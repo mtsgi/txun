@@ -5,7 +5,9 @@ const content = ref('')
 const filename = ref('untitled.txt')
 const isDirty = ref(false)
 
-watch(content, () => { isDirty.value = true })
+watch(content, () => {
+  isDirty.value = true
+})
 
 function onSave() {
   const blob = new Blob([content.value], { type: 'text/plain' })

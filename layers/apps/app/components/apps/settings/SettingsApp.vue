@@ -74,73 +74,72 @@ function applyFont(font: AppFont) {
     </h2>
 
     <div class="settings-sections">
+      <!-- Theme -->
+      <section class="settings-section">
+        <h3>{{ $t('apps.settings.theme') }}</h3>
+        <div class="option-row">
+          <UButton
+            v-for="t in themes"
+            :key="t.value"
+            :icon="t.icon"
+            :label="t.label"
+            :variant="store.theme === t.value ? 'solid' : 'outline'"
+            :color="store.theme === t.value ? 'primary' : 'neutral'"
+            @click="applyTheme(t.value)"
+          />
+        </div>
+      </section>
 
-    <!-- Theme -->
-    <section class="settings-section">
-      <h3>{{ $t('apps.settings.theme') }}</h3>
-      <div class="option-row">
-        <UButton
-          v-for="t in themes"
-          :key="t.value"
-          :icon="t.icon"
-          :label="t.label"
-          :variant="store.theme === t.value ? 'solid' : 'outline'"
-          :color="store.theme === t.value ? 'primary' : 'neutral'"
-          @click="applyTheme(t.value)"
-        />
-      </div>
-    </section>
+      <!-- Primary Color -->
+      <section class="settings-section">
+        <h3>{{ $t('apps.settings.primaryColor') }}</h3>
+        <div class="color-swatches">
+          <button
+            v-for="c in colorOptions"
+            :key="c.value"
+            class="color-swatch"
+            :class="store.primaryColor === c.value ? 'active' : ''"
+            :style="{ backgroundColor: c.hex }"
+            :title="c.label"
+            @click="applyColor(c.value)"
+          />
+        </div>
+      </section>
 
-    <!-- Primary Color -->
-    <section class="settings-section">
-      <h3>{{ $t('apps.settings.primaryColor') }}</h3>
-      <div class="color-swatches">
-        <button
-          v-for="c in colorOptions"
-          :key="c.value"
-          class="color-swatch"
-          :class="store.primaryColor === c.value ? 'active' : ''"
-          :style="{ backgroundColor: c.hex }"
-          :title="c.label"
-          @click="applyColor(c.value)"
-        />
-      </div>
-    </section>
+      <!-- Font -->
+      <section class="settings-section">
+        <h3>{{ $t('apps.settings.font') }}</h3>
+        <div class="font-options">
+          <button
+            v-for="f in fontOptions"
+            :key="f.value"
+            class="font-option"
+            :class="store.font === f.value ? 'active' : ''"
+            @click="applyFont(f.value)"
+          >
+            <span class="font-label">{{ f.label }}</span>
+            <span
+              class="font-preview"
+              :style="{ fontFamily: FONT_FAMILIES[f.value] }"
+            >{{ f.preview }}</span>
+          </button>
+        </div>
+      </section>
 
-    <!-- Font -->
-    <section class="settings-section">
-      <h3>{{ $t('apps.settings.font') }}</h3>
-      <div class="font-options">
-        <button
-          v-for="f in fontOptions"
-          :key="f.value"
-          class="font-option"
-          :class="store.font === f.value ? 'active' : ''"
-          @click="applyFont(f.value)"
-        >
-          <span class="font-label">{{ f.label }}</span>
-          <span
-            class="font-preview"
-            :style="{ fontFamily: FONT_FAMILIES[f.value] }"
-          >{{ f.preview }}</span>
-        </button>
-      </div>
-    </section>
-
-    <!-- Language -->
-    <section class="settings-section">
-      <h3>{{ $t('apps.settings.language') }}</h3>
-      <div class="option-row">
-        <UButton
-          v-for="l in langs"
-          :key="l.value"
-          :label="l.label"
-          :variant="store.locale === l.value ? 'solid' : 'outline'"
-          :color="store.locale === l.value ? 'primary' : 'neutral'"
-          @click="applyLocale(l.value)"
-        />
-      </div>
-    </section>
+      <!-- Language -->
+      <section class="settings-section">
+        <h3>{{ $t('apps.settings.language') }}</h3>
+        <div class="option-row">
+          <UButton
+            v-for="l in langs"
+            :key="l.value"
+            :label="l.label"
+            :variant="store.locale === l.value ? 'solid' : 'outline'"
+            :color="store.locale === l.value ? 'primary' : 'neutral'"
+            @click="applyLocale(l.value)"
+          />
+        </div>
+      </section>
     </div>
   </div>
 </template>
