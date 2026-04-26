@@ -1,77 +1,49 @@
-<script setup>
-useHead({
-  meta: [
-    { name: 'viewport', content: 'width=device-width, initial-scale=1' }
-  ],
-  link: [
-    { rel: 'icon', href: '/favicon.ico' }
-  ],
-  htmlAttrs: {
-    lang: 'en'
-  }
+<script setup lang="ts">
+const { locale } = useI18n()
+const store = useDesktopStore()
+const colorMode = useColorMode()
+const appConfig = useAppConfig()
+
+const FONT_FAMILIES: Record<string, string> = {
+  system: 'system-ui, -apple-system, sans-serif',
+  sans: '\'Public Sans\', sans-serif',
+  mono: 'ui-monospace, monospace',
+  serif: 'ui-serif, Georgia, serif'
+}
+
+function applyFont(font: string) {
+  document.documentElement.style.setProperty('--app-font', FONT_FAMILIES[font] ?? FONT_FAMILIES['system']!)
+}
+
+function applyPrimaryColor(color: string) {
+  (appConfig.ui as Record<string, unknown>).colors = { ...(appConfig.ui as unknown as Record<string, Record<string, string>>).colors, primary: color }
+}
+
+// Sync store → runtime on initial load
+onMounted(() => {
+  colorMode.preference = store.theme
+  locale.value = store.locale
+  applyFont(store.font)
+  applyPrimaryColor(store.primaryColor)
 })
 
-const title = 'Nuxt Starter Template'
-const description = 'A production-ready starter template powered by Nuxt UI. Build beautiful, accessible, and performant applications in minutes, not hours.'
+watch(() => store.font, applyFont)
+watch(() => store.primaryColor, applyPrimaryColor)
+
+useHead({
+  meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1' }],
+  link: [{ rel: 'icon', href: '/favicon.ico' }],
+  htmlAttrs: { lang: locale }
+})
 
 useSeoMeta({
-  title,
-  description,
-  ogTitle: title,
-  ogDescription: description,
-  ogImage: 'https://ui.nuxt.com/assets/templates/nuxt/starter-light.png',
-  twitterCard: 'summary_large_image'
+  title: 'TxunOS',
+  description: 'A web desktop environment built with Nuxt UI'
 })
 </script>
 
 <template>
-  <UApp>
-    <UHeader>
-      <template #left>
-        <NuxtLink to="/">
-          <AppLogo class="w-auto h-6 shrink-0" />
-        </NuxtLink>
-
-        <TemplateMenu />
-      </template>
-
-      <template #right>
-        <UColorModeButton />
-
-        <UButton
-          to="https://github.com/nuxt-ui-templates/starter"
-          target="_blank"
-          icon="i-simple-icons-github"
-          aria-label="GitHub"
-          color="neutral"
-          variant="ghost"
-        />
-      </template>
-    </UHeader>
-
-    <UMain>
-      <NuxtPage />
-    </UMain>
-
-    <USeparator icon="i-simple-icons-nuxtdotjs" />
-
-    <UFooter>
-      <template #left>
-        <p class="text-sm text-muted">
-          Built with Nuxt UI • © {{ new Date().getFullYear() }}
-        </p>
-      </template>
-
-      <template #right>
-        <UButton
-          to="https://github.com/nuxt-ui-templates/starter"
-          target="_blank"
-          icon="i-simple-icons-github"
-          aria-label="GitHub"
-          color="neutral"
-          variant="ghost"
-        />
-      </template>
-    </UFooter>
+  <UApp :class="colorMode.value === 'dark' ? 'dark' : ''">
+    <NuxtPage />
   </UApp>
 </template>

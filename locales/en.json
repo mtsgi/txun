@@ -1,0 +1,42 @@
+{
+  "desktop": {
+    "window": {
+      "minimize": "Minimize",
+      "maximize": "Maximize",
+      "restore": "Restore",
+      "close": "Close"
+    },
+    "taskbar": {
+      "launcher": "App Launcher"
+    },
+    "virtualDesktop": {
+      "add": "Add Virtual Desktop",
+      "remove": "Remove"
+    }
+  },
+  "apps": {
+    "settings": {
+      "name": "Settings",
+      "theme": "Theme",
+      "language": "Language"
+    },
+    "textEditor": {
+      "name": "Text Editor",
+      "open": "Open",
+      "save": "Save",
+      "placeholder": "Start typing…"
+    },
+    "fileManager": {
+      "name": "Files",
+      "empty": "This folder is empty",
+      "items": "items"
+    },
+    "browser": {
+      "name": "Browser",
+      "addressBar": "Enter URL"
+    },
+    "terminal": {
+      "name": "Terminal"
+    }
+  }
+}

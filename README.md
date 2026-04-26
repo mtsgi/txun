@@ -1,64 +1,166 @@
-# Nuxt Starter Template
+# TxunOS
 
-[![Nuxt UI](https://img.shields.io/badge/Made%20with-Nuxt%20UI-00DC82?logo=nuxt&labelColor=020420)](https://ui.nuxt.com)
+[![Nuxt](https://img.shields.io/badge/Nuxt-4.x-00DC82?logo=nuxt&labelColor=020420)](https://nuxt.com)
+[![Nuxt UI](https://img.shields.io/badge/Nuxt%20UI-4.x-00DC82?logo=nuxt&labelColor=020420)](https://ui.nuxt.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
-Use this template to get started with [Nuxt UI](https://ui.nuxt.com) quickly.
+**TxunOS** は Nuxt 4 SPA として構築した、ブラウザ上で動作する Web デスクトップ環境です。  
+Nuxt UI / Nuxt Layers / Pinia / i18n などの Nuxt エコシステムをフル活用しています。
 
-- [Live demo](https://starter-template.nuxt.dev/)
-- [Documentation](https://ui.nuxt.com/docs/getting-started/installation/nuxt)
+---
 
-<a href="https://starter-template.nuxt.dev/" target="_blank">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://ui.nuxt.com/assets/templates/nuxt/starter-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="https://ui.nuxt.com/assets/templates/nuxt/starter-light.png">
-    <img alt="Nuxt Starter Template" src="https://ui.nuxt.com/assets/templates/nuxt/starter-light.png" width="830" height="466">
-  </picture>
-</a>
+## 特徴
 
-> The starter template for Vue is on https://github.com/nuxt-ui-templates/starter-vue.
+- ドラッグ・リサイズ可能なウィンドウ（8 方向スナップゾーン対応）
+- 仮想デスクトップの追加・切替
+- ビルトインアプリ: ファイルマネージャー・テキストエディタ・ブラウザ・ターミナル・設定
+- 日本語 / 英語 i18n（`@nuxtjs/i18n`）
+- ライト / ダーク テーマ（Nuxt UI カラーモード）
+- IndexedDB による状態の永続化
+- Nuxt Layers を使ったサードパーティアプリの追加
 
-## Quick Start
+---
 
-```bash [Terminal]
-npm create nuxt@latest -- -t ui
+## ディレクトリ構成
+
+```
+txunos/
+├── app/                        # エントリーポイント（pages, app.vue, app.config.ts）
+├── layers/
+│   ├── core/                   # デスクトップシェル・ウィンドウマネージャー・Pinia ストア
+│   │   └── app/
+│   │       ├── components/desktop/   # AppWindow, TaskBar, DesktopShell など
+│   │       ├── composables/          # useWindowManager, useVirtualDesktop, useDesktopStorage
+│   │       ├── stores/               # desktop.ts（Pinia）
+│   │       └── utils/                # window-manager.ts（純粋関数 / ユニットテスト対象）
+│   └── apps/                   # ビルトインアプリ
+│       └── app/
+│           ├── components/apps/      # SettingsApp, TextEditor, FileManager など
+│           └── plugins/              # register-apps.ts（アプリ登録）
+├── i18n/locales/               # ja.json / en.json
+└── test/unit/                  # Vitest ユニットテスト
 ```
 
-## Deploy your own
+`layers/` 内のレイヤーは Nuxt 4 によって自動登録されます。  
+優先順位: `app/` > `layers/apps/` > `layers/core/`
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-name=starter&repository-url=https%3A%2F%2Fgithub.com%2Fnuxt-ui-templates%2Fstarter&demo-image=https%3A%2F%2Fui.nuxt.com%2Fassets%2Ftemplates%2Fnuxt%2Fstarter-dark.png&demo-url=https%3A%2F%2Fstarter-template.nuxt.dev%2F&demo-title=Nuxt%20Starter%20Template&demo-description=A%20minimal%20template%20to%20get%20started%20with%20Nuxt%20UI.)
+---
 
-## Setup
-
-Make sure to install the dependencies:
+## セットアップ
 
 ```bash
-pnpm install
+npm install
+npm run dev         # http://localhost:3000
 ```
 
-## Development Server
+ブラウザで `http://localhost:3000` を開くとデスクトップが起動します。
 
-Start the development server on `http://localhost:3000`:
+### コマンド一覧
 
-```bash
-pnpm dev
+| コマンド | 説明 |
+|---|---|
+| `npm run dev` | 開発サーバー起動 |
+| `npm run build` | プロダクションビルド（静的 SPA） |
+| `npm run preview` | ビルド結果のプレビュー |
+| `npm run typecheck` | TypeScript 型チェック |
+| `npm run lint` | ESLint |
+| `npm run test:unit` | ユニットテスト（window-manager 純粋関数） |
+| `npm run test:coverage` | カバレッジレポート生成 |
+
+---
+
+## アーキテクチャ概要
+
+### 状態管理（Pinia）
+
+`layers/core/app/stores/desktop.ts` がすべてのデスクトップ状態の単一ソースです。
+
+| 状態 | 型 | 説明 |
+|---|---|---|
+| `windows` | `WindowState[]` | 開いているウィンドウ一覧 |
+| `virtualDesktops` | `VirtualDesktop[]` | 仮想デスクトップ一覧 |
+| `activeVirtualDesktopId` | `string` | 現在のデスクトップ ID |
+| `apps` | `AppMeta[]` | 登録済みアプリ一覧 |
+| `theme` | `'light' \| 'dark'` | 現在のテーマ |
+| `locale` | `'ja' \| 'en'` | 現在の言語 |
+
+### コンポーザブル
+
+| コンポーザブル | 役割 |
+|---|---|
+| `useWindowManager` | ウィンドウ操作（CRUD・スナップ・`setTheme`・`setLocale`） |
+| `useVirtualDesktop` | 仮想デスクトップの追加・削除・切替 |
+| `useDesktopStorage` | IndexedDB への状態保存・読み込み |
+
+### ウィンドウマネージャーユーティリティ
+
+`layers/core/app/utils/window-manager.ts` は **純粋関数のみ**で構成（テスト対象）。
+
+| 関数 | 説明 |
+|---|---|
+| `detectSnapZone` | カーソル位置からスナップゾーンを検出（8 方向 + 最大化） |
+| `applySnapZone` | スナップゾーンに対応するウィンドウ座標を計算 |
+| `clampPosition` | ウィンドウがはみ出さないよう座標を補正 |
+| `cascadePosition` | 新規ウィンドウのカスケード初期位置を計算 |
+
+---
+
+## サードパーティアプリの開発
+
+Nuxt Layer npm パッケージを作成し、`nuxt.config.ts` の `extends` に追加することでアプリを追加できます。
+
+### 1. レイヤー構成
+
+```
+my-txunos-app/
+├── nuxt.config.ts
+└── app/
+    ├── components/apps/
+    │   └── MyApp.vue          # windowId: string プロップを受け取る
+    └── plugins/
+        └── register.ts        # useDesktopStore().registerApp() を呼ぶ
 ```
 
-## Production
+### 2. アプリコンポーネント
 
-Build the application for production:
+```vue
+<!-- app/components/apps/MyApp.vue -->
+<script setup lang="ts">
+defineProps<{ windowId: string }>()
+</script>
 
-```bash
-pnpm build
+<template>
+  <div class="p-4">マイアプリの内容</div>
+</template>
 ```
 
-Locally preview production build:
+### 3. 登録プラグイン
 
-```bash
-pnpm preview
+```ts
+// app/plugins/register.ts
+export default defineNuxtPlugin(() => {
+  useDesktopStore().registerApp({
+    id: 'my-app',
+    name: 'マイアプリ',
+    nameKey: 'myApp.name',
+    icon: 'i-lucide-star',
+    component: 'AppsMyApp',   // Nuxt auto-import 名（components/apps/MyApp.vue → AppsMyApp）
+    defaultWidth: 640,
+    defaultHeight: 480
+  })
+})
 ```
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+### 4. nuxt.config.ts に追加
 
-## Renovate integration
+```ts
+export default defineNuxtConfig({
+  extends: ['my-txunos-app']
+})
+```
 
-Install [Renovate GitHub app](https://github.com/apps/renovate/installations/select_target) on your repository and you are good to go.
+---
+
+## ライセンス
+
+[MIT](./LICENSE)
