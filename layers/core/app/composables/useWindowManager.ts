@@ -8,7 +8,7 @@ import type { AppMeta } from '../stores/desktop'
 export function useWindowManager() {
   const store = useDesktopStore()
   const colorMode = useColorMode()
-  const { locale } = useI18n()
+  const i18n = useI18n()
 
   /**
    * アプリ ID を指定してアプリを開く。
@@ -36,7 +36,7 @@ export function useWindowManager() {
    */
   function setLocale(loc: 'ja' | 'en'): void {
     store.setLocale(loc)
-    locale.value = loc
+    i18n.setLocale(loc)
   }
 
   return {

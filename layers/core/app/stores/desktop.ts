@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { clampPosition } from '../utils/window-manager'
 
 /** ウィンドウ一つ分の状態を表すインターフェース */
 export interface WindowState {
@@ -8,6 +9,8 @@ export interface WindowState {
   appId: string
   /** ウィンドウタイトル */
   title: string
+  /** i18n キー（存在する場合は title より優先して翻訳に使用） */
+  nameKey?: string
   /** アイコンクラス名 */
   icon: string
   /** 左端の X 座標（px） */
@@ -159,6 +162,7 @@ export const useDesktopStore = defineStore('desktop', {
         id,
         appId: app.id,
         title: app.name,
+        nameKey: app.nameKey,
         icon: app.icon,
         x: 80 + offset,
         y: 40 + offset,
@@ -208,13 +212,17 @@ export const useDesktopStore = defineStore('desktop', {
      * 最大化中は preMaximize に復元用境界を保存する。
      * @param id - 最大化をトグルするウィンドウの ID
      */
-    toggleMaximize(id: string): void {
+    toggleMaximize(id: string, screenWidth = 1280, screenHeight = 720, taskbarHeight = 48): void {
       const w = this.windows.find(w => w.id === id)
       if (!w) return
       if (w.isMaximized) {
         if (w.preMaximize) {
-          w.x = w.preMaximize.x
-          w.y = w.preMaximize.y
+          const clamped = clampPosition(
+            { x: w.preMaximize.x, y: w.preMaximize.y, width: w.preMaximize.width, height: w.preMaximize.height },
+            screenWidth, screenHeight, taskbarHeight
+          )
+          w.x = clamped.x
+          w.y = clamped.y
           w.width = w.preMaximize.width
           w.height = w.preMaximize.height
           w.preMaximize = undefined

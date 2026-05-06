@@ -6,7 +6,16 @@
       "primaryColor": "アクセントカラー",
       "font": "フォント",
       "language": "言語",
-      "appearance": "外観"
+      "appearance": "外観",
+      "wallpaper": "壁紙",
+      "radius": "角丸",
+      "about": "TxunOS について",
+      "aboutDescription": "TxunOS は Nuxt 4・Nuxt UI を基盤に構築されたウェブベースのデスクトップ環境です。",
+      "version": "バージョン",
+      "license": "ライセンス",
+      "ossLicenses": "OSS ライセンス",
+      "wallpaperUrl": "画像URLで設定",
+      "wallpaperApply": "適用"
     },
     "textEditor": {
       "name": "テキストエディタ",

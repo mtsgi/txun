@@ -35,39 +35,5 @@
         "placeholder": "Search apps and windows..."
       }
     }
-  },
-  "apps": {
-    "settings": {
-      "name": "Settings",
-      "theme": "Theme",
-      "primaryColor": "Accent Color",
-      "font": "Font",
-      "language": "Language",
-      "appearance": "Appearance",
-      "wallpaper": "Wallpaper",
-      "radius": "Border Radius"
-    },
-    "textEditor": {
-      "name": "Text Editor",
-      "open": "Open",
-      "save": "Save",
-      "placeholder": "Start typing\u2026"
-    },
-    "fileManager": {
-      "name": "Files",
-      "empty": "This folder is empty",
-      "items": "items",
-      "open": "Open",
-      "rename": "Rename",
-      "delete": "Delete",
-      "sidebar": "Sidebar"
-    },
-    "browser": {
-      "name": "Browser",
-      "addressBar": "Enter URL"
-    },
-    "terminal": {
-      "name": "Terminal"
-    }
   }
 }

@@ -136,6 +136,6 @@ onUnmounted(() => {
 .vdesktop-slide-enter-from,
 .vdesktop-slide-leave-to {
   opacity: 0;
-  transform: translateY(-50%);
+  transform: translateX(-50%) translateY(-50%);
 }
 </style>

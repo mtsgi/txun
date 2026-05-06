@@ -1,7 +1,13 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
+  extends: [
+    'layers/core',
+    'layers/apps'
+  ],
+
   modules: [
     '@nuxt/ui',
+    '@nuxtjs/i18n',
     '@nuxt/test-utils',
     '@nuxt/eslint',
     '@pinia/nuxt'
@@ -40,5 +46,14 @@ export default defineNuxtConfig({
         braceStyle: '1tbs'
       }
     }
+  },
+
+  i18n: {
+
+    defaultLocale: 'ja',
+    detectBrowserLanguage: {
+      useCookie: true
+    },
+    strategy: 'no_prefix'
   }
 })

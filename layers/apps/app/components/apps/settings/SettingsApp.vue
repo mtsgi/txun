@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { SelectItem } from '@nuxt/ui'
 import type { AppFont, AppRadius } from '../../../../../core/app/stores/desktop'
 
 defineProps<{ windowId: string }>()
@@ -6,13 +7,20 @@ defineProps<{ windowId: string }>()
 const store = useDesktopStore()
 const colorMode = useColorMode()
 const appConfig = useAppConfig()
-const { t } = useI18n()
+const { t, locales } = useI18n()
 const { setLocale } = useWindowManager()
 
-const langs = [
-  { label: '日本語', value: 'ja' as const },
-  { label: 'English', value: 'en' as const }
-]
+const localeOptions = computed<SelectItem[]>(() =>
+  locales.value.map(l => ({
+    label: (l as { name?: string }).name ?? l.code,
+    value: l.code
+  }))
+)
+
+const selectedLocale = computed({
+  get: () => store.locale,
+  set: (v: string) => setLocale(v as 'ja' | 'en')
+})
 
 /** コンテナ幅に応じてモバイルレイアウトかどうかを判定する */
 const containerRef = ref<HTMLElement | null>(null)
@@ -96,7 +104,8 @@ const tabs = computed(() => [
   { label: t('apps.settings.appearance'), icon: 'i-lucide-palette', slot: 'appearance' },
   { label: t('apps.settings.wallpaper'), icon: 'i-lucide-image', slot: 'wallpaper' },
   { label: t('apps.settings.font'), icon: 'i-lucide-type', slot: 'font' },
-  { label: t('apps.settings.language'), icon: 'i-lucide-globe', slot: 'language' }
+  { label: t('apps.settings.language'), icon: 'i-lucide-globe', slot: 'language' },
+  { label: t('apps.settings.about'), icon: 'i-lucide-info', slot: 'about' }
 ])
 
 /** colorMode 変更をストアに同期 */
@@ -118,6 +127,25 @@ function applyFont(font: AppFont) {
 function applyRadius(radius: AppRadius) {
   store.setRadius(radius)
   document.documentElement.style.setProperty('--ui-radius', RADIUS_VALUES[radius])
+}
+
+const ossPackages = [
+  { name: 'Nuxt', license: 'MIT' },
+  { name: 'Nuxt UI', license: 'MIT' },
+  { name: 'Vue', license: 'MIT' },
+  { name: 'Pinia', license: 'MIT' },
+  { name: '@nuxtjs/i18n', license: 'MIT' },
+  { name: 'ProseMirror', license: 'MIT' },
+  { name: 'Lucide Icons', license: 'ISC' }
+]
+
+const wallpaperUrlInput = ref('')
+
+function applyWallpaperUrl(): void {
+  const url = wallpaperUrlInput.value.trim()
+  if (url) {
+    store.setWallpaper(url)
+  }
 }
 
 onMounted(() => {
@@ -177,7 +205,10 @@ onMounted(() => {
                 :class="store.radius === r.value ? 'active' : ''"
                 @click="applyRadius(r.value)"
               >
-                <div class="radius-preview" :style="{ borderRadius: RADIUS_VALUES[r.value] }" />
+                <div
+                  class="radius-preview"
+                  :style="{ borderRadius: RADIUS_VALUES[r.value] }"
+                />
                 <span>{{ r.label }}</span>
               </button>
             </div>
@@ -218,6 +249,29 @@ onMounted(() => {
               @click="store.setWallpaper(wp.id)"
             />
           </div>
+          <div
+            class="field"
+            style="margin-top:1rem"
+          >
+            <p class="field-label">
+              {{ $t('apps.settings.wallpaperUrl') }}
+            </p>
+            <div class="wallpaper-url-row">
+              <UInput
+                v-model="wallpaperUrlInput"
+                placeholder="https://example.com/image.jpg"
+                class="flex-1"
+                @keydown.enter="applyWallpaperUrl"
+              />
+              <UButton
+                :label="$t('apps.settings.wallpaperApply')"
+                color="primary"
+                variant="solid"
+                size="sm"
+                @click="applyWallpaperUrl"
+              />
+            </div>
+          </div>
         </div>
       </template>
 
@@ -250,15 +304,60 @@ onMounted(() => {
             {{ $t('apps.settings.language') }}
           </h3>
           <div class="field">
-            <div class="option-row">
-              <UButton
-                v-for="l in langs"
-                :key="l.value"
-                :label="l.label"
-                :variant="store.locale === l.value ? 'solid' : 'outline'"
-                :color="store.locale === l.value ? 'primary' : 'neutral'"
-                @click="setLocale(l.value)"
-              />
+            <USelect
+              v-model="selectedLocale"
+              :items="localeOptions"
+              value-key="value"
+              class="w-48"
+            />
+          </div>
+        </div>
+      </template>
+
+      <template #about>
+        <div class="section-content">
+          <h3 class="section-title">
+            {{ $t('apps.settings.about') }}
+          </h3>
+          <div class="about-logo">
+            <UIcon
+              name="i-lucide-monitor"
+              class="about-icon"
+            />
+            <span class="about-name">TxunOS</span>
+          </div>
+          <p class="about-desc">
+            {{ $t('apps.settings.aboutDescription') }}
+          </p>
+          <div class="field">
+            <p class="field-label">
+              {{ $t('apps.settings.version') }}
+            </p>
+            <p class="about-value">
+              0.1.0
+            </p>
+          </div>
+          <div class="field">
+            <p class="field-label">
+              {{ $t('apps.settings.license') }}
+            </p>
+            <p class="about-value">
+              MIT
+            </p>
+          </div>
+          <div class="field">
+            <p class="field-label">
+              {{ $t('apps.settings.ossLicenses') }}
+            </p>
+            <div class="oss-list">
+              <div
+                v-for="oss in ossPackages"
+                :key="oss.name"
+                class="oss-item"
+              >
+                <span class="oss-name">{{ oss.name }}</span>
+                <span class="oss-license">{{ oss.license }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -345,7 +444,10 @@ onMounted(() => {
                   :class="store.radius === r.value ? 'active' : ''"
                   @click="applyRadius(r.value)"
                 >
-                  <div class="radius-preview" :style="{ borderRadius: RADIUS_VALUES[r.value] }" />
+                  <div
+                    class="radius-preview"
+                    :style="{ borderRadius: RADIUS_VALUES[r.value] }"
+                  />
                   <span>{{ r.label }}</span>
                 </button>
               </div>
@@ -384,6 +486,29 @@ onMounted(() => {
                 @click="store.setWallpaper(wp.id)"
               />
             </div>
+            <div
+              class="field"
+              style="margin-top:1rem"
+            >
+              <p class="field-label">
+                {{ $t('apps.settings.wallpaperUrl') }}
+              </p>
+              <div class="wallpaper-url-row">
+                <UInput
+                  v-model="wallpaperUrlInput"
+                  placeholder="https://example.com/image.jpg"
+                  class="flex-1"
+                  @keydown.enter="applyWallpaperUrl"
+                />
+                <UButton
+                  :label="$t('apps.settings.wallpaperApply')"
+                  color="primary"
+                  variant="solid"
+                  size="sm"
+                  @click="applyWallpaperUrl"
+                />
+              </div>
+            </div>
           </div>
 
           <!-- フォント -->
@@ -414,15 +539,59 @@ onMounted(() => {
             class="section-content"
           >
             <div class="field">
-              <div class="option-row">
-                <UButton
-                  v-for="l in langs"
-                  :key="l.value"
-                  :label="l.label"
-                  :variant="store.locale === l.value ? 'solid' : 'outline'"
-                  :color="store.locale === l.value ? 'primary' : 'neutral'"
-                  @click="setLocale(l.value)"
-                />
+              <USelect
+                v-model="selectedLocale"
+                :items="localeOptions"
+                value-key="value"
+                class="w-48"
+              />
+            </div>
+          </div>
+
+          <!-- About -->
+          <div
+            v-if="activeSection === 'about'"
+            class="section-content"
+          >
+            <div class="about-logo">
+              <UIcon
+                name="i-lucide-monitor"
+                class="about-icon"
+              />
+              <span class="about-name">TxunOS</span>
+            </div>
+            <p class="about-desc">
+              {{ $t('apps.settings.aboutDescription') }}
+            </p>
+            <div class="field">
+              <p class="field-label">
+                {{ $t('apps.settings.version') }}
+              </p>
+              <p class="about-value">
+                0.1.0
+              </p>
+            </div>
+            <div class="field">
+              <p class="field-label">
+                {{ $t('apps.settings.license') }}
+              </p>
+              <p class="about-value">
+                MIT
+              </p>
+            </div>
+            <div class="field">
+              <p class="field-label">
+                {{ $t('apps.settings.ossLicenses') }}
+              </p>
+              <div class="oss-list">
+                <div
+                  v-for="oss in ossPackages"
+                  :key="oss.name"
+                  class="oss-item"
+                >
+                  <span class="oss-name">{{ oss.name }}</span>
+                  <span class="oss-license">{{ oss.license }}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -665,6 +834,64 @@ onMounted(() => {
   &.active {
     border-color: var(--ui-primary);
     box-shadow: 0 0 0 2px var(--ui-bg), 0 0 0 4px var(--ui-primary);
+  }
+}
+
+.wallpaper-url-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+// About セクション
+.about-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+
+  .about-icon {
+    font-size: 2.5rem;
+    color: var(--ui-primary);
+  }
+
+  .about-name {
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+}
+
+.about-desc {
+  font-size: 0.875rem;
+  color: var(--ui-text-muted);
+  margin: 0 0 1.25rem;
+  line-height: 1.6;
+}
+
+.about-value {
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.oss-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.oss-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8125rem;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--ui-border);
+
+  .oss-name {
+    font-weight: 500;
+  }
+
+  .oss-license {
+    color: var(--ui-text-muted);
   }
 }
 </style>

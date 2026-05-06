@@ -6,13 +6,22 @@
       "primaryColor": "Accent Color",
       "font": "Font",
       "language": "Language",
-      "appearance": "Appearance"
+      "appearance": "Appearance",
+      "wallpaper": "Wallpaper",
+      "radius": "Border Radius",
+      "about": "About TxunOS",
+      "aboutDescription": "TxunOS is a web-based desktop environment built with Nuxt 4 and Nuxt UI.",
+      "version": "Version",
+      "license": "License",
+      "ossLicenses": "OSS Licenses",
+      "wallpaperUrl": "Set by image URL",
+      "wallpaperApply": "Apply"
     },
     "textEditor": {
       "name": "Text Editor",
       "open": "Open",
       "save": "Save",
-      "placeholder": "Start typing…"
+      "placeholder": "Start typing\u2026"
     },
     "fileManager": {
       "name": "Files",

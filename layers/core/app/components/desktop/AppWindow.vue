@@ -3,6 +3,8 @@ import { detectSnapZone, applySnapZone, clampPosition } from '../../utils/window
 import { useDesktopStore } from '../../stores/desktop'
 import type { WindowState } from '../../stores/desktop'
 
+const { t } = useI18n()
+
 const props = defineProps<{
   window: WindowState
   screenWidth: number
@@ -81,7 +83,9 @@ function onTitlebarMouseDown(e: MouseEvent) {
     const zone = !props.isMobile
       ? detectSnapZone(ev.clientX, ev.clientY, props.screenWidth, props.screenHeight)
       : null
-    if (zone) {
+    if (zone === 'maximize') {
+      store.toggleMaximize(props.window.id, props.screenWidth, props.screenHeight, taskbarH.value)
+    } else if (zone) {
       store.updateWindowBounds(props.window.id, applySnapZone(zone, props.screenWidth, props.screenHeight, taskbarH.value))
     } else {
       const clamped = clampPosition(
@@ -100,7 +104,7 @@ function onTitlebarMouseDown(e: MouseEvent) {
 }
 
 function onTitlebarDblClick() {
-  store.toggleMaximize(props.window.id)
+  store.toggleMaximize(props.window.id, props.screenWidth, props.screenHeight, taskbarH.value)
 }
 
 type ResizeDir = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw'
@@ -181,7 +185,7 @@ function onResizeStart(e: MouseEvent, dir: ResizeDir) {
         class="titlebar-icon"
       />
       <span class="titlebar-title">
-        {{ window.title }}
+        {{ window.nameKey ? t(window.nameKey) : window.title }}
       </span>
       <div class="titlebar-controls">
         <UButton
@@ -200,7 +204,7 @@ function onResizeStart(e: MouseEvent, dir: ResizeDir) {
           variant="ghost"
           :icon="window.isMaximized ? 'i-lucide-minimize-2' : 'i-lucide-maximize-2'"
           :aria-label="$t('core.desktop.window.maximize')"
-          @click="store.toggleMaximize(window.id)"
+          @click="store.toggleMaximize(window.id, screenWidth, screenHeight, taskbarH)"
         />
         <UButton
           size="xs"

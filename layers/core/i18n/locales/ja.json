@@ -35,39 +35,5 @@
         "placeholder": "アプリやウィンドウを検索..."
       }
     }
-  },
-  "apps": {
-    "settings": {
-      "name": "設定",
-      "theme": "テーマ",
-      "primaryColor": "アクセントカラー",
-      "font": "フォント",
-      "language": "言語",
-      "appearance": "外観",
-      "wallpaper": "壁紙",
-      "radius": "角丸"
-    },
-    "textEditor": {
-      "name": "テキストエディタ",
-      "open": "開く",
-      "save": "保存",
-      "placeholder": "テキストを入力\u2026"
-    },
-    "fileManager": {
-      "name": "ファイル",
-      "empty": "フォルダが空です",
-      "items": "項目",
-      "open": "開く",
-      "rename": "名前変更",
-      "delete": "削除",
-      "sidebar": "サイドバー"
-    },
-    "browser": {
-      "name": "ブラウザ",
-      "addressBar": "URLを入力"
-    },
-    "terminal": {
-      "name": "ターミナル"
-    }
   }
 }

@@ -15,7 +15,7 @@ const { desktops, activeId, addDesktop, removeDesktop, switchDesktop } = useVirt
       <UButton
         v-if="desktops.length > 1"
         size="xs"
-        variant="ghost"
+        :variant="desktop.id === activeId ? 'solid' : 'ghost'"
         icon="i-lucide-x"
         class="vdesktop-close"
         @click.stop="removeDesktop(desktop.id)"

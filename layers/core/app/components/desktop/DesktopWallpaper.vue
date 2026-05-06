@@ -2,6 +2,7 @@
 import { useDesktopStore } from '../../stores/desktop'
 
 const store = useDesktopStore()
+const isMobile = computed(() => window.innerWidth < 768)
 
 /** 壁紙プリセット ID から CSS 背景値へのマッピング */
 const WALLPAPER_PRESETS: Record<string, string> = {
@@ -14,9 +15,19 @@ const WALLPAPER_PRESETS: Record<string, string> = {
   'solid-light': '#e5e7eb'
 }
 
-const wallpaperCss = computed(() =>
-  WALLPAPER_PRESETS[store.wallpaper] ?? WALLPAPER_PRESETS['gradient-default'] ?? ''
-)
+const wallpaperCss = computed(() => {
+  const w = store.wallpaper
+  // http/https URL または絶対パスの場合は background-image として扱う
+  if (w.startsWith('http://') || w.startsWith('https://') || w.startsWith('/')) {
+    return `url("${w}")`
+  }
+  return WALLPAPER_PRESETS[w] ?? WALLPAPER_PRESETS['gradient-default'] ?? ''
+})
+
+const isImageUrl = computed(() => {
+  const w = store.wallpaper
+  return w.startsWith('http://') || w.startsWith('https://') || w.startsWith('/')
+})
 const { openSpotlight } = useSpotlight()
 const { addDesktop } = useVirtualDesktop()
 const { t } = useI18n()
@@ -34,11 +45,13 @@ const contextMenuItems = computed(() => [
     }
   ],
   [
-    {
-      label: t('core.desktop.virtualDesktop.add'),
-      icon: 'i-lucide-plus',
-      onSelect: () => addDesktop()
-    },
+    ...(!isMobile.value
+      ? [{
+          label: t('core.desktop.virtualDesktop.add'),
+          icon: 'i-lucide-plus',
+          onSelect: () => addDesktop()
+        }]
+      : []),
     {
       label: t('core.desktop.spotlight.open'),
       icon: 'i-lucide-search',
@@ -50,7 +63,10 @@ const contextMenuItems = computed(() => [
 
 <template>
   <UContextMenu :items="contextMenuItems">
-    <div class="wallpaper" :style="{ background: wallpaperCss }" />
+    <div
+      class="wallpaper"
+      :style="isImageUrl ? { backgroundImage: wallpaperCss, backgroundSize: 'cover', backgroundPosition: 'center' } : { background: wallpaperCss }"
+    />
   </UContextMenu>
 </template>
 
