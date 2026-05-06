@@ -1,4 +1,5 @@
 export default defineNuxtConfig({
+  modules: ['@nuxtjs/i18n'],
   $meta: {
     description: 'TxunOS Built-in Applications Layer — settings, text editor, file manager, browser, terminal',
     name: 'txunos-apps',
@@ -10,5 +11,15 @@ export default defineNuxtConfig({
       global: true,
       prefix: 'Apps'
     }
-  ]
+  ],
+
+  i18n: {
+    locales: [
+      { code: 'ja', file: 'ja.json', name: '日本語' },
+      { code: 'en', file: 'en.json', name: 'English' }
+    ],
+    defaultLocale: 'ja',
+    langDir: 'locales',
+    strategy: 'no_prefix'
+  }
 })

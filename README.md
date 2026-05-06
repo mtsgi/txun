@@ -28,21 +28,24 @@ txunos/
 ├── app/                        # エントリーポイント（pages, app.vue, app.config.ts）
 ├── layers/
 │   ├── core/                   # デスクトップシェル・ウィンドウマネージャー・Pinia ストア
+│   │   ├── i18n/locales/       # core.desktop.* キー（ja.json / en.json）
 │   │   └── app/
 │   │       ├── components/desktop/   # AppWindow, TaskBar, DesktopShell など
 │   │       ├── composables/          # useWindowManager, useVirtualDesktop, useDesktopStorage
 │   │       ├── stores/               # desktop.ts（Pinia）
 │   │       └── utils/                # window-manager.ts（純粋関数 / ユニットテスト対象）
 │   └── apps/                   # ビルトインアプリ
+│       ├── i18n/locales/       # apps.* キー（ja.json / en.json）
 │       └── app/
 │           ├── components/apps/      # SettingsApp, TextEditor, FileManager など
 │           └── plugins/              # register-apps.ts（アプリ登録）
-├── i18n/locales/               # ja.json / en.json
 └── test/unit/                  # Vitest ユニットテスト
 ```
 
 `layers/` 内のレイヤーは Nuxt 4 によって自動登録されます。  
 優先順位: `app/` > `layers/apps/` > `layers/core/`
+
+i18n ロケールファイルは各レイヤーに分散しています。`@nuxtjs/i18n` がレイヤー間で自動マージするため、`layers/core/` または `layers/apps/` だけを個別に `extends` した場合でもそのレイヤーが提供するキーを利用できます。キー名前空間はレイヤー境界に対応しています（`core.desktop.*` / `apps.*`）。
 
 ---
 

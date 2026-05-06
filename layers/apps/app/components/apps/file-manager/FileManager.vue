@@ -10,6 +10,9 @@ interface FSEntry {
 
 const currentPath = ref('/')
 const selectedItem = ref<string | null>(null)
+const showSidebar = ref(true)
+
+const { t } = useI18n()
 
 const fsTree: Record<string, FSEntry[]> = {
   '/': [
@@ -26,14 +29,61 @@ const fsTree: Record<string, FSEntry[]> = {
 
 const entries = computed<FSEntry[]>(() => fsTree[currentPath.value] ?? [])
 
-const pathParts = computed(() =>
-  currentPath.value === '/'
-    ? [{ label: '/', path: '/' }]
-    : ['/', ...currentPath.value.slice(1).split('/')].reduce<{ label: string, path: string }[]>((acc, part, i, arr) => {
-        acc.push({ label: part || '/', path: arr.slice(0, i + 1).join('/') || '/' })
-        return acc
-      }, [])
-)
+/** UBreadcrumb 用リンク配列 */
+const breadcrumbLinks = computed(() => {
+  if (currentPath.value === '/') {
+    return [{ label: '/', onClick: () => goTo('/') }]
+  }
+  const parts = currentPath.value.slice(1).split('/')
+  return [
+    { label: '/', onClick: () => goTo('/') },
+    ...parts.map((part, i) => ({
+      label: part,
+      onClick: () => goTo('/' + parts.slice(0, i + 1).join('/'))
+    }))
+  ]
+})
+
+/** UTree 用ツリーアイテム */
+const treeItems = computed(() => [
+  {
+    label: '/',
+    icon: 'i-lucide-hard-drive',
+    defaultExpanded: true,
+    path: '/',
+    children: Object.keys(fsTree)
+      .filter(k => k !== '/' && (k.match(/\//g) ?? []).length === 1)
+      .map(k => ({
+        label: k.split('/').pop() ?? k,
+        icon: 'i-lucide-folder',
+        path: k
+      }))
+  }
+])
+
+/** UContextMenu のアイテム */
+const contextMenuItems = computed(() => (entry: FSEntry) => [
+  [
+    {
+      label: t('apps.fileManager.open'),
+      icon: entry.type === 'dir' ? 'i-lucide-folder-open' : 'i-lucide-file-text',
+      onSelect: () => navigate(entry)
+    }
+  ],
+  [
+    {
+      label: t('apps.fileManager.rename'),
+      icon: 'i-lucide-pencil',
+      onSelect: () => {}
+    },
+    {
+      label: t('apps.fileManager.delete'),
+      icon: 'i-lucide-trash-2',
+      color: 'error' as const,
+      onSelect: () => {}
+    }
+  ]
+])
 
 function navigate(entry: FSEntry) {
   if (entry.type !== 'dir') return
@@ -48,62 +98,85 @@ function goTo(path: string) {
   currentPath.value = path
   selectedItem.value = null
 }
+
+/** UTree のノード選択ハンドラ */
+function onTreeSelect(node: { path?: string }) {
+  if (node.path) goTo(node.path)
+}
 </script>
 
 <template>
   <div class="file-manager">
+    <!-- toolbar -->
     <div class="toolbar">
       <UButton
         size="xs"
         variant="ghost"
+        color="neutral"
+        icon="i-lucide-panel-left"
+        :aria-label="$t('apps.fileManager.sidebar')"
+        @click="showSidebar = !showSidebar"
+      />
+      <UButton
+        size="xs"
+        variant="ghost"
+        color="neutral"
         icon="i-lucide-arrow-left"
         :disabled="currentPath === '/'"
         @click="goTo(currentPath.split('/').slice(0, -1).join('/') || '/')"
       />
-      <nav class="breadcrumb">
-        <template
-          v-for="(part, i) in pathParts"
-          :key="part.path"
-        >
-          <span
-            v-if="i > 0"
-            class="sep"
-          >/</span>
-          <button
-            :class="['crumb', i === pathParts.length - 1 ? 'active' : 'muted']"
-            @click="goTo(part.path)"
-          >
-            {{ part.label }}
-          </button>
-        </template>
-      </nav>
+      <UBreadcrumb
+        :links="breadcrumbLinks"
+        class="breadcrumb"
+      />
     </div>
 
-    <div class="file-grid">
-      <div
-        v-if="entries.length === 0"
-        class="empty"
-      >
-        {{ $t('apps.fileManager.empty') }}
-      </div>
-      <div
-        v-else
-        class="grid"
-      >
-        <button
-          v-for="entry in entries"
-          :key="entry.name"
-          class="file-item"
-          :class="selectedItem === entry.name ? 'selected' : ''"
-          @click="selectedItem = entry.name"
-          @dblclick="navigate(entry)"
+    <!-- main area -->
+    <div class="main-area">
+      <!-- sidebar -->
+      <Transition name="sidebar-slide">
+        <div
+          v-if="showSidebar"
+          class="sidebar"
         >
-          <UIcon
-            :name="entry.type === 'dir' ? 'i-lucide-folder' : 'i-lucide-file-text'"
-            :class="['file-icon', entry.type === 'dir' ? 'icon-dir' : 'icon-file']"
+          <UTree
+            :items="treeItems"
+            @update:model-value="onTreeSelect"
           />
-          <span>{{ entry.name }}</span>
-        </button>
+        </div>
+      </Transition>
+
+      <!-- file grid -->
+      <div class="file-grid">
+        <div
+          v-if="entries.length === 0"
+          class="empty"
+        >
+          {{ $t('apps.fileManager.empty') }}
+        </div>
+        <div
+          v-else
+          class="grid"
+        >
+          <UContextMenu
+            v-for="entry in entries"
+            :key="entry.name"
+            :items="contextMenuItems(entry)"
+          >
+            <button
+              class="file-item"
+              :class="selectedItem === entry.name ? 'selected' : ''"
+              @click="selectedItem = entry.name"
+              @dblclick="navigate(entry)"
+            >
+              <UIcon
+                :name="entry.type === 'dir' ? 'i-lucide-folder' : 'i-lucide-file-text'"
+                :class="['file-icon', entry.type === 'dir' ? 'icon-dir' : 'icon-file']"
+              />
+              <span>{{ entry.name }}</span>
+            </button>
+          </UContextMenu>
+        </div>
       </div>
     </div>
 
@@ -130,39 +203,39 @@ function goTo(path: string) {
   }
 
   .breadcrumb {
-    display: flex;
-    align-items: center;
-    gap: 0.125rem;
-    overflow-x: auto;
-    font-size: 0.75rem;
     flex: 1 1 0%;
     min-width: 0;
+    overflow-x: auto;
+    font-size: 0.75rem;
+  }
 
-    .sep {
-      color: var(--ui-text-muted);
-    }
+  .main-area {
+    display: flex;
+    flex: 1 1 0%;
+    min-height: 0;
+    overflow: hidden;
+  }
 
-    .crumb {
-      border: none;
-      background: none;
-      padding: 0.125rem 0.25rem;
-      border-radius: calc(var(--ui-radius) * 0.5);
-      cursor: pointer;
-      color: inherit;
-      font-size: inherit;
+  .sidebar {
+    width: 11rem;
+    flex-shrink: 0;
+    overflow-y: auto;
+    border-right: 1px solid var(--ui-border);
+    padding: 0.5rem;
+    background: var(--ui-bg-elevated);
+  }
 
-      &:hover {
-        background: var(--ui-bg);
-      }
+  // サイドバー スライドアニメーション
+  .sidebar-slide-enter-active,
+  .sidebar-slide-leave-active {
+    transition: width 0.2s ease, opacity 0.2s ease;
+    overflow: hidden;
+  }
 
-      &.active {
-        font-weight: 600;
-      }
-
-      &.muted {
-        color: var(--ui-text-muted);
-      }
-    }
+  .sidebar-slide-enter-from,
+  .sidebar-slide-leave-to {
+    width: 0;
+    opacity: 0;
   }
 
   .file-grid {
@@ -232,12 +305,12 @@ function goTo(path: string) {
   }
 
   .status-bar {
+    flex-shrink: 0;
+    padding: 0.25rem 0.75rem;
     border-top: 1px solid var(--ui-border);
     background: var(--ui-bg-elevated);
-    padding: 0.25rem 0.75rem;
     font-size: 0.75rem;
     color: var(--ui-text-muted);
-    flex-shrink: 0;
   }
 }
 </style>

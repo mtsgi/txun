@@ -1,0 +1,73 @@
+{
+  "core": {
+    "desktop": {
+      "window": {
+        "minimize": "Minimize",
+        "maximize": "Maximize",
+        "restore": "Restore",
+        "close": "Close",
+        "theme": {
+          "light": "Light Mode",
+          "dark": "Dark Mode"
+        }
+      },
+      "taskbar": {
+        "launcher": "App Launcher"
+      },
+      "launcher": {
+        "search_placeholder": "Search apps...",
+        "all_apps": "All Apps",
+        "new_folder": "New Folder",
+        "folder_rename": "Rename",
+        "folder_delete": "Delete",
+        "add_to_folder": "Add to Folder",
+        "remove_from_folder": "Remove from Folder",
+        "open": "Open"
+      },
+      "virtualDesktop": {
+        "add": "Add Virtual Desktop",
+        "remove": "Remove"
+      },
+      "spotlight": {
+        "open": "Spotlight Search",
+        "apps": "Apps",
+        "windows": "Windows",
+        "placeholder": "Search apps and windows..."
+      }
+    }
+  },
+  "apps": {
+    "settings": {
+      "name": "Settings",
+      "theme": "Theme",
+      "primaryColor": "Accent Color",
+      "font": "Font",
+      "language": "Language",
+      "appearance": "Appearance",
+      "wallpaper": "Wallpaper",
+      "radius": "Border Radius"
+    },
+    "textEditor": {
+      "name": "Text Editor",
+      "open": "Open",
+      "save": "Save",
+      "placeholder": "Start typing\u2026"
+    },
+    "fileManager": {
+      "name": "Files",
+      "empty": "This folder is empty",
+      "items": "items",
+      "open": "Open",
+      "rename": "Rename",
+      "delete": "Delete",
+      "sidebar": "Sidebar"
+    },
+    "browser": {
+      "name": "Browser",
+      "addressBar": "Enter URL"
+    },
+    "terminal": {
+      "name": "Terminal"
+    }
+  }
+}

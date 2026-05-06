@@ -1,7 +1,14 @@
+/** IndexedDB データベース名 */
 const DB_NAME = 'txunos'
+/** IndexedDB データベースバージョン */
 const DB_VERSION = 1
+/** IndexedDB オブジェクトストア名 */
 const STORE_NAME = 'desktop'
 
+/**
+ * IndexedDB を開き、ビルトインストアがなければ作成するプライベート関数。
+ * @returns 接続した IDBDatabase
+ */
 function openDB(): Promise<IDBDatabase> {
   return new Promise<IDBDatabase>((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION)
@@ -16,7 +23,16 @@ function openDB(): Promise<IDBDatabase> {
   })
 }
 
+/**
+ * IndexedDB を介したデスクトップ状態永続化コンポーザブル。
+ * `saveState` / `loadState` / `deleteState` を提供する。
+ */
 export function useDesktopStorage() {
+  /**
+   * デスクトップ状態を IndexedDB に保存する。
+   * @param key - 保存キー
+   * @param value - 保存する値
+   */
   async function saveState(key: string, value: unknown): Promise<void> {
     const db = await openDB()
     return new Promise<void>((resolve, reject) => {
@@ -27,6 +43,11 @@ export function useDesktopStorage() {
     })
   }
 
+  /**
+   * IndexedDB からデスクトップ状態を読み込む。
+   * @param key - 読み込むキー
+   * @returns 保存された値、なければ null
+   */
   async function loadState<T>(key: string): Promise<T | null> {
     const db = await openDB()
     return new Promise<T | null>((resolve, reject) => {
@@ -40,6 +61,10 @@ export function useDesktopStorage() {
     })
   }
 
+  /**
+   * IndexedDB から指定キーの状態を削除する。
+   * @param key - 削除するキー
+   */
   async function deleteState(key: string): Promise<void> {
     const db = await openDB()
     return new Promise<void>((resolve, reject) => {

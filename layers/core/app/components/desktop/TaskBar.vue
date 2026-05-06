@@ -3,6 +3,8 @@ import { useDesktopStore } from '../../stores/desktop'
 import type { WindowState } from '../../stores/desktop'
 
 const store = useDesktopStore()
+const { toggleLauncher, isOpen: launcherOpen } = useLauncher()
+const { toggleSpotlight } = useSpotlight()
 
 defineProps<{ screenWidth: number, isMobile: boolean }>()
 
@@ -18,14 +20,6 @@ function onTaskClick(win: WindowState) {
     store.focusWindow(win.id)
   }
 }
-
-const launcherItems = computed(() =>
-  store.apps.map(app => ({
-    label: app.name,
-    icon: app.icon,
-    onSelect: () => store.openWindow(app)
-  }))
-)
 
 const now = ref(new Date())
 onMounted(() => {
@@ -49,18 +43,32 @@ const dateLabel = computed(() =>
     :style="{ height: `${TASKBAR_HEIGHT}px` }"
   >
     <!-- App launcher -->
-    <UDropdownMenu
-      :items="[launcherItems]"
-      :popper="{ placement: 'top-start' }"
-    >
+    <UButton
+      icon="i-lucide-layout-grid"
+      :variant="launcherOpen ? 'soft' : 'ghost'"
+      :color="launcherOpen ? 'primary' : 'neutral'"
+      size="sm"
+      :aria-label="$t('core.desktop.taskbar.launcher')"
+      :aria-expanded="launcherOpen"
+      @click="toggleLauncher"
+    />
+
+    <USeparator
+      orientation="vertical"
+      class="sep"
+    />
+
+    <!-- Spotlight search button -->
+    <UTooltip :text="$t('core.desktop.spotlight.open')">
       <UButton
-        icon="i-lucide-layout-grid"
+        icon="i-lucide-search"
         variant="ghost"
         color="neutral"
         size="sm"
-        :aria-label="$t('desktop.taskbar.launcher')"
+        :aria-label="$t('core.desktop.spotlight.open')"
+        @click="toggleSpotlight"
       />
-    </UDropdownMenu>
+    </UTooltip>
 
     <USeparator
       orientation="vertical"
@@ -69,24 +77,28 @@ const dateLabel = computed(() =>
 
     <!-- Open windows -->
     <div class="task-list">
-      <UButton
+      <UTooltip
         v-for="win in store.activeWindows"
         :key="win.id"
-        size="sm"
-        :variant="win.isMinimized ? 'ghost' : 'soft'"
-        :color="store.topWindow?.id === win.id ? 'primary' : 'neutral'"
-        :class="['task-btn', { 'task-btn-icon': isMobile }]"
-        @click="onTaskClick(win)"
+        :text="win.title"
       >
-        <UIcon
-          :name="win.icon"
-          class="task-icon"
-        />
-        <span
-          v-if="!isMobile"
-          class="task-label"
-        >{{ win.title }}</span>
-      </UButton>
+        <UButton
+          size="sm"
+          :variant="win.isMinimized ? 'ghost' : 'soft'"
+          :color="store.topWindow?.id === win.id ? 'primary' : 'neutral'"
+          :class="['task-btn', { 'task-btn-icon': isMobile }]"
+          @click="onTaskClick(win)"
+        >
+          <UIcon
+            :name="win.icon"
+            class="task-icon"
+          />
+          <span
+            v-if="!isMobile"
+            class="task-label"
+          >{{ win.title }}</span>
+        </UButton>
+      </UTooltip>
     </div>
 
     <!-- Clock -->

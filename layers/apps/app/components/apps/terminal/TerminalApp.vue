@@ -1,6 +1,8 @@
 <script setup lang="ts">
 defineProps<{ windowId: string }>()
 
+const { notify } = useDesktopNotification()
+
 interface HistoryEntry {
   input: string
   output: string
@@ -18,18 +20,24 @@ const inputHistory = ref<string[]>([])
 const COMMANDS: Record<string, (args: string[]) => string> = {
   help: () => [
     'Available commands:',
-    '  help       — show this help',
-    '  echo <msg> — print message',
-    '  clear      — clear terminal',
-    '  date       — show current date/time',
-    '  whoami     — show current user',
-    '  ls         — list virtual directory'
+    '  help          — show this help',
+    '  echo <msg>    — print message',
+    '  clear         — clear terminal',
+    '  date          — show current date/time',
+    '  whoami        — show current user',
+    '  ls            — list virtual directory',
+    '  notify <msg>  — send desktop notification'
   ].join('\n'),
   echo: args => args.join(' '),
   date: () => new Date().toString(),
   whoami: () => 'user@txunos',
   ls: () => 'Desktop/  Documents/  Downloads/',
-  clear: () => '__CLEAR__'
+  clear: () => '__CLEAR__',
+  notify: (args) => {
+    const msg = args.join(' ') || 'Hello from terminal!'
+    notify(msg, { type: 'info', icon: 'i-lucide-terminal' })
+    return `Notification sent: "${msg}"`
+  }
 }
 
 function execute(cmd: string) {

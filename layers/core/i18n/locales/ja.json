@@ -1,0 +1,73 @@
+{
+  "core": {
+    "desktop": {
+      "window": {
+        "minimize": "最小化",
+        "maximize": "最大化",
+        "restore": "元に戻す",
+        "close": "閉じる",
+        "theme": {
+          "light": "ライトモード",
+          "dark": "ダークモード"
+        }
+      },
+      "taskbar": {
+        "launcher": "アプリ起動"
+      },
+      "launcher": {
+        "search_placeholder": "アプリを検索...",
+        "all_apps": "すべてのアプリ",
+        "new_folder": "新しいフォルダー",
+        "folder_rename": "名前変更",
+        "folder_delete": "削除",
+        "add_to_folder": "フォルダーに追加",
+        "remove_from_folder": "フォルダーから削除",
+        "open": "開く"
+      },
+      "virtualDesktop": {
+        "add": "仮想デスクトップを追加",
+        "remove": "削除"
+      },
+      "spotlight": {
+        "open": "スポットライト検索",
+        "apps": "アプリ",
+        "windows": "ウィンドウ",
+        "placeholder": "アプリやウィンドウを検索..."
+      }
+    }
+  },
+  "apps": {
+    "settings": {
+      "name": "設定",
+      "theme": "テーマ",
+      "primaryColor": "アクセントカラー",
+      "font": "フォント",
+      "language": "言語",
+      "appearance": "外観",
+      "wallpaper": "壁紙",
+      "radius": "角丸"
+    },
+    "textEditor": {
+      "name": "テキストエディタ",
+      "open": "開く",
+      "save": "保存",
+      "placeholder": "テキストを入力\u2026"
+    },
+    "fileManager": {
+      "name": "ファイル",
+      "empty": "フォルダが空です",
+      "items": "項目",
+      "open": "開く",
+      "rename": "名前変更",
+      "delete": "削除",
+      "sidebar": "サイドバー"
+    },
+    "browser": {
+      "name": "ブラウザ",
+      "addressBar": "URLを入力"
+    },
+    "terminal": {
+      "name": "ターミナル"
+    }
+  }
+}

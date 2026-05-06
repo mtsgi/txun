@@ -30,6 +30,7 @@ const windowStyle = computed(() => {
       width: `${props.screenWidth}px`,
       height: `${props.screenHeight - taskbarH.value}px`,
       borderRadius: '0',
+      boxShadow: 'none',
       zIndex: props.window.zIndex
     }
   }
@@ -189,7 +190,7 @@ function onResizeStart(e: MouseEvent, dir: ResizeDir) {
           color="neutral"
           variant="ghost"
           icon="i-lucide-minus"
-          :aria-label="$t('desktop.window.minimize')"
+          :aria-label="$t('core.desktop.window.minimize')"
           @click="store.minimizeWindow(window.id)"
         />
         <UButton
@@ -198,7 +199,7 @@ function onResizeStart(e: MouseEvent, dir: ResizeDir) {
           color="neutral"
           variant="ghost"
           :icon="window.isMaximized ? 'i-lucide-minimize-2' : 'i-lucide-maximize-2'"
-          :aria-label="$t('desktop.window.maximize')"
+          :aria-label="$t('core.desktop.window.maximize')"
           @click="store.toggleMaximize(window.id)"
         />
         <UButton
@@ -206,7 +207,7 @@ function onResizeStart(e: MouseEvent, dir: ResizeDir) {
           color="error"
           variant="ghost"
           icon="i-lucide-x"
-          :aria-label="$t('desktop.window.close')"
+          :aria-label="$t('core.desktop.window.close')"
           @click="store.closeWindow(window.id)"
         />
       </div>

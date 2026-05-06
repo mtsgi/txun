@@ -1,26 +1,12 @@
 {
-  "desktop": {
-    "window": {
-      "minimize": "最小化",
-      "maximize": "最大化",
-      "restore": "元に戻す",
-      "close": "閉じる"
-    },
-    "taskbar": {
-      "launcher": "アプリ起動"
-    },
-    "virtualDesktop": {
-      "add": "仮想デスクトップを追加",
-      "remove": "削除"
-    }
-  },
   "apps": {
     "settings": {
       "name": "設定",
       "theme": "テーマ",
       "primaryColor": "アクセントカラー",
       "font": "フォント",
-      "language": "言語"
+      "language": "言語",
+      "appearance": "外観"
     },
     "textEditor": {
       "name": "テキストエディタ",
@@ -31,7 +17,11 @@
     "fileManager": {
       "name": "ファイル",
       "empty": "フォルダが空です",
-      "items": "項目"
+      "items": "項目",
+      "open": "開く",
+      "rename": "名前変更",
+      "delete": "削除",
+      "sidebar": "サイドバー"
     },
     "browser": {
       "name": "ブラウザ",

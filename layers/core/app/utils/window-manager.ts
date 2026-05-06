@@ -1,10 +1,19 @@
+/** ウィンドウの座標とサイズを表すインターフェース */
 export interface WindowBounds {
+  /** 左端の X 座標（px） */
   x: number
+  /** 上端の Y 座標（px） */
   y: number
+  /** ウィンドウの幅（px） */
   width: number
+  /** ウィンドウの高さ（px） */
   height: number
 }
 
+/**
+ * ウィンドウのスナップ先ゾーンを表す型。
+ * 画面の 6 方向の端領域と最大化ゾーンが存在する。
+ */
 export type SnapZone
   = | 'left'
     | 'right'
@@ -14,11 +23,17 @@ export type SnapZone
     | 'bottom-right'
     | 'maximize'
 
+/** スナップゾーンと判定する画面端からのピクセル距離 */
 const SNAP_THRESHOLD = 24
 
 /**
- * Detect if a cursor position is within a snap zone.
- * Returns null when not near any snap zone.
+ * カーソル位置がスナップゾーン内にあるかを検出する。
+ * どのゾーンにも属さない場合は null を返す。
+ * @param cursorX - カーソルの X 座標（px）
+ * @param cursorY - カーソルの Y 座標（px）
+ * @param screenWidth - 画面幅（px）
+ * @param screenHeight - 画面高（px）
+ * @returns スナップゾーン識別子、またはゾーン外の場合は null
  */
 export function detectSnapZone(
   cursorX: number,
@@ -43,7 +58,12 @@ export function detectSnapZone(
 }
 
 /**
- * Compute the resulting window bounds for a given snap zone.
+ * 指定したスナップゾーンに対応するウィンドウ座標とサイズを計算して返す。
+ * @param zone - スナップ先ゾーン
+ * @param screenWidth - 画面幅（px）
+ * @param screenHeight - 画面高（px）
+ * @param taskbarHeight - タスクバーの高さ（px）。デフォルト 48
+ * @returns スナップ後のウィンドウ境界
  */
 export function applySnapZone(
   zone: SnapZone,
@@ -74,7 +94,14 @@ export function applySnapZone(
 }
 
 /**
- * Clamp window position so at least `minVisible` pixels remain on screen.
+ * ウィンドウが画面外にはみ出さないよう座標をクランプする。
+ * `minVisible` ピクセル以上が常に画面内に収まることを保証する。
+ * @param bounds - クランプ前のウィンドウ境界
+ * @param screenWidth - 画面幅（px）
+ * @param screenHeight - 画面高（px）
+ * @param taskbarHeight - タスクバーの高さ（px）。デフォルト 48
+ * @param minVisible - 画面内に残す最小ピクセル数。デフォルト 60
+ * @returns クランプ後のウィンドウ境界
  */
 export function clampPosition(
   bounds: WindowBounds,
@@ -96,7 +123,15 @@ export function clampPosition(
 }
 
 /**
- * Calculate a cascading initial position for a new window.
+ * 新規ウィンドウのカスケード初期位置を計算して返す。
+ * 既存ウィンドウ数に応じてオフセットをずらし、重なりを軽減する。
+ * @param existingCount - 同アプリの既存ウィンドウ数
+ * @param defaultWidth - ウィンドウのデフォルト幅（px）
+ * @param defaultHeight - ウィンドウのデフォルト高さ（px）
+ * @param screenWidth - 画面幅（px）
+ * @param screenHeight - 画面高（px）
+ * @param taskbarHeight - タスクバーの高さ（px）。デフォルト 48
+ * @returns 初期ウィンドウ境界
  */
 export function cascadePosition(
   existingCount: number,

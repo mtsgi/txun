@@ -28,7 +28,7 @@ const { desktops, activeId, addDesktop, removeDesktop, switchDesktop } = useVirt
       color="neutral"
       icon="i-lucide-plus"
       class="vdesktop-add"
-      :aria-label="$t('desktop.virtualDesktop.add')"
+      :aria-label="$t('core.desktop.virtualDesktop.add')"
       @click="addDesktop"
     />
   </div>

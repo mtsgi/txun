@@ -2,7 +2,7 @@
 defineProps<{ windowId: string }>()
 
 const content = ref('')
-const filename = ref('untitled.txt')
+const filename = ref('untitled.md')
 const isDirty = ref(false)
 
 watch(content, () => {
@@ -23,7 +23,7 @@ function onSave() {
 async function onOpen() {
   const input = document.createElement('input')
   input.type = 'file'
-  input.accept = 'text/*'
+  input.accept = 'text/*,.md'
   input.onchange = async () => {
     const file = input.files?.[0]
     if (!file) return
@@ -59,12 +59,18 @@ async function onOpen() {
         >*</span>
       </span>
     </div>
-    <textarea
+    <UEditor
       v-model="content"
+      content-type="markdown"
       class="editor"
-      spellcheck="false"
-      :placeholder="$t('apps.textEditor.placeholder')"
-    />
+    >
+      <template #default="{ editor }">
+        <UEditorToolbar
+          :editor="editor"
+          layout="fixed"
+        />
+      </template>
+    </UEditor>
   </div>
 </template>
 
@@ -97,15 +103,7 @@ async function onOpen() {
   .editor {
     flex: 1 1 0%;
     min-height: 0;
-    resize: none;
-    background: transparent;
-    padding: 0.75rem;
-    font-family: ui-monospace, monospace;
-    font-size: 0.875rem;
-    outline: none;
-    border: none;
-    color: inherit;
-    width: 100%;
+    overflow: auto;
   }
 }
 </style>
