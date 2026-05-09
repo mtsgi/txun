@@ -1,0 +1,21 @@
+{
+  "apps": {
+    "settings": {
+      "name": "Settings",
+      "theme": "Theme",
+      "primaryColor": "Accent Color",
+      "font": "Font",
+      "language": "Language",
+      "appearance": "Appearance",
+      "wallpaper": "Wallpaper",
+      "radius": "Border Radius",
+      "about": "About TxunOS",
+      "aboutDescription": "TxunOS is a web-based desktop environment built with Nuxt 4 and Nuxt UI.",
+      "version": "Version",
+      "license": "License",
+      "ossLicenses": "OSS Licenses",
+      "wallpaperUrl": "Set by image URL",
+      "wallpaperApply": "Apply"
+    }
+  }
+}

@@ -4,71 +4,140 @@
 [![Nuxt UI](https://img.shields.io/badge/Nuxt%20UI-4.x-00DC82?logo=nuxt&labelColor=020420)](https://ui.nuxt.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
-**TxunOS** は Nuxt 4 SPA として構築した、ブラウザ上で動作する Web デスクトップ環境です。  
-Nuxt UI / Nuxt Layers / Pinia / i18n などの Nuxt エコシステムをフル活用しています。
+**TxunOS** は Nuxt 4 SPA で構築したブラウザデスクトップ環境です。
 
----
+**@txun/core + 各アプリ独立レイヤー** の構成で、導入ユーザーが必要なアプリだけを選んで `extends` できる設計になっています。
 
 ## 特徴
 
-- ドラッグ・リサイズ可能なウィンドウ（8 方向スナップゾーン対応）
+- ドラッグ・リサイズ可能なウィンドウ（8 方向スナップゾーン）
 - 仮想デスクトップの追加・切替
-- ビルトインアプリ: ファイルマネージャー・テキストエディタ・ブラウザ（タブ・ブックマーク・履歴ナビゲーション）・ターミナル・設定・タスクマネージャー
+- Nuxt UI ベースのビルトインアプリ群
 - 日本語 / 英語 i18n（`@nuxtjs/i18n`）
-- ライト / ダーク テーマ（Nuxt UI カラーモード）
-- IndexedDB による状態の永続化
-- Nuxt Layers を使ったサードパーティアプリの追加
+- ライト / ダークテーマ（Nuxt UI カラーモード）
+- IndexedDB への状態保存
+- Nuxt Layers による拡張しやすい構成
 
 ---
 
-## ディレクトリ構成
+## パッケージ構成
 
-```
-txunos/
-├── app/                        # エントリーポイント（pages, app.vue, app.config.ts）
-├── layers/
-│   ├── core/                   # デスクトップシェル・ウィンドウマネージャー・Pinia ストア
-│   │   ├── i18n/locales/       # core.desktop.* キー（ja.json / en.json）
-│   │   └── app/
-│   │       ├── components/desktop/   # AppWindow, TaskBar, DesktopShell など
-│   │       ├── composables/          # useWindowManager, useVirtualDesktop, useDesktopStorage
-│   │       ├── stores/               # desktop.ts（Pinia）
-│   │       └── utils/                # window-manager.ts（純粋関数 / ユニットテスト対象）
-│   └── apps/                   # ビルトインアプリ
-│       ├── i18n/locales/       # apps.* キー（ja.json / en.json）
-│       └── app/
-│           ├── components/apps/      # SettingsApp, TextEditor, FileManager など
-│           └── plugins/              # register-apps.ts（アプリ登録）
-└── test/unit/                  # Vitest ユニットテスト
-```
+TxunOS は以下の npm パッケージ単位で利用できます。
 
-`layers/` 内のレイヤーは Nuxt 4 によって自動登録されます。  
-優先順位: `app/` > `layers/apps/` > `layers/core/`
+| パッケージ | 役割 |
+|---|---|
+| `@txun/core` | デスクトップシェル、ウィンドウ管理、Pinia ストア、core i18n |
+| `@txun/settings` | 設定アプリ |
+| `@txun/text-editor` | テキストエディタ |
+| `@txun/file-manager` | ファイルマネージャー |
+| `@txun/browser` | ブラウザ |
+| `@txun/terminal` | ターミナル |
+| `@txun/task-manager` | タスクマネージャー |
+| `@txun/calculator` | 電卓 |
+| `@txun/calendar` | カレンダー |
+| `@txun/clock` | 時計 |
+| `@txun/image-viewer` | 画像ビューア |
+| `@txun/sticky-notes` | スティッキーノート |
 
-i18n ロケールファイルは各レイヤーに分散しています。`@nuxtjs/i18n` がレイヤー間で自動マージするため、`layers/core/` または `layers/apps/` だけを個別に `extends` した場合でもそのレイヤーが提供するキーを利用できます。キー名前空間はレイヤー境界に対応しています（`core.desktop.*` / `apps.*`）。
+各アプリレイヤーは `useDesktopStore().registerApp()` を自身のプラグインで実行し、`@txun/core` のストアに動的登録されます。
 
 ---
 
-## セットアップ
+## 利用者向けセットアップ
+
+### 最小構成（例: core + terminal）
+
+```bash
+npm install @txun/core @txun/terminal
+```
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  extends: [
+    '@txun/core',
+    '@txun/terminal'
+  ]
+})
+```
+
+### フル構成（全ビルトインアプリ）
+
+```bash
+npm install @txun/core @txun/settings @txun/text-editor @txun/file-manager @txun/browser @txun/terminal @txun/task-manager @txun/calculator @txun/calendar @txun/clock @txun/image-viewer @txun/sticky-notes
+```
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  extends: [
+    '@txun/core',
+    '@txun/settings',
+    '@txun/text-editor',
+    '@txun/file-manager',
+    '@txun/browser',
+    '@txun/terminal',
+    '@txun/task-manager',
+    '@txun/calculator',
+    '@txun/calendar',
+    '@txun/clock',
+    '@txun/image-viewer',
+    '@txun/sticky-notes'
+  ]
+})
+```
+
+`@txun/core` は必須です。各アプリは任意追加です。
+
+---
+
+## このリポジトリでの開発
 
 ```bash
 npm install
-npm run dev         # http://localhost:3000
+npm run dev
 ```
 
-ブラウザで `http://localhost:3000` を開くとデスクトップが起動します。
+ブラウザで `http://localhost:3000` を開くと起動します。
 
 ### コマンド一覧
 
 | コマンド | 説明 |
 |---|---|
 | `npm run dev` | 開発サーバー起動 |
-| `npm run build` | プロダクションビルド（静的 SPA） |
+| `npm run build` | プロダクションビルド |
 | `npm run preview` | ビルド結果のプレビュー |
 | `npm run typecheck` | TypeScript 型チェック |
 | `npm run lint` | ESLint |
-| `npm run test:unit` | ユニットテスト（window-manager 純粋関数） |
-| `npm run test:coverage` | カバレッジレポート生成 |
+| `npm run test:unit` | ユニットテスト |
+| `npm run test:nuxt` | Nuxt 統合テスト |
+| `npm run test:coverage` | カバレッジ生成 |
+| `npm run pack:workspaces` | 各 workspace の npm pack dry-run |
+
+---
+
+## リポジトリ構成
+
+```text
+txunos/
+├── app/
+├── layers/
+│   ├── core/
+│   ├── browser/
+│   ├── calculator/
+│   ├── calendar/
+│   ├── clock/
+│   ├── file-manager/
+│   ├── image-viewer/
+│   ├── settings/
+│   ├── sticky-notes/
+│   ├── task-manager/
+│   ├── terminal/
+│   └── text-editor/
+└── test/
+```
+
+各レイヤーは `app/` を srcDir とする Nuxt 4 Layer です。
 
 ---
 
@@ -76,111 +145,169 @@ npm run dev         # http://localhost:3000
 
 ### 状態管理（Pinia）
 
-`layers/core/app/stores/desktop.ts` がすべてのデスクトップ状態の単一ソースです。
+`layers/core/app/stores/desktop.ts` が単一ソースです。
 
 | 状態 | 型 | 説明 |
 |---|---|---|
-| `windows` | `WindowState[]` | 開いているウィンドウ一覧 |
-| `virtualDesktops` | `VirtualDesktop[]` | 仮想デスクトップ一覧 |
-| `activeVirtualDesktopId` | `string` | 現在のデスクトップ ID |
-| `apps` | `AppMeta[]` | 登録済みアプリ一覧 |
-| `theme` | `'light' \| 'dark'` | 現在のテーマ |
-| `locale` | `'ja' \| 'en'` | 現在の言語 |
+| `windows` | `WindowState[]` | 開いているウィンドウ |
+| `virtualDesktops` | `VirtualDesktop[]` | 仮想デスクトップ |
+| `apps` | `AppMeta[]` | 登録済みアプリ |
+| `theme` | `'light' \| 'dark'` | テーマ |
+| `locale` | `'ja' \| 'en'` | 言語 |
 
-`AppMeta` の主要フィールド:
-
-| フィールド | 型 | 説明 |
-|---|---|---|
-| `id` | `string` | アプリ固有 ID |
-| `icon` | `string` | アイコンクラス名 |
-| `color` | `string?` | アイコン背景色・タスクバーボタン色（Tailwind カラー名、省略時は primary） |
-| `component` | `string` | Nuxt auto-import コンポーネント名 |
-
-### コンポーザブル
+### 主要コンポーザブル
 
 | コンポーザブル | 役割 |
 |---|---|
-| `useWindowManager` | ウィンドウ操作（CRUD・スナップ・`setTheme`・`setLocale`） |
-| `useVirtualDesktop` | 仮想デスクトップの追加・削除・切替 |
-| `useDesktopStorage` | IndexedDB への状態保存・読み込み |
+| `useWindowManager` | ウィンドウ操作 + `setTheme` / `setLocale` 同期 |
+| `useVirtualDesktop` | 仮想デスクトップ操作 |
+| `useDesktopStorage` | IndexedDB 保存・復元 |
 
-### ウィンドウマネージャーユーティリティ
+### ウィンドウ管理ユーティリティ
 
-`layers/core/app/utils/window-manager.ts` は **純粋関数のみ**で構成（テスト対象）。
+`layers/core/app/utils/window-manager.ts` は純粋関数のみで構成され、ユニットテスト対象です。
 
 | 関数 | 説明 |
 |---|---|
-| `detectSnapZone` | カーソル位置からスナップゾーンを検出（8 方向 + 最大化） |
-| `applySnapZone` | スナップゾーンに対応するウィンドウ座標を計算 |
-| `clampPosition` | ウィンドウがはみ出さないよう座標を補正 |
-| `cascadePosition` | 新規ウィンドウのカスケード初期位置を計算 |
+| `detectSnapZone` | スナップゾーン検出 |
+| `applySnapZone` | スナップ適用後の境界計算 |
+| `clampPosition` | 画面内に収める補正 |
+| `cascadePosition` | 新規ウィンドウ初期配置 |
 
-### ビルトインアプリ
+### i18n の分割方針
 
-| アプリ | ID | 説明 |
-|---|---|---|
-| 設定 | `settings` | テーマ・フォント・壁紙・言語設定 |
-| テキストエディタ | `text-editor` | Markdown / プレーンテキスト編集 |
-| ファイル | `file-manager` | ファイル系参照 |
-| ブラウザ | `browser` | タブ・ブックマーク・履歴ナビゲーション付きインブラウザ |
-| ターミナル | `terminal` | xterm.js ベースの伪似ターミナル |
-| タスクマネージャー | `task-manager` | ウィンドウ・仮想デスクトップ・メモリ使用量の確認・操作 |
+- core のキー: `core.desktop.*`
+- アプリのキー: `apps.<appName>.*`
+- 各アプリレイヤーは自身の `i18n/locales/` に必要なキーのみ保持
+
+`@nuxtjs/i18n` により、`extends` したレイヤーのロケールは自動マージされます。
 
 ---
 
-## サードパーティアプリの開発
+## TxunOS アプリ開発ガイド
 
-Nuxt Layer npm パッケージを作成し、`nuxt.config.ts` の `extends` に追加することでアプリを追加できます。
+以下は `@txun/my-app` のような独自アプリレイヤーを作る最小構成です。
 
 ### 1. レイヤー構成
 
-```
-my-txunos-app/
+```text
+my-txun-app/
+├── package.json
+├── LICENSE
 ├── nuxt.config.ts
+├── i18n/
+│   └── locales/
+│       ├── ja.json
+│       └── en.json
 └── app/
     ├── components/apps/
-    │   └── MyApp.vue          # windowId: string プロップを受け取る
+  │   └── MyApp.vue
     └── plugins/
-        └── register.ts        # useDesktopStore().registerApp() を呼ぶ
+        └── register-my-app.ts
 ```
 
 ### 2. アプリコンポーネント
 
 ```vue
-<!-- app/components/apps/MyApp.vue -->
 <script setup lang="ts">
 defineProps<{ windowId: string }>()
 </script>
 
 <template>
-  <div class="p-4">マイアプリの内容</div>
+  <div class="p-4">
+    My App
+  </div>
 </template>
 ```
 
 ### 3. 登録プラグイン
 
 ```ts
-// app/plugins/register.ts
 export default defineNuxtPlugin(() => {
   useDesktopStore().registerApp({
     id: 'my-app',
-    name: 'マイアプリ',
-    nameKey: 'myApp.name',
+    name: 'My App',
+    nameKey: 'apps.myApp.name',
     icon: 'i-lucide-star',
-    component: 'AppsMyApp',   // Nuxt auto-import 名（components/apps/MyApp.vue → AppsMyApp）
+    component: 'AppsMyApp',
     defaultWidth: 640,
-    defaultHeight: 480
+    defaultHeight: 480,
+    category: 'utility'
   })
 })
 ```
 
-### 4. nuxt.config.ts に追加
+### 4. i18n
+
+```json
+{
+  "apps": {
+    "myApp": {
+      "name": "My App"
+    }
+  }
+}
+```
+
+### 5. nuxt.config.ts
 
 ```ts
 export default defineNuxtConfig({
-  extends: ['my-txunos-app']
+  $meta: {
+    name: 'txunos-my-app',
+    version: '1.0.0',
+    description: 'TxunOS app layer - my-app'
+  },
+  components: [
+    {
+      path: './components/apps',
+      global: true,
+      prefix: 'Apps'
+    }
+  ],
+  i18n: {
+    locales: [
+      { code: 'ja', file: 'ja.json', name: '日本語' },
+      { code: 'en', file: 'en.json', name: 'English' }
+    ]
+  }
 })
 ```
+
+### 6. package.json（例）
+
+```json
+{
+  "name": "@txun/my-app",
+  "version": "1.0.0",
+  "type": "module",
+  "files": ["app", "i18n", "nuxt.config.ts"],
+  "peerDependencies": {
+    "@txun/core": "^1.0.0",
+    "nuxt": "^4.4.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
+```
+
+### 7. 利用側で extends
+
+```ts
+export default defineNuxtConfig({
+  extends: ['@txun/core', '@txun/my-app']
+})
+```
+
+---
+
+## 既存構成からの変更点
+
+- 旧 `layers/apps`（一括レイヤー）は廃止
+- 各アプリが独立レイヤーとして分離
+- ルートは npm workspaces で複数パッケージを管理
+- 各パッケージは `LICENSE`（MIT）を個別同梱
 
 ---
 

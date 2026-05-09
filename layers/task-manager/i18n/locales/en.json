@@ -1,0 +1,24 @@
+{
+  "apps": {
+    "taskManager": {
+      "name": "Task Manager",
+      "windows": "Windows",
+      "virtualDesktops": "Virtual Desktops",
+      "system": "System",
+      "appName": "App",
+      "status": "Status",
+      "desktop": "Desktop",
+      "windowCount": "Windows",
+      "minimize": "Minimize",
+      "close": "Close",
+      "statusMinimized": "Minimized",
+      "statusMaximized": "Maximized",
+      "statusNormal": "Normal",
+      "heapUsed": "Heap Used",
+      "heapTotal": "Heap Total",
+      "heapLimit": "Heap Limit",
+      "memoryUnavailable": "Memory info is not available in this browser",
+      "noWindows": "No windows open"
+    }
+  }
+}

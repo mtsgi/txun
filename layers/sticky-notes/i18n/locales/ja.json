@@ -1,0 +1,21 @@
+{
+  "apps": {
+    "stickyNotes": {
+      "name": "スティッキーノート",
+      "notes": "メモ",
+      "newNote": "新しいメモ",
+      "empty": "メモがありません",
+      "create": "メモを作成",
+      "selectOrCreate": "メモを選択するか、新規作成してください",
+      "titlePlaceholder": "タイトル",
+      "contentPlaceholder": "メモを入力…",
+      "color": {
+        "yellow": "黄色",
+        "green": "緑",
+        "blue": "青",
+        "pink": "ピンク",
+        "purple": "紫"
+      }
+    }
+  }
+}

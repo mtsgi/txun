@@ -1,0 +1,13 @@
+{
+  "apps": {
+    "fileManager": {
+      "name": "Files",
+      "empty": "This folder is empty",
+      "items": "items",
+      "open": "Open",
+      "rename": "Rename",
+      "delete": "Delete",
+      "sidebar": "Sidebar"
+    }
+  }
+}

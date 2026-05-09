@@ -2,7 +2,17 @@
 export default defineNuxtConfig({
   extends: [
     'layers/core',
-    'layers/apps'
+    'layers/settings',
+    'layers/text-editor',
+    'layers/file-manager',
+    'layers/browser',
+    'layers/terminal',
+    'layers/task-manager',
+    'layers/calculator',
+    'layers/calendar',
+    'layers/clock',
+    'layers/image-viewer',
+    'layers/sticky-notes'
   ],
 
   modules: [

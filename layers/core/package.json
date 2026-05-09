@@ -1,0 +1,22 @@
+{
+  "name": "@txun/core",
+  "version": "1.0.0",
+  "type": "module",
+  "files": [
+    "app",
+    "i18n",
+    "nuxt.config.ts"
+  ],
+  "exports": {
+    "./stores/desktop": "./app/stores/desktop.ts"
+  },
+  "peerDependencies": {
+    "@nuxt/ui": "^4.6.1",
+    "@nuxtjs/i18n": "^10.3.0",
+    "@pinia/nuxt": "^0.11.3",
+    "nuxt": "^4.4.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

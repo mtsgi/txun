@@ -1,0 +1,21 @@
+{
+  "apps": {
+    "stickyNotes": {
+      "name": "Sticky Notes",
+      "notes": "Notes",
+      "newNote": "New Note",
+      "empty": "No notes yet",
+      "create": "Create Note",
+      "selectOrCreate": "Select a note or create a new one",
+      "titlePlaceholder": "Title",
+      "contentPlaceholder": "Write something…",
+      "color": {
+        "yellow": "Yellow",
+        "green": "Green",
+        "blue": "Blue",
+        "pink": "Pink",
+        "purple": "Purple"
+      }
+    }
+  }
+}

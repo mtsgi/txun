@@ -1,0 +1,19 @@
+{
+  "apps": {
+    "clock": {
+      "name": "Clock",
+      "tabClock": "Clock",
+      "tabStopwatch": "Stopwatch",
+      "tabTimer": "Timer",
+      "start": "Start",
+      "stop": "Stop",
+      "resume": "Resume",
+      "reset": "Reset",
+      "lap": "Lap",
+      "lapLabel": "Lap",
+      "minutes": "Min",
+      "seconds": "Sec",
+      "timerFinished": "Timer finished!"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "apps": {
+    "browser": {
+      "name": "ブラウザ",
+      "addressBar": "URLを入力",
+      "back": "戻る",
+      "forward": "進む",
+      "refresh": "再読み込み",
+      "home": "ホーム",
+      "newTab": "新しいタブ",
+      "closeTab": "タブを閉じる",
+      "bookmarks": "ブックマーク",
+      "addBookmark": "ブックマークに追加",
+      "removeBookmark": "ブックマークから削除",
+      "noBookmarks": "ブックマークはありません",
+      "settingsTitle": "ブラウザの設定",
+      "settingsHomepage": "ホームページ",
+      "settingsSave": "保存",
+      "settingsSandboxInfo": "iframe サンドボックスの制限により、一部のサイトは読み込めない場合があります。表示できないページはブラウザで直接開くか、URLを確認してください。"
+    }
+  }
+}

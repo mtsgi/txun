@@ -1,0 +1,10 @@
+{
+  "apps": {
+    "textEditor": {
+      "name": "Text Editor",
+      "open": "Open",
+      "save": "Save",
+      "placeholder": "Start typing…"
+    }
+  }
+}

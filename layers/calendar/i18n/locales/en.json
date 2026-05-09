@@ -1,0 +1,45 @@
+{
+  "apps": {
+    "calendar": {
+      "name": "Calendar",
+      "today": "Today",
+      "addEvent": "Add Event",
+      "eventTitle": "Title",
+      "eventTitlePlaceholder": "Enter event name",
+      "eventDate": "Date",
+      "eventColor": "Color",
+      "add": "Add",
+      "cancel": "Cancel",
+      "month": {
+        "jan": "January",
+        "feb": "February",
+        "mar": "March",
+        "apr": "April",
+        "may": "May",
+        "jun": "June",
+        "jul": "July",
+        "aug": "August",
+        "sep": "September",
+        "oct": "October",
+        "nov": "November",
+        "dec": "December"
+      },
+      "week": {
+        "sun": "Sun",
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat"
+      },
+      "color": {
+        "red": "Red",
+        "blue": "Blue",
+        "green": "Green",
+        "orange": "Orange",
+        "purple": "Purple"
+      }
+    }
+  }
+}

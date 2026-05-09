@@ -1,0 +1,13 @@
+{
+  "apps": {
+    "imageViewer": {
+      "name": "Image Viewer",
+      "open": "Open File",
+      "dropHere": "Drag & drop an image here",
+      "zoomIn": "Zoom In",
+      "zoomOut": "Zoom Out",
+      "reset": "Reset",
+      "rotate": "Rotate"
+    }
+  }
+}

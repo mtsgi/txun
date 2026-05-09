@@ -1,10 +1,17 @@
 export default defineNuxtConfig({
-  modules: ['@nuxtjs/i18n'],
   $meta: {
-    description: 'TxunOS Core Layer — desktop shell, window manager, virtual desktop',
-    name: 'txunos-core',
+    description: 'TxunOS Built-in App Layer - image-viewer',
+    name: 'txunos-image-viewer',
     version: '1.0.0'
   },
+
+  components: [
+    {
+      path: './components/apps',
+      global: true,
+      prefix: 'Apps'
+    }
+  ],
 
   i18n: {
     locales: [

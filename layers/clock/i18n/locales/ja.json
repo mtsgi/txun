@@ -1,0 +1,19 @@
+{
+  "apps": {
+    "clock": {
+      "name": "時計",
+      "tabClock": "時計",
+      "tabStopwatch": "ストップウォッチ",
+      "tabTimer": "タイマー",
+      "start": "開始",
+      "stop": "停止",
+      "resume": "再開",
+      "reset": "リセット",
+      "lap": "ラップ",
+      "lapLabel": "ラップ",
+      "minutes": "分",
+      "seconds": "秒",
+      "timerFinished": "タイマーが終了しました"
+    }
+  }
+}

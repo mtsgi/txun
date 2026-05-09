@@ -1,0 +1,19 @@
+{
+  "name": "@txun/file-manager",
+  "version": "1.0.0",
+  "type": "module",
+  "files": [
+    "app",
+    "i18n",
+    "nuxt.config.ts"
+  ],
+  "peerDependencies": {
+    "@txun/core": "^1.0.0",
+    "@nuxt/ui": "^4.6.1",
+    "@nuxtjs/i18n": "^10.3.0",
+    "nuxt": "^4.4.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

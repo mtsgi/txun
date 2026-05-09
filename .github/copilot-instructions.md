@@ -1,65 +1,93 @@
 # TxunOS — 実装ガイド
 
-このファイルはAgent向けのリポジトリカスタム指示です。
+このファイルは Agent 向けのリポジトリカスタム指示です。  
+Nuxt Layers の現行構成（core + 各アプリ独立レイヤー）を前提に、実装・検証・公開の基準を定義します。
 
-- IDE機能を活用してファイル内容やエラーの確認を行う
-- 設計上の分岐がある場合はユーザーに質問しながら進める
-- interfaceや関数には日本語JSDocコメントをつける
-- 実装後は `README.md` も更新することを検討する
+## 基本方針
 
-## レイヤー構成
+- IDE 機能（定義ジャンプ、Problems、型情報）を活用して調査する。
+- 設計上の分岐や仕様不明点がある場合は、必ずユーザーに確認してから進める。
+- interface / type / composable / store action / export 関数には日本語 JSDoc コメントを付ける。
+- 実装後は README とガイド文書の差分整合を確認する。
 
-ファイルは `layers/core/app/` または `layers/apps/app/` に配置します  
-（Nuxt 4 レイヤーは `app/` を srcDir とするため）。
+## レイヤー / パッケージ構成
 
-- `layers/core/` — デスクトップシェル・ウィンドウマネージャー・Pinia ストア
-- `layers/apps/` — ビルトインアプリコンポーネントと登録プラグイン
-- `app/` — メインエントリー（pages, app.vue, app.config.ts）
+Nuxt 4 Layer は `app/` を srcDir として扱う。実装は以下に配置する。
+
+- `layers/core/`
+  - デスクトップシェル、ウィンドウ管理、Pinia ストア、core i18n
+  - npm package: `@txun/core`
+- `layers/<app>/`
+  - 各ビルトインアプリの独立レイヤー（コンポーネント、register プラグイン、i18n）
+  - npm package: `@txun/<app>`
+- `app/`
+  - メインエントリー（`app.vue`, `pages/`, `app.config.ts` など）
+
+旧 `layers/apps`（一括レイヤー）は廃止済み。新規実装で復活させないこと。
 
 ## コンポーネント規約
 
-- **Nuxt UI コンポーネントを優先使用すること**（`UButton`, `UDropdownMenu`, `UContextMenu`, `UInput` など）。カスタム HTML 要素より Nuxt UI を選ぶ。
-- コンポーネント名は Nuxt auto-import の命名規則に従う。ディレクトリ名がファイル名の先頭と重複する場合、Nuxt は自動的に縮約する。
-  - 例: `components/desktop/AppWindow.vue` → `<DesktopAppWindow>`
-  - 例: `components/desktop/DesktopShell.vue` → `<DesktopShell>`（`Desktop` が縮約される）
-- アプリコンポーネントは `layers/apps/app/components/apps/` に配置し、`windowId: string` プロップを受け取る。
-- ウィンドウアニメーションにはすべて `<Transition>` / `<TransitionGroup>` を使用すること。
+- Nuxt UI コンポーネントを優先利用する（例: `UButton`, `UDropdownMenu`, `UContextMenu`, `UInput`）。
+- アプリコンポーネントは `layers/<app>/app/components/apps/` 直下に配置する。
+  - 正: `components/apps/BrowserApp.vue`
+  - 禁止: `components/apps/browser/BrowserApp.vue` のような深いネスト
+- アプリコンポーネントは `windowId: string` を props で受け取る。
+- ウィンドウ表示・一覧のアニメーションには `Transition` / `TransitionGroup` を使用する。
+- Auto-import 名は `prefix: 'Apps'` を前提に `AppMeta.component` と一致させる。
+  - 例: `components/apps/MyApp.vue` → `AppsMyApp`
+
+## アプリ登録規約
+
+- 各アプリレイヤーに `app/plugins/register-<app>.ts` を置き、`useDesktopStore().registerApp()` を呼ぶ。
+- `registerApp` に渡す `nameKey` は `apps.*` 名前空間を使う。
+- 文字列の直接埋め込みを避け、UI 表示は i18n キー経由に統一する。
 
 ## 状態管理（Pinia）
 
-- **単一ソース**: `layers/core/app/stores/desktop.ts`（`useDesktopStore`）。
-- `useWindowManager`、`useVirtualDesktop` はストアのアクションにサイドエフェクト（カラーモード同期・i18n ロケール同期）を加えたラッパー。
-- `useWindowManager` は必ず `setTheme` と `setLocale` を公開すること（`SettingsApp` の型チェック要件）。
-- `store.windows` や `store.virtualDesktops` の配列インデックスアクセスには `undefined` ガードが必要（`noUncheckedIndexedAccess` 前提）。
-- `@pinia/nuxt` はレイヤーの `app/stores/` を自動スキャンしないため、`app/composables/stores.ts` で re-export して auto-import に乗せること。
+- 単一ソースは `layers/core/app/stores/desktop.ts`（`useDesktopStore`）。
+- `useWindowManager` と `useVirtualDesktop` はストアのラッパーとして副作用を集約する。
+- `useWindowManager` は `setTheme` と `setLocale` を必ず公開する。
+- `store.windows` / `store.virtualDesktops` の配列インデックス参照は `undefined` ガードを必須とする。
+- `@pinia/nuxt` はレイヤーの `app/stores/` を自動スキャンしないため、`app/composables/stores.ts` で re-export する。
 
 ## TypeScript 規約
 
-- `noUncheckedIndexedAccess` が有効 — 配列インデックス読み取りには必ずガードを入れる。
-- エクスポートする関数とストアアクションには明示的な戻り値型を書く。
-- 型インポートは `import type { ... }` 構文を使う。
-- `any` は使用禁止。型を絞れない場合は `unknown` + 型ナローイングを使う。
+- `noUncheckedIndexedAccess` を前提に実装する。
+- export する関数と store action は戻り値型を明示する。
+- 型インポートは `import type` を使う。
+- `any` は禁止。必要なら `unknown` を使って型ナローイングする。
 
-## i18n
+## i18n 規約
 
-- ロケールファイル: `i18n/locales/ja.json`、`i18n/locales/en.json`（`@nuxtjs/i18n` v10 は `i18n/locales/` を参照する）。
-- テンプレートでは `$t('key')`、`<script setup>` では `t('key')` を使う。
-- ユーザーに見える文字列はすべて i18n キーを通すこと（テンプレートにハードコードしない）。
-- `store.locale` と `locale.value`（`useI18n`）は `useWindowManager.setLocale` を経由して同期すること。
+- ロケールファイルは `i18n/locales/ja.json` と `i18n/locales/en.json`。
+- テンプレートでは `$t('key')`、`script setup` では `t('key')` を使う。
+- core のキーは `core.desktop.*`、アプリのキーは `apps.<appName>.*`。
+- `store.locale` と `locale.value` は `useWindowManager.setLocale` を経由して同期する。
 
 ## ウィンドウマネージャー
 
-- `layers/core/app/utils/window-manager.ts` は**純粋関数のみ** — Vue/Nuxt のインポートは禁止。ユニットテスト対象。
-- スナップゾーン検出閾値: 画面端から 24px。
+- `layers/core/app/utils/window-manager.ts` は純粋関数のみ。
+- Vue / Nuxt 依存を持ち込まない（ユニットテスト対象のため）。
+- スナップゾーン検出閾値は画面端 24px。
 
-## サードパーティアプリ（Nuxt Layers）
+## バージョニング / ライセンス / 公開
 
-- 外部アプリは `nuxt.config.ts` の `extends` 配列で追加。
-- アプリ登録は Nuxt プラグイン内で `useDesktopStore().registerApp(AppMeta)` を呼ぶ。
-- `AppMeta.component` は Nuxt auto-import 名と一致させること（例: `'AppsMyApp'` → `components/apps/MyApp.vue`）。
+- パッケージ公開対象は `@txun/core` と `@txun/<app>`。
+- 初回公開基準バージョンは `1.0.0`。
+- 変更時は以下を同時更新する。
+  - `layers/<pkg>/package.json` の `version`
+  - `layers/<pkg>/nuxt.config.ts` の `$meta.version`
+  - 依存先の peerDependencies（例: `@txun/core`）
+- 各パッケージ直下に `LICENSE`（MIT）を置く。
+- `package.json` の `files` に公開対象ファイルが入っていることを確認する。
+- 公開前チェック:
+  - `npm run typecheck`
+  - `npm run lint`
+  - `npm run test:unit -- --run`
+  - `npm run pack:workspaces`
 
-## テスト
+## テスト方針
 
-- ユニットテスト: `test/unit/`、`environment: 'node'` — 純粋ユーティリティ関数専用。
-- Nuxt 統合テスト: `test/nuxt/` — コンポーザブルやコンポーネント用。
-- 実行: `npm run test:unit`。
+- ユニットテスト: `test/unit/`（純粋ユーティリティ中心、`environment: 'node'`）。
+- Nuxt 統合テスト: `test/nuxt/`（コンポーザブル・コンポーネント）。
+- 仕様変更時は既存テストの維持だけでなく、必要に応じてケース追加を検討する。

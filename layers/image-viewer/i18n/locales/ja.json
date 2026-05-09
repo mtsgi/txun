@@ -1,0 +1,13 @@
+{
+  "apps": {
+    "imageViewer": {
+      "name": "画像ビューア",
+      "open": "ファイルを開く",
+      "dropHere": "画像をドラッグ＆ドロップ",
+      "zoomIn": "ズームイン",
+      "zoomOut": "ズームアウト",
+      "reset": "リセット",
+      "rotate": "回転"
+    }
+  }
+}

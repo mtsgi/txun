@@ -1,0 +1,24 @@
+{
+  "apps": {
+    "taskManager": {
+      "name": "タスクマネージャー",
+      "windows": "ウィンドウ",
+      "virtualDesktops": "仮想デスクトップ",
+      "system": "システム",
+      "appName": "アプリ",
+      "status": "状態",
+      "desktop": "デスクトップ",
+      "windowCount": "ウィンドウ数",
+      "minimize": "最小化",
+      "close": "閉じる",
+      "statusMinimized": "最小化中",
+      "statusMaximized": "最大化中",
+      "statusNormal": "通常",
+      "heapUsed": "ヒープ使用",
+      "heapTotal": "ヒープ合計",
+      "heapLimit": "ヒープ上限",
+      "memoryUnavailable": "メモリ情報はこのブラウザでは利用できません",
+      "noWindows": "ウィンドウはありません"
+    }
+  }
+}

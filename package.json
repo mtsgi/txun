@@ -1,7 +1,22 @@
 {
   "name": "txunos",
   "version": "0.1.0",
+  "private": true,
   "type": "module",
+  "workspaces": [
+    "layers/core",
+    "layers/browser",
+    "layers/calculator",
+    "layers/calendar",
+    "layers/clock",
+    "layers/file-manager",
+    "layers/image-viewer",
+    "layers/settings",
+    "layers/sticky-notes",
+    "layers/task-manager",
+    "layers/terminal",
+    "layers/text-editor"
+  ],
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
@@ -14,7 +29,8 @@
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
     "test:unit": "vitest --project unit",
-    "test:nuxt": "vitest --project nuxt"
+    "test:nuxt": "vitest --project nuxt",
+    "pack:workspaces": "npm pack --workspaces --dry-run"
   },
   "dependencies": {
     "@iconify-json/lucide": "^1.2.102",

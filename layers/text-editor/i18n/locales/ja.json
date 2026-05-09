@@ -1,0 +1,10 @@
+{
+  "apps": {
+    "textEditor": {
+      "name": "テキストエディタ",
+      "open": "開く",
+      "save": "保存",
+      "placeholder": "テキストを入力…"
+    }
+  }
+}

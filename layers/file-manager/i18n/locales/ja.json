@@ -1,0 +1,13 @@
+{
+  "apps": {
+    "fileManager": {
+      "name": "ファイル",
+      "empty": "フォルダが空です",
+      "items": "項目",
+      "open": "開く",
+      "rename": "名前変更",
+      "delete": "削除",
+      "sidebar": "サイドバー"
+    }
+  }
+}
