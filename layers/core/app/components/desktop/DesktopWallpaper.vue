@@ -57,6 +57,16 @@ const contextMenuItems = computed(() => [
       icon: 'i-lucide-search',
       onSelect: () => openSpotlight()
     }
+  ],
+  [
+    {
+      label: t('core.desktop.taskManager.open'),
+      icon: 'i-lucide-activity',
+      onSelect: () => {
+        const app = store.apps.find(a => a.id === 'task-manager')
+        if (app) store.openWindow(app)
+      }
+    }
   ]
 ])
 </script>

@@ -13,7 +13,7 @@ const store = useDesktopStore()
 const { closeLauncher, searchQuery } = useLauncher()
 const { t } = useI18n()
 
-const searchInputRef = ref<HTMLInputElement | null>(null)
+const searchInputRef = ref<{ input: HTMLInputElement } | null>(null)
 
 /** 検索クエリでフィルタリングされたアプリ一覧 */
 const filteredApps = computed<AppMeta[]>(() => {
@@ -84,6 +84,16 @@ function getAppContextItems(app: AppMeta, folderId?: string) {
   return [baseItems, folderActions]
 }
 
+/** アプリアイコンの背景色スタイルを返す（color をソリッド背景・白アイコンで使用） */
+function getAppIconStyle(app: AppMeta): Record<string, string> {
+  if (!app.color) return {}
+  return {
+    background: `var(--color-${app.color}-500)`,
+    borderColor: `var(--color-${app.color}-600)`,
+    color: 'white'
+  }
+}
+
 /** アプリを開いてランチャーを閉じる */
 function handleAppOpen(app: AppMeta): void {
   store.openWindow(app)
@@ -99,17 +109,17 @@ function onOverlayClick(event: MouseEvent): void {
 
 // ランチャーが開いたら検索欄にフォーカス
 onMounted(() => {
-  nextTick(() => searchInputRef.value?.focus())
+  nextTick(() => searchInputRef.value?.input?.focus())
 })
 </script>
 
 <template>
   <div
-    :class="['launcher-root', isMobile ? 'launcher-fullscreen' : 'launcher-panel']"
-    @click="isMobile ? onOverlayClick($event) : undefined"
+    :class="['launcher-root', props.isMobile ? 'launcher-fullscreen' : 'launcher-panel']"
+    @click="props.isMobile ? onOverlayClick($event) : undefined"
   >
     <div
-      :class="['launcher-content', isMobile ? 'launcher-content-fullscreen' : 'launcher-content-panel']"
+      :class="['launcher-content', props.isMobile ? 'launcher-content-fullscreen' : 'launcher-content-panel']"
       @click.stop
     >
       <!-- 検索バー -->
@@ -140,7 +150,10 @@ onMounted(() => {
                 class="app-btn"
                 @click="handleAppOpen(app)"
               >
-                <div class="app-icon-wrap">
+                <div
+                  class="app-icon-wrap"
+                  :style="getAppIconStyle(app)"
+                >
                   <UIcon
                     :name="app.icon"
                     class="app-icon"
@@ -196,7 +209,10 @@ onMounted(() => {
                   class="app-btn"
                   @click="handleAppOpen(app)"
                 >
-                  <div class="app-icon-wrap">
+                  <div
+                    class="app-icon-wrap"
+                    :style="getAppIconStyle(app)"
+                  >
                     <UIcon
                       :name="app.icon"
                       class="app-icon"
@@ -281,9 +297,7 @@ onMounted(() => {
   margin-bottom: 0.5rem;
 }
 
-.apps-section {
-  // no extra margin
-}
+// .apps-section has no extra styles
 
 .section-label {
   font-size: 0.6875rem;
@@ -298,6 +312,12 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 0.25rem;
+
+  // グリッドアイテムが長いテキストで列幅を拡げないよう min-width を抑制
+  > * {
+    min-width: 0;
+    overflow: hidden;
+  }
 }
 
 .app-btn {
@@ -330,7 +350,7 @@ onMounted(() => {
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 0.625rem;
-  background: color-mix(in srgb, var(--ui-bg-inverted) 8%, var(--ui-bg));
+  background: var(--ui-bg-elevated);
   border: 1px solid var(--ui-border);
 }
 

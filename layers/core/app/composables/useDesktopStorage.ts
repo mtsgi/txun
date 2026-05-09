@@ -34,10 +34,13 @@ export function useDesktopStorage() {
    * @param value - 保存する値
    */
   async function saveState(key: string, value: unknown): Promise<void> {
+    // Vue の Proxy オブジェクトは IndexedDB の structured clone で複製できないため
+    // JSON シリアライズでプレーンオブジェクトに変換してから保存する
+    const plain = JSON.parse(JSON.stringify(value)) as unknown
     const db = await openDB()
     return new Promise<void>((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, 'readwrite')
-      tx.objectStore(STORE_NAME).put({ key, value })
+      tx.objectStore(STORE_NAME).put({ key, value: plain })
       tx.oncomplete = () => resolve()
       tx.onerror = () => reject(tx.error)
     })

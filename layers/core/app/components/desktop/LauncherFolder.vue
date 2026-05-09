@@ -28,6 +28,35 @@ const renameInput = ref<HTMLInputElement | null>(null)
 /** フォルダーのサムネイルに使う先頭 4 アイコン */
 const thumbnailIcons = computed(() => props.apps.slice(0, 4).map(a => a.icon))
 
+/** フォルダーサムネイルの背景色スタイル（先頭アプリの color を使用） */
+const folderThumbStyle = computed((): Record<string, string> => {
+  const color = props.apps[0]?.color
+  if (!color) return {}
+  return {
+    background: `color-mix(in srgb, var(--color-${color}-500) 22%, var(--ui-bg-elevated))`
+  }
+})
+
+/** アプリのコンテキストメニュー項目を生成する */
+function getAppMenuItems(app: AppMeta) {
+  return [
+    [
+      {
+        label: t('core.desktop.launcher.open'),
+        icon: 'i-lucide-external-link',
+        onSelect: () => emit('appSelect', app)
+      }
+    ],
+    [
+      {
+        label: t('core.desktop.launcher.remove_from_folder'),
+        icon: 'i-lucide-folder-minus',
+        onSelect: () => store.removeAppFromFolder(props.folder.id, app.id)
+      }
+    ]
+  ]
+}
+
 /** コンテキストメニュー項目 */
 const contextMenuItems = computed(() => [
   [
@@ -77,7 +106,10 @@ function cancelRename(): void {
         @click="isExpanded = !isExpanded"
       >
         <!-- 2×2 アイコングリッドのサムネイル -->
-        <div class="folder-thumb">
+        <div
+          class="folder-thumb"
+          :style="folderThumbStyle"
+        >
           <div class="thumb-grid">
             <UIcon
               v-for="(icon, i) in thumbnailIcons"
@@ -128,19 +160,24 @@ function cancelRename(): void {
           v-if="isExpanded"
           class="folder-apps"
         >
-          <button
+          <UContextMenu
             v-for="app in apps"
             :key="app.id"
-            type="button"
-            class="folder-app-btn"
-            @click="emit('appSelect', app)"
+            :items="getAppMenuItems(app)"
           >
-            <UIcon
-              :name="app.icon"
-              class="app-icon"
-            />
-            <span class="app-name">{{ $t(app.nameKey) }}</span>
-          </button>
+            <button
+              type="button"
+              class="folder-app-btn"
+              @click="emit('appSelect', app)"
+            >
+              <UIcon
+                :name="app.icon"
+                class="app-icon"
+                :style="app.color ? { color: `var(--color-${app.color}-500)` } : {}"
+              />
+              <span class="app-name">{{ $t(app.nameKey) }}</span>
+            </button>
+          </UContextMenu>
         </div>
       </Transition>
     </div>

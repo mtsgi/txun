@@ -38,20 +38,33 @@ export interface WindowState {
 export interface VirtualDesktop {
   /** 仮想デスクトップ固有の ID */
   id: string
-  /** 表示名 */
+  /** 仮想デスクトップ表示名 */
   name: string
 }
 
 /** アプリの登録情報を表すインターフェース */
+/**
+ * アプリアイコン背景色に使用できる Tailwind カラー名
+ * main.css の @theme static に対応する変数を宣言済みの色のみ指定可能
+ */
+export type AppIconColor
+  = | 'red' | 'orange' | 'amber' | 'yellow' | 'lime'
+    | 'green' | 'emerald' | 'teal' | 'cyan' | 'sky'
+    | 'blue' | 'indigo' | 'violet' | 'purple' | 'fuchsia'
+    | 'pink' | 'rose'
+    | 'slate' | 'gray' | 'zinc' | 'neutral' | 'stone'
+
 export interface AppMeta {
   /** アプリ固有の ID */
   id: string
   /** アプリ表示名（フォールバック用） */
   name: string
-  /** i18n キー */
+  /** アプリ表示名（i18n キー） */
   nameKey: string
   /** アイコンクラス名 */
   icon: string
+  /** アイコン背景色・タスクバーウィンドウボタン色（AppIconColor のいずれか、省略時は primary） */
+  color?: AppIconColor
   /** Nuxt auto-import 名（コンポーネント名） */
   component: string
   /** ウィンドウのデフォルト幅（px） */

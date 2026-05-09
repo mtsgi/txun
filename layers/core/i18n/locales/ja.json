@@ -33,6 +33,9 @@
         "apps": "アプリ",
         "windows": "ウィンドウ",
         "placeholder": "アプリやウィンドウを検索..."
+      },
+      "taskManager": {
+        "open": "タスクマネージャーを開く"
       }
     }
   }

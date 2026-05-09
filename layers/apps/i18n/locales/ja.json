@@ -34,10 +34,108 @@
     },
     "browser": {
       "name": "ブラウザ",
-      "addressBar": "URLを入力"
+      "addressBar": "URLを入力",
+      "back": "戻る",
+      "forward": "進む",
+      "refresh": "再読み込み",
+      "home": "ホーム",
+      "newTab": "新しいタブ",
+      "closeTab": "タブを閉じる",
+      "bookmarks": "ブックマーク",
+      "addBookmark": "ブックマークに追加",
+      "removeBookmark": "ブックマークから削除",
+      "noBookmarks": "ブックマークはありません",
+      "settingsTitle": "ブラウザの設定",
+      "settingsHomepage": "ホームページ",
+      "settingsSave": "保存",
+      "settingsSandboxInfo": "iframe サンドボックスの制限により、一部のサイトは読み込めない場合があります。表示できないページはブラウザで直接開くか、URLを確認してください。"
     },
     "terminal": {
       "name": "ターミナル"
-    }
+    },
+    "taskManager": {
+      "name": "タスクマネージャー",
+      "windows": "ウィンドウ",
+      "virtualDesktops": "仮想デスクトップ",
+      "system": "システム",
+      "appName": "アプリ",
+      "status": "状態",
+      "desktop": "デスクトップ",
+      "windowCount": "ウィンドウ数",
+      "minimize": "最小化",
+      "close": "閉じる",
+      "statusMinimized": "最小化中",
+      "statusMaximized": "最大化中",
+      "statusNormal": "通常",
+      "heapUsed": "ヒープ使用",
+      "heapTotal": "ヒープ合計",
+      "heapLimit": "ヒープ上限",
+      "memoryUnavailable": "メモリ情報はこのブラウザでは利用できません",
+      "noWindows": "ウィンドウはありません"    },
+    "calculator": {
+      "name": "電卓"
+    },
+    "calendar": {
+      "name": "カレンダー",
+      "today": "今日",
+      "addEvent": "イベントを追加",
+      "eventTitle": "タイトル",
+      "eventTitlePlaceholder": "イベント名を入力",
+      "eventDate": "日付",
+      "eventColor": "カラー",
+      "add": "追加",
+      "cancel": "キャンセル",
+      "month": {
+        "jan": "1月", "feb": "2月", "mar": "3月",
+        "apr": "4月", "may": "5月", "jun": "6月",
+        "jul": "7月", "aug": "8月", "sep": "9月",
+        "oct": "10月", "nov": "11月", "dec": "12月"
+      },
+      "week": {
+        "sun": "日", "mon": "月", "tue": "火",
+        "wed": "水", "thu": "木", "fri": "金", "sat": "土"
+      },
+      "color": {
+        "red": "赤", "blue": "青", "green": "緑",
+        "orange": "オレンジ", "purple": "紫"
+      }
+    },
+    "clock": {
+      "name": "時計",
+      "tabClock": "時計",
+      "tabStopwatch": "ストップウォッチ",
+      "tabTimer": "タイマー",
+      "start": "開始",
+      "stop": "停止",
+      "resume": "再開",
+      "reset": "リセット",
+      "lap": "ラップ",
+      "lapLabel": "ラップ",
+      "minutes": "分",
+      "seconds": "秒",
+      "timerFinished": "タイマーが終了しました"
+    },
+    "imageViewer": {
+      "name": "画像ビューア",
+      "open": "ファイルを開く",
+      "dropHere": "画像をドラッグ＆ドロップ",
+      "zoomIn": "ズームイン",
+      "zoomOut": "ズームアウト",
+      "reset": "リセット",
+      "rotate": "回転"
+    },
+    "stickyNotes": {
+      "name": "スティッキーノート",
+      "notes": "メモ",
+      "newNote": "新しいメモ",
+      "empty": "メモがありません",
+      "create": "メモを作成",
+      "selectOrCreate": "メモを選択するか、新規作成してください",
+      "titlePlaceholder": "タイトル",
+      "contentPlaceholder": "メモを入力…",
+      "color": {
+        "yellow": "黄色", "green": "緑", "blue": "青",
+        "pink": "ピンク", "purple": "紫"
+      }    }
   }
 }

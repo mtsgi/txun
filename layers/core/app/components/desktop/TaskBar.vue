@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useDesktopStore } from '../../stores/desktop'
-import type { WindowState } from '../../stores/desktop'
+import type { WindowState, AppIconColor } from '../../stores/desktop'
 
 const store = useDesktopStore()
 const { toggleLauncher, isOpen: launcherOpen } = useLauncher()
@@ -19,6 +19,24 @@ function onTaskClick(win: WindowState) {
   } else {
     store.focusWindow(win.id)
   }
+}
+
+/** UButton が受け入れる color 型 */
+type UButtonColor = 'error' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'neutral'
+
+/** アプリの AppIconColor を UButton の color 型にマッピングする */
+const COLOR_MAP: Partial<Record<AppIconColor, UButtonColor>> = {
+  violet: 'primary', purple: 'primary', fuchsia: 'primary',
+  blue: 'info', sky: 'info', indigo: 'info', cyan: 'info',
+  green: 'success', emerald: 'success', teal: 'success', lime: 'success',
+  amber: 'warning', yellow: 'warning', orange: 'warning',
+  red: 'error', rose: 'error', pink: 'error'
+}
+
+/** ウィンドウに対応するアプリの UButton 互換 color を返す */
+function getWindowAppColor(win: WindowState): UButtonColor {
+  const color = store.apps.find(a => a.id === win.appId)?.color
+  return (color != null ? (COLOR_MAP[color] ?? 'primary') : 'primary')
 }
 
 const now = ref(new Date())
@@ -85,7 +103,7 @@ const dateLabel = computed(() =>
         <UButton
           size="sm"
           :variant="win.isMinimized ? 'ghost' : 'soft'"
-          :color="store.topWindow?.id === win.id ? 'primary' : 'neutral'"
+          :color="store.topWindow?.id === win.id ? getWindowAppColor(win) : 'neutral'"
           :class="['task-btn', { 'task-btn-icon': isMobile }]"
           @click="onTaskClick(win)"
         >

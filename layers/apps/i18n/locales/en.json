@@ -34,10 +34,110 @@
     },
     "browser": {
       "name": "Browser",
-      "addressBar": "Enter URL"
+      "addressBar": "Enter URL",
+      "back": "Back",
+      "forward": "Forward",
+      "refresh": "Refresh",
+      "home": "Home",
+      "newTab": "New Tab",
+      "closeTab": "Close Tab",
+      "bookmarks": "Bookmarks",
+      "addBookmark": "Add Bookmark",
+      "removeBookmark": "Remove Bookmark",
+      "noBookmarks": "No bookmarks yet",
+      "settingsTitle": "Browser Settings",
+      "settingsHomepage": "Homepage",
+      "settingsSave": "Save",
+      "settingsSandboxInfo": "Due to iframe sandbox restrictions, some sites may not load. Open them in your system browser or verify the URL."
     },
     "terminal": {
       "name": "Terminal"
+    },
+    "taskManager": {
+      "name": "Task Manager",
+      "windows": "Windows",
+      "virtualDesktops": "Virtual Desktops",
+      "system": "System",
+      "appName": "App",
+      "status": "Status",
+      "desktop": "Desktop",
+      "windowCount": "Windows",
+      "minimize": "Minimize",
+      "close": "Close",
+      "statusMinimized": "Minimized",
+      "statusMaximized": "Maximized",
+      "statusNormal": "Normal",
+      "heapUsed": "Heap Used",
+      "heapTotal": "Heap Total",
+      "heapLimit": "Heap Limit",
+      "memoryUnavailable": "Memory info is not available in this browser",
+      "noWindows": "No windows open"
+    },
+    "calculator": {
+      "name": "Calculator"
+    },
+    "calendar": {
+      "name": "Calendar",
+      "today": "Today",
+      "addEvent": "Add Event",
+      "eventTitle": "Title",
+      "eventTitlePlaceholder": "Enter event name",
+      "eventDate": "Date",
+      "eventColor": "Color",
+      "add": "Add",
+      "cancel": "Cancel",
+      "month": {
+        "jan": "January", "feb": "February", "mar": "March",
+        "apr": "April", "may": "May", "jun": "June",
+        "jul": "July", "aug": "August", "sep": "September",
+        "oct": "October", "nov": "November", "dec": "December"
+      },
+      "week": {
+        "sun": "Sun", "mon": "Mon", "tue": "Tue",
+        "wed": "Wed", "thu": "Thu", "fri": "Fri", "sat": "Sat"
+      },
+      "color": {
+        "red": "Red", "blue": "Blue", "green": "Green",
+        "orange": "Orange", "purple": "Purple"
+      }
+    },
+    "clock": {
+      "name": "Clock",
+      "tabClock": "Clock",
+      "tabStopwatch": "Stopwatch",
+      "tabTimer": "Timer",
+      "start": "Start",
+      "stop": "Stop",
+      "resume": "Resume",
+      "reset": "Reset",
+      "lap": "Lap",
+      "lapLabel": "Lap",
+      "minutes": "Min",
+      "seconds": "Sec",
+      "timerFinished": "Timer finished!"
+    },
+    "imageViewer": {
+      "name": "Image Viewer",
+      "open": "Open File",
+      "dropHere": "Drag & drop an image here",
+      "zoomIn": "Zoom In",
+      "zoomOut": "Zoom Out",
+      "reset": "Reset",
+      "rotate": "Rotate"
+    },
+    "stickyNotes": {
+      "name": "Sticky Notes",
+      "notes": "Notes",
+      "newNote": "New Note",
+      "empty": "No notes yet",
+      "create": "Create Note",
+      "selectOrCreate": "Select a note or create a new one",
+      "titlePlaceholder": "Title",
+      "contentPlaceholder": "Write something…",
+      "color": {
+        "yellow": "Yellow", "green": "Green", "blue": "Blue",
+        "pink": "Pink", "purple": "Purple"
+      }
     }
   }
 }

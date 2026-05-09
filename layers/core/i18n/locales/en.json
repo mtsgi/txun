@@ -33,6 +33,9 @@
         "apps": "Apps",
         "windows": "Windows",
         "placeholder": "Search apps and windows..."
+      },
+      "taskManager": {
+        "open": "Open Task Manager"
       }
     }
   }
