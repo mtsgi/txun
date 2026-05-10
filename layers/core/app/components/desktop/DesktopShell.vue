@@ -1,4 +1,26 @@
 <script setup lang="ts">
+import type { AppFont, AppRadius } from '../../stores/desktop'
+
+/** 永続化する設定データの型 */
+type UserSettings = {
+  theme: 'light' | 'dark'
+  locale: 'ja' | 'en'
+  font: AppFont
+  primaryColor: string
+  wallpaper: string
+  radius: AppRadius
+}
+
+/** CSS 変数 --ui-radius に設定する値のマッピング */
+const RADIUS_CSS: Record<AppRadius, string> = {
+  none: '0',
+  sm: '0.25rem',
+  md: '0.5rem',
+  lg: '0.75rem',
+  xl: '1rem'
+}
+
+const SETTINGS_KEY = 'user-settings'
 const MOBILE_BREAKPOINT = 768
 const shellRef = ref<HTMLElement | null>(null)
 const screenWidth = ref(0)
@@ -8,8 +30,11 @@ const vDesktopVisible = ref(false)
 
 const isMobile = computed(() => screenWidth.value < MOBILE_BREAKPOINT)
 
+const store = useDesktopStore()
 const { isOpen: launcherOpen, initLauncher } = useLauncher()
 const { openSpotlight } = useSpotlight()
+const { setTheme, setLocale } = useWindowManager()
+const { saveState, loadState } = useDesktopStorage()
 
 function onKeydown(e: KeyboardEvent) {
   if (e.ctrlKey && e.key === 'k') {
@@ -24,12 +49,49 @@ function updateSize() {
   screenHeight.value = shellRef.value.clientHeight
 }
 
-onMounted(() => {
+onMounted(async () => {
   updateSize()
   window.addEventListener('resize', updateSize)
   window.addEventListener('keydown', onKeydown)
   initLauncher()
+
+  const saved = await loadState<UserSettings>(SETTINGS_KEY)
+  if (saved) {
+    if (saved.theme) setTheme(saved.theme)
+    if (saved.locale) setLocale(saved.locale)
+    if (saved.font) store.setFont(saved.font)
+    if (saved.primaryColor) store.setPrimaryColor(saved.primaryColor)
+    if (saved.wallpaper) store.setWallpaper(saved.wallpaper)
+    if (saved.radius) {
+      store.setRadius(saved.radius)
+      const radiusCss = RADIUS_CSS[saved.radius]
+      if (radiusCss) {
+        document.documentElement.style.setProperty('--ui-radius', radiusCss)
+      }
+    }
+  }
 })
+
+watch(
+  [
+    () => store.theme,
+    () => store.locale,
+    () => store.font,
+    () => store.primaryColor,
+    () => store.wallpaper,
+    () => store.radius
+  ],
+  async () => {
+    await saveState(SETTINGS_KEY, {
+      theme: store.theme,
+      locale: store.locale,
+      font: store.font,
+      primaryColor: store.primaryColor,
+      wallpaper: store.wallpaper,
+      radius: store.radius
+    })
+  }
+)
 
 onUnmounted(() => {
   window.removeEventListener('resize', updateSize)

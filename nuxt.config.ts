@@ -58,6 +58,16 @@ export default defineNuxtConfig({
     }
   },
 
+  fonts: {
+    families: [
+      { name: 'Inter', provider: 'google' },
+      { name: 'Poppins', provider: 'google' },
+      { name: 'Noto Sans JP', provider: 'google' },
+      { name: 'BIZ UDPGothic', provider: 'google' },
+      { name: 'Zen Kaku Gothic Antique', provider: 'google' }
+    ]
+  },
+
   i18n: {
 
     defaultLocale: 'ja',

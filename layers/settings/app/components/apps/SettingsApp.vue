@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import type { SelectItem } from '@nuxt/ui'
 import type { AppFont, AppRadius } from '#layers/txunos-core/app/stores/desktop'
+import licenseNuxt from '../../../../../node_modules/nuxt/LICENSE?raw'
+import licenseNuxtUi from '../../../../../node_modules/@nuxt/ui/LICENSE.md?raw'
+import licenseVue from '../../../../../node_modules/vue/LICENSE?raw'
+import licensePinia from '../../../../../node_modules/pinia/LICENSE?raw'
+import licenseI18n from '../../../../../node_modules/@nuxtjs/i18n/LICENSE?raw'
+import licenseProseMirror from '../../../../../node_modules/prosemirror-state/LICENSE?raw'
 
 defineProps<{ windowId: string }>()
 
@@ -54,18 +60,31 @@ const colorOptions = [
   { value: 'pink', hex: '#db2777', label: 'Pink' }
 ]
 
-const fontOptions: { value: AppFont, label: string, preview: string }[] = [
-  { value: 'system', label: 'System', preview: 'The quick brown fox' },
-  { value: 'sans', label: 'Sans', preview: 'The quick brown fox' },
-  { value: 'mono', label: 'Mono', preview: 'The quick brown fox' },
-  { value: 'serif', label: 'Serif', preview: 'The quick brown fox' }
-]
+/** ロケール設定に応じたフォントプレビューテキスト（i18n キー経由） */
+const fontPreviewText = computed(() => t('apps.settings.fontPreview'))
+
+const fontOptions = computed<{ value: AppFont, label: string, preview: string }[]>(() => [
+  { value: 'system', label: 'System', preview: fontPreviewText.value },
+  { value: 'sans', label: 'Sans (Public Sans)', preview: fontPreviewText.value },
+  { value: 'mono', label: 'Mono', preview: fontPreviewText.value },
+  { value: 'serif', label: 'Serif', preview: fontPreviewText.value },
+  { value: 'inter', label: 'Inter', preview: fontPreviewText.value },
+  { value: 'poppins', label: 'Poppins', preview: fontPreviewText.value },
+  { value: 'noto-sans-jp', label: 'Noto Sans JP', preview: fontPreviewText.value },
+  { value: 'biz-ud-gothic', label: 'BIZ UDPGothic', preview: fontPreviewText.value },
+  { value: 'zen-kaku-gothic-antique', label: 'Zen Kaku Gothic Antique', preview: fontPreviewText.value }
+])
 
 const FONT_FAMILIES: Record<AppFont, string> = {
-  system: 'system-ui, -apple-system, sans-serif',
-  sans: '\'Public Sans\', sans-serif',
-  mono: 'ui-monospace, monospace',
-  serif: 'ui-serif, Georgia, serif'
+  'system': 'system-ui, -apple-system, sans-serif',
+  'sans': '\'Public Sans\', sans-serif',
+  'mono': 'ui-monospace, monospace',
+  'serif': 'ui-serif, Georgia, serif',
+  'inter': '\'Inter\', sans-serif',
+  'poppins': '\'Poppins\', sans-serif',
+  'noto-sans-jp': '\'Noto Sans JP\', system-ui, sans-serif',
+  'biz-ud-gothic': '\'BIZ UDPGothic\', sans-serif',
+  'zen-kaku-gothic-antique': '\'Zen Kaku Gothic Antique\', sans-serif'
 }
 
 const themeOptions = [
@@ -100,6 +119,17 @@ const wallpaperPresets = [
   { id: 'solid-light', label: 'Light', css: '#e5e7eb' }
 ]
 
+const photoWallpapers = [
+  { id: 'photo-10', label: 'Forest', thumbUrl: 'https://picsum.photos/id/10/200/120', wallUrl: 'https://picsum.photos/id/10/1920/1080' },
+  { id: 'photo-15', label: 'Mountain', thumbUrl: 'https://picsum.photos/id/15/200/120', wallUrl: 'https://picsum.photos/id/15/1920/1080' },
+  { id: 'photo-28', label: 'Sea', thumbUrl: 'https://picsum.photos/id/28/200/120', wallUrl: 'https://picsum.photos/id/28/1920/1080' },
+  { id: 'photo-29', label: 'Forest 2', thumbUrl: 'https://picsum.photos/id/29/200/120', wallUrl: 'https://picsum.photos/id/29/1920/1080' },
+  { id: 'photo-57', label: 'Sky', thumbUrl: 'https://picsum.photos/id/57/200/120', wallUrl: 'https://picsum.photos/id/57/1920/1080' },
+  { id: 'photo-92', label: 'River', thumbUrl: 'https://picsum.photos/id/92/200/120', wallUrl: 'https://picsum.photos/id/92/1920/1080' },
+  { id: 'photo-137', label: 'Shore', thumbUrl: 'https://picsum.photos/id/137/200/120', wallUrl: 'https://picsum.photos/id/137/1920/1080' },
+  { id: 'photo-177', label: 'Field', thumbUrl: 'https://picsum.photos/id/177/200/120', wallUrl: 'https://picsum.photos/id/177/1920/1080' }
+]
+
 const tabs = computed(() => [
   { label: t('apps.settings.appearance'), icon: 'i-lucide-palette', slot: 'appearance' },
   { label: t('apps.settings.wallpaper'), icon: 'i-lucide-image', slot: 'wallpaper' },
@@ -129,15 +159,35 @@ function applyRadius(radius: AppRadius) {
   document.documentElement.style.setProperty('--ui-radius', RADIUS_VALUES[radius])
 }
 
+/** Lucide Icons（@iconify-json/lucide）の ISC ライセンス全文 */
+const LUCIDE_ISC = `ISC License
+
+Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as part of Feather (MIT). All other copyright (c) for Lucide are held by Lucide Contributors 2022.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.`
+
 const ossPackages = [
-  { name: 'Nuxt', license: 'MIT' },
-  { name: 'Nuxt UI', license: 'MIT' },
-  { name: 'Vue', license: 'MIT' },
-  { name: 'Pinia', license: 'MIT' },
-  { name: '@nuxtjs/i18n', license: 'MIT' },
-  { name: 'ProseMirror', license: 'MIT' },
-  { name: 'Lucide Icons', license: 'ISC' }
+  { name: 'Nuxt', license: 'MIT', fullText: licenseNuxt },
+  { name: 'Nuxt UI', license: 'MIT', fullText: licenseNuxtUi },
+  { name: 'Vue', license: 'MIT', fullText: licenseVue },
+  { name: 'Pinia', license: 'MIT', fullText: licensePinia },
+  { name: '@nuxtjs/i18n', license: 'MIT', fullText: licenseI18n },
+  { name: 'ProseMirror', license: 'MIT', fullText: licenseProseMirror },
+  { name: 'Lucide Icons', license: 'ISC', fullText: LUCIDE_ISC }
 ]
+
+/** 展開中の OSS パッケージ名 */
+const openOss = ref<string | null>(null)
 
 const wallpaperUrlInput = ref('')
 
@@ -167,7 +217,7 @@ onMounted(() => {
       v-if="!isMobile"
       orientation="vertical"
       :items="tabs"
-      :ui="{ root: 'h-full items-start', list: 'border-r border-(--ui-border) w-40 self-stretch', content: 'flex-1 overflow-y-auto' }"
+      :ui="{ root: 'h-full items-stretch', list: 'border-r border-(--ui-border) w-40 justify-start', content: 'flex-1 overflow-y-auto' }"
     >
       <template #appearance>
         <div class="section-content">
@@ -238,6 +288,9 @@ onMounted(() => {
           <h3 class="section-title">
             {{ $t('apps.settings.wallpaper') }}
           </h3>
+          <p class="field-label">
+            {{ $t('apps.settings.wallpaperGradients') }}
+          </p>
           <div class="wallpaper-presets">
             <button
               v-for="wp in wallpaperPresets"
@@ -247,6 +300,20 @@ onMounted(() => {
               :style="{ background: wp.css }"
               :title="wp.label"
               @click="store.setWallpaper(wp.id)"
+            />
+          </div>
+          <p class="field-label wallpaper-section-label">
+            {{ $t('apps.settings.wallpaperPhotos') }}
+          </p>
+          <div class="wallpaper-presets">
+            <button
+              v-for="wp in photoWallpapers"
+              :key="wp.id"
+              class="wallpaper-swatch"
+              :class="store.wallpaper === wp.wallUrl ? 'active' : ''"
+              :style="{ backgroundImage: `url(${wp.thumbUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }"
+              :title="wp.label"
+              @click="store.setWallpaper(wp.wallUrl)"
             />
           </div>
           <div
@@ -355,8 +422,21 @@ onMounted(() => {
                 :key="oss.name"
                 class="oss-item"
               >
-                <span class="oss-name">{{ oss.name }}</span>
-                <span class="oss-license">{{ oss.license }}</span>
+                <button
+                  class="oss-header"
+                  @click="openOss = openOss === oss.name ? null : oss.name"
+                >
+                  <span class="oss-name">{{ oss.name }}</span>
+                  <span class="oss-license">{{ oss.license }}</span>
+                  <UIcon
+                    :name="openOss === oss.name ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
+                    class="oss-chevron"
+                  />
+                </button>
+                <pre
+                  v-if="openOss === oss.name"
+                  class="oss-full-text"
+                >{{ oss.fullText }}</pre>
               </div>
             </div>
           </div>
@@ -410,187 +490,219 @@ onMounted(() => {
             }}</span>
           </div>
 
-          <!-- 外観 -->
-          <div
-            v-if="activeSection === 'appearance'"
-            class="section-content"
-          >
-            <div class="field">
-              <p class="field-label">
-                {{ $t('apps.settings.theme') }}
-              </p>
-              <div class="option-row">
-                <UButton
-                  v-for="th in themeOptions"
-                  :key="th.value"
-                  :icon="th.icon"
-                  :label="th.label"
-                  :variant="colorMode.preference === th.value ? 'solid' : 'outline'"
-                  :color="colorMode.preference === th.value ? 'primary' : 'neutral'"
-                  size="sm"
-                  @click="colorMode.preference = th.value"
-                />
+          <div class="mobile-detail-content">
+            <!-- 外観 -->
+            <div
+              v-if="activeSection === 'appearance'"
+              class="section-content"
+            >
+              <div class="field">
+                <p class="field-label">
+                  {{ $t('apps.settings.theme') }}
+                </p>
+                <div class="option-row">
+                  <UButton
+                    v-for="th in themeOptions"
+                    :key="th.value"
+                    :icon="th.icon"
+                    :label="th.label"
+                    :variant="colorMode.preference === th.value ? 'solid' : 'outline'"
+                    :color="colorMode.preference === th.value ? 'primary' : 'neutral'"
+                    size="sm"
+                    @click="colorMode.preference = th.value"
+                  />
+                </div>
+              </div>
+              <div class="field">
+                <p class="field-label">
+                  {{ $t('apps.settings.radius') }}
+                </p>
+                <div class="radius-options">
+                  <button
+                    v-for="r in radiusOptions"
+                    :key="r.value"
+                    class="radius-option"
+                    :class="store.radius === r.value ? 'active' : ''"
+                    @click="applyRadius(r.value)"
+                  >
+                    <div
+                      class="radius-preview"
+                      :style="{ borderRadius: RADIUS_VALUES[r.value] }"
+                    />
+                    <span>{{ r.label }}</span>
+                  </button>
+                </div>
+              </div>
+              <div class="field">
+                <p class="field-label">
+                  {{ $t('apps.settings.primaryColor') }}
+                </p>
+                <div class="color-swatches">
+                  <button
+                    v-for="c in colorOptions"
+                    :key="c.value"
+                    class="color-swatch"
+                    :class="store.primaryColor === c.value ? 'active' : ''"
+                    :style="{ backgroundColor: c.hex }"
+                    :title="c.label"
+                    @click="applyColor(c.value)"
+                  />
+                </div>
               </div>
             </div>
-            <div class="field">
+
+            <!-- 壁紙 -->
+            <div
+              v-if="activeSection === 'wallpaper'"
+              class="section-content"
+            >
               <p class="field-label">
-                {{ $t('apps.settings.radius') }}
+                {{ $t('apps.settings.wallpaperGradients') }}
               </p>
-              <div class="radius-options">
+              <div class="wallpaper-presets">
                 <button
-                  v-for="r in radiusOptions"
-                  :key="r.value"
-                  class="radius-option"
-                  :class="store.radius === r.value ? 'active' : ''"
-                  @click="applyRadius(r.value)"
-                >
-                  <div
-                    class="radius-preview"
-                    :style="{ borderRadius: RADIUS_VALUES[r.value] }"
+                  v-for="wp in wallpaperPresets"
+                  :key="wp.id"
+                  class="wallpaper-swatch"
+                  :class="store.wallpaper === wp.id ? 'active' : ''"
+                  :style="{ background: wp.css }"
+                  :title="wp.label"
+                  @click="store.setWallpaper(wp.id)"
+                />
+              </div>
+              <p class="field-label wallpaper-section-label">
+                {{ $t('apps.settings.wallpaperPhotos') }}
+              </p>
+              <div class="wallpaper-presets">
+                <button
+                  v-for="wp in photoWallpapers"
+                  :key="wp.id"
+                  class="wallpaper-swatch"
+                  :class="store.wallpaper === wp.wallUrl ? 'active' : ''"
+                  :style="{ backgroundImage: `url(${wp.thumbUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }"
+                  :title="wp.label"
+                  @click="store.setWallpaper(wp.wallUrl)"
+                />
+              </div>
+              <div
+                class="field"
+                style="margin-top:1rem"
+              >
+                <p class="field-label">
+                  {{ $t('apps.settings.wallpaperUrl') }}
+                </p>
+                <div class="wallpaper-url-row">
+                  <UInput
+                    v-model="wallpaperUrlInput"
+                    placeholder="https://example.com/image.jpg"
+                    class="flex-1"
+                    @keydown.enter="applyWallpaperUrl"
                   />
-                  <span>{{ r.label }}</span>
+                  <UButton
+                    :label="$t('apps.settings.wallpaperApply')"
+                    color="primary"
+                    variant="solid"
+                    size="sm"
+                    @click="applyWallpaperUrl"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- フォント -->
+            <div
+              v-if="activeSection === 'font'"
+              class="section-content"
+            >
+              <div class="font-options">
+                <button
+                  v-for="f in fontOptions"
+                  :key="f.value"
+                  class="font-option"
+                  :class="store.font === f.value ? 'active' : ''"
+                  @click="applyFont(f.value)"
+                >
+                  <span class="font-label">{{ f.label }}</span>
+                  <span
+                    class="font-preview"
+                    :style="{ fontFamily: FONT_FAMILIES[f.value] }"
+                  >{{ f.preview }}</span>
                 </button>
               </div>
             </div>
-            <div class="field">
-              <p class="field-label">
-                {{ $t('apps.settings.primaryColor') }}
-              </p>
-              <div class="color-swatches">
-                <button
-                  v-for="c in colorOptions"
-                  :key="c.value"
-                  class="color-swatch"
-                  :class="store.primaryColor === c.value ? 'active' : ''"
-                  :style="{ backgroundColor: c.hex }"
-                  :title="c.label"
-                  @click="applyColor(c.value)"
-                />
-              </div>
-            </div>
-          </div>
 
-          <!-- 壁紙 -->
-          <div
-            v-if="activeSection === 'wallpaper'"
-            class="section-content"
-          >
-            <div class="wallpaper-presets">
-              <button
-                v-for="wp in wallpaperPresets"
-                :key="wp.id"
-                class="wallpaper-swatch"
-                :class="store.wallpaper === wp.id ? 'active' : ''"
-                :style="{ background: wp.css }"
-                :title="wp.label"
-                @click="store.setWallpaper(wp.id)"
-              />
-            </div>
+            <!-- 言語 -->
             <div
-              class="field"
-              style="margin-top:1rem"
+              v-if="activeSection === 'language'"
+              class="section-content"
             >
-              <p class="field-label">
-                {{ $t('apps.settings.wallpaperUrl') }}
-              </p>
-              <div class="wallpaper-url-row">
-                <UInput
-                  v-model="wallpaperUrlInput"
-                  placeholder="https://example.com/image.jpg"
-                  class="flex-1"
-                  @keydown.enter="applyWallpaperUrl"
-                />
-                <UButton
-                  :label="$t('apps.settings.wallpaperApply')"
-                  color="primary"
-                  variant="solid"
-                  size="sm"
-                  @click="applyWallpaperUrl"
+              <div class="field">
+                <USelect
+                  v-model="selectedLocale"
+                  :items="localeOptions"
+                  value-key="value"
+                  class="w-48"
                 />
               </div>
             </div>
-          </div>
 
-          <!-- フォント -->
-          <div
-            v-if="activeSection === 'font'"
-            class="section-content"
-          >
-            <div class="font-options">
-              <button
-                v-for="f in fontOptions"
-                :key="f.value"
-                class="font-option"
-                :class="store.font === f.value ? 'active' : ''"
-                @click="applyFont(f.value)"
-              >
-                <span class="font-label">{{ f.label }}</span>
-                <span
-                  class="font-preview"
-                  :style="{ fontFamily: FONT_FAMILIES[f.value] }"
-                >{{ f.preview }}</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- 言語 -->
-          <div
-            v-if="activeSection === 'language'"
-            class="section-content"
-          >
-            <div class="field">
-              <USelect
-                v-model="selectedLocale"
-                :items="localeOptions"
-                value-key="value"
-                class="w-48"
-              />
-            </div>
-          </div>
-
-          <!-- About -->
-          <div
-            v-if="activeSection === 'about'"
-            class="section-content"
-          >
-            <div class="about-logo">
-              <UIcon
-                name="i-lucide-monitor"
-                class="about-icon"
-              />
-              <span class="about-name">TxunOS</span>
-            </div>
-            <p class="about-desc">
-              {{ $t('apps.settings.aboutDescription') }}
-            </p>
-            <div class="field">
-              <p class="field-label">
-                {{ $t('apps.settings.version') }}
+            <!-- About -->
+            <div
+              v-if="activeSection === 'about'"
+              class="section-content"
+            >
+              <div class="about-logo">
+                <UIcon
+                  name="i-lucide-monitor"
+                  class="about-icon"
+                />
+                <span class="about-name">TxunOS</span>
+              </div>
+              <p class="about-desc">
+                {{ $t('apps.settings.aboutDescription') }}
               </p>
-              <p class="about-value">
-                0.1.0
-              </p>
-            </div>
-            <div class="field">
-              <p class="field-label">
-                {{ $t('apps.settings.license') }}
-              </p>
-              <p class="about-value">
-                MIT
-              </p>
-            </div>
-            <div class="field">
-              <p class="field-label">
-                {{ $t('apps.settings.ossLicenses') }}
-              </p>
-              <div class="oss-list">
-                <div
-                  v-for="oss in ossPackages"
-                  :key="oss.name"
-                  class="oss-item"
-                >
-                  <span class="oss-name">{{ oss.name }}</span>
-                  <span class="oss-license">{{ oss.license }}</span>
+              <div class="field">
+                <p class="field-label">
+                  {{ $t('apps.settings.version') }}
+                </p>
+                <p class="about-value">
+                  0.1.0
+                </p>
+              </div>
+              <div class="field">
+                <p class="field-label">
+                  {{ $t('apps.settings.license') }}
+                </p>
+                <p class="about-value">
+                  MIT
+                </p>
+              </div>
+              <div class="field">
+                <p class="field-label">
+                  {{ $t('apps.settings.ossLicenses') }}
+                </p>
+                <div class="oss-list">
+                  <div
+                    v-for="oss in ossPackages"
+                    :key="oss.name"
+                    class="oss-item"
+                  >
+                    <button
+                      class="oss-header"
+                      @click="openOss = openOss === oss.name ? null : oss.name"
+                    >
+                      <span class="oss-name">{{ oss.name }}</span>
+                      <span class="oss-license">{{ oss.license }}</span>
+                      <UIcon
+                        :name="openOss === oss.name ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
+                        class="oss-chevron"
+                      />
+                    </button>
+                    <pre
+                      v-if="openOss === oss.name"
+                      class="oss-full-text"
+                    >{{ oss.fullText }}</pre>
+                  </div>
                 </div>
               </div>
             </div>
@@ -755,6 +867,15 @@ onMounted(() => {
       font-weight: 600;
     }
   }
+
+  .mobile-detail-content {
+    flex: 1;
+    overflow-y: auto;
+  }
+}
+
+.wallpaper-section-label {
+  margin-top: 1rem;
 }
 
 // SP スライドアニメーション
@@ -876,22 +997,65 @@ onMounted(() => {
 .oss-list {
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  overflow: hidden;
 }
 
 .oss-item {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.8125rem;
-  padding: 0.25rem 0;
   border-bottom: 1px solid var(--ui-border);
 
-  .oss-name {
-    font-weight: 500;
+  &:last-child {
+    border-bottom: none;
   }
 
-  .oss-license {
+  .oss-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: inherit;
+    text-align: left;
+    font-size: 0.8125rem;
+    transition: background-color 0.1s;
+
+    &:hover {
+      background: var(--ui-bg-elevated);
+    }
+
+    .oss-name {
+      font-weight: 500;
+      flex: 1;
+    }
+
+    .oss-license {
+      color: var(--ui-text-muted);
+    }
+
+    .oss-chevron {
+      font-size: 0.875rem;
+      color: var(--ui-text-muted);
+      flex-shrink: 0;
+    }
+  }
+
+  .oss-full-text {
+    font-family: ui-monospace, monospace;
+    font-size: 0.6875rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+    padding: 0.75rem;
+    margin: 0;
+    background: var(--ui-bg-elevated);
     color: var(--ui-text-muted);
+    border-top: 1px solid var(--ui-border);
+    max-height: 16rem;
+    overflow-y: auto;
   }
 }
 </style>

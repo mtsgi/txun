@@ -5,10 +5,15 @@ const colorMode = useColorMode()
 const appConfig = useAppConfig()
 
 const FONT_FAMILIES: Record<string, string> = {
-  system: 'system-ui, -apple-system, sans-serif',
-  sans: '\'Public Sans\', sans-serif',
-  mono: 'ui-monospace, monospace',
-  serif: 'ui-serif, Georgia, serif'
+  'system': 'system-ui, -apple-system, sans-serif',
+  'sans': '\'Public Sans\', sans-serif',
+  'mono': 'ui-monospace, monospace',
+  'serif': 'ui-serif, Georgia, serif',
+  'inter': '\'Inter\', sans-serif',
+  'poppins': '\'Poppins\', sans-serif',
+  'noto-sans-jp': '\'Noto Sans JP\', system-ui, sans-serif',
+  'biz-ud-gothic': '\'BIZ UDPGothic\', sans-serif',
+  'zen-kaku-gothic-antique': '\'Zen Kaku Gothic Antique\', sans-serif'
 }
 
 function applyFont(font: string) {

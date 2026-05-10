@@ -15,7 +15,10 @@
       "license": "License",
       "ossLicenses": "OSS Licenses",
       "wallpaperUrl": "Set by image URL",
-      "wallpaperApply": "Apply"
+      "wallpaperApply": "Apply",
+      "wallpaperGradients": "Gradients",
+      "wallpaperPhotos": "Photos",
+      "fontPreview": "The quick brown fox"
     }
   }
 }

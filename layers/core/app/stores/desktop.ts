@@ -76,7 +76,7 @@ export interface AppMeta {
 }
 
 /** アプリ全体で使用するフォント種別 */
-export type AppFont = 'system' | 'sans' | 'mono' | 'serif'
+export type AppFont = 'system' | 'sans' | 'mono' | 'serif' | 'inter' | 'poppins' | 'noto-sans-jp' | 'biz-ud-gothic' | 'zen-kaku-gothic-antique'
 
 /** ボーダー半径の設定値 */
 export type AppRadius = 'none' | 'sm' | 'md' | 'lg' | 'xl'

@@ -15,7 +15,10 @@
       "license": "ライセンス",
       "ossLicenses": "OSS ライセンス",
       "wallpaperUrl": "画像URLで設定",
-      "wallpaperApply": "適用"
+      "wallpaperApply": "適用",
+      "wallpaperGradients": "グラデーション",
+      "wallpaperPhotos": "フォト",
+      "fontPreview": "あいうえお Aa"
     }
   }
 }
