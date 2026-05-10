@@ -30,7 +30,9 @@
     "test:coverage": "vitest --coverage",
     "test:unit": "vitest --project unit",
     "test:nuxt": "vitest --project nuxt",
-    "pack:workspaces": "npm pack --workspaces --dry-run"
+    "pack:workspaces": "npm pack --workspaces --dry-run",
+    "publish:workspaces": "node scripts/publish-workspaces.mjs",
+    "publish:workspaces:dry-run": "NPM_PUBLISH_DRY_RUN=true node scripts/publish-workspaces.mjs"
   },
   "dependencies": {
     "@iconify-json/lucide": "^1.2.102",
@@ -48,6 +50,7 @@
     "@types/node": "^25.6.0",
     "@vitest/coverage-v8": "^4.1.5",
     "@vue/test-utils": "^2.4.8",
+    "happy-dom": "^20.9.0",
     "sass": "^1.99.0",
     "typescript": "^6.0.2",
     "vitest": "^4.1.5",

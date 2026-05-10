@@ -1,0 +1,95 @@
+name: Publish npm packages
+
+'on':
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      dist_tag:
+        description: 'npm dist-tag override (latest / next / canary / rc)'
+        required: false
+        type: string
+      dry_run:
+        description: 'Run npm publish with --dry-run'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-npm-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm run test:unit -- --run
+
+      - name: Nuxt integration tests
+        run: npm run test:nuxt -- --run
+
+      - name: Verify npm pack outputs
+        run: npm run pack:workspaces
+
+      - name: Resolve dist-tag
+        id: dist_tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ inputs.dist_tag }}" ]]; then
+            tag="${{ inputs.dist_tag }}"
+          else
+            version=$(node -p "JSON.parse(require('node:fs').readFileSync('layers/core/package.json','utf8')).version")
+            if [[ "$version" == *-* ]]; then
+              tag="next"
+            else
+              tag="latest"
+            fi
+          fi
+
+          echo "Resolved npm dist-tag: $tag"
+          echo "value=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Publish workspace packages
+        shell: bash
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_DIST_TAG: ${{ steps.dist_tag.outputs.value }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${NODE_AUTH_TOKEN:-}" ]]; then
+            echo "NPM_TOKEN is required"
+            exit 1
+          fi
+
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.dry_run }}" == "true" ]]; then
+            export NPM_PUBLISH_DRY_RUN=true
+          fi
+
+          npm run publish:workspaces

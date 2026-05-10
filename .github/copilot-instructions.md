@@ -84,7 +84,14 @@ Nuxt 4 Layer は `app/` を srcDir として扱う。実装は以下に配置す
   - `npm run typecheck`
   - `npm run lint`
   - `npm run test:unit -- --run`
+  - `npm run test:nuxt -- --run`
   - `npm run pack:workspaces`
+- `npm pack` で `README.md` と `LICENSE` が同梱されることを確認する。
+- dist-tag 戦略:
+  - stable（例: `1.2.0`）は `latest`
+  - pre-release（例: `1.2.0-beta.1`）は `next`
+  - 手動実行時は `NPM_DIST_TAG` で上書き可能（`canary`, `rc` など）
+- CI 自動 publish は `.github/workflows/publish.yml` を使用し、`NPM_TOKEN` シークレットを必須とする。
 
 ## テスト方針
 

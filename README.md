@@ -113,6 +113,52 @@ npm run dev
 | `npm run test:nuxt` | Nuxt 統合テスト |
 | `npm run test:coverage` | カバレッジ生成 |
 | `npm run pack:workspaces` | 各 workspace の npm pack dry-run |
+| `npm run publish:workspaces` | dist-tag 戦略に従って各 workspace を npm publish |
+| `npm run publish:workspaces:dry-run` | publish を dry-run で実行 |
+
+### npm publish 手順（タグ戦略）
+
+`npm run pack:workspaces` の結果を公開前ゲートとして扱い、各パッケージで次を確認します。
+
+- `LICENSE` が同梱されている
+- `README.md` が同梱されている
+- `app/`, `i18n/`, `nuxt.config.ts`, `package.json` が同梱されている
+
+#### dist-tag 戦略
+
+| 条件 | 付与する dist-tag |
+|---|---|
+| stable 版（例: `1.2.0`） | `latest` |
+| pre-release 版（例: `1.2.0-beta.1`） | `next` |
+| 手動指定（canary / rc など） | `workflow_dispatch` の `dist_tag` 入力値 |
+
+#### ローカル手順
+
+```bash
+# 1) 検証
+npm run lint
+npm run typecheck
+npm run test:unit -- --run
+npm run test:nuxt -- --run
+npm run pack:workspaces
+
+# 2) publish（stable 例）
+NPM_DIST_TAG=latest npm run publish:workspaces
+
+# 3) publish（pre-release 例）
+NPM_DIST_TAG=next npm run publish:workspaces
+```
+
+#### CI 自動 publish
+
+- ワークフロー: `.github/workflows/publish.yml`
+- トリガー:
+  - Git タグ push（`v*`）
+  - 手動実行（`workflow_dispatch`）
+- 必須シークレット: `NPM_TOKEN`（npm automation token）
+- 実行順:
+  - `lint` → `typecheck` → `test:unit` → `test:nuxt` → `pack:workspaces` → publish
+  - publish は `@txun/core` → 各アプリの順序で処理
 
 ---
 
@@ -201,7 +247,7 @@ my-txun-app/
 │       └── en.json
 └── app/
     ├── components/apps/
-  │   └── MyApp.vue
+    │   └── MyApp.vue
     └── plugins/
         └── register-my-app.ts
 ```
