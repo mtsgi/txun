@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { SelectItem } from '@nuxt/ui'
-import type { AppFont, AppRadius } from '#layers/txunos-core/app/stores/desktop'
+import type { AppFont, AppRadius, AppUIScale, AppFontSize } from '#layers/txunos-core/app/stores/desktop'
 import licenseNuxt from '../../../../../node_modules/nuxt/LICENSE?raw'
 import licenseNuxtUi from '../../../../../node_modules/@nuxt/ui/LICENSE.md?raw'
 import licenseVue from '../../../../../node_modules/vue/LICENSE?raw'
@@ -101,6 +101,14 @@ const RADIUS_VALUES: Record<AppRadius, string> = {
   xl: '1rem'
 }
 
+const DESKTOP_RADIUS_VALUES: Record<AppRadius, string> = {
+  none: '0',
+  sm: '0.5rem',
+  md: '0.75rem',
+  lg: '1rem',
+  xl: '1.25rem'
+}
+
 const radiusOptions: { value: AppRadius, label: string }[] = [
   { value: 'none', label: 'None' },
   { value: 'sm', label: 'S' },
@@ -157,7 +165,46 @@ function applyFont(font: AppFont) {
 function applyRadius(radius: AppRadius) {
   store.setRadius(radius)
   document.documentElement.style.setProperty('--ui-radius', RADIUS_VALUES[radius])
+  document.documentElement.style.setProperty('--desktop-radius', DESKTOP_RADIUS_VALUES[radius])
 }
+
+/** UI スケールの選択肢 */
+const uiScaleOptions = computed<SelectItem[]>(() => [
+  { value: 'sm', label: t('apps.settings.uiScaleSm') },
+  { value: 'md', label: t('apps.settings.uiScaleMd') },
+  { value: 'lg', label: t('apps.settings.uiScaleLg') }
+])
+
+/** フォントサイズの選択肢 */
+const fontSizeOptions = computed<SelectItem[]>(() => [
+  { value: 'sm', label: t('apps.settings.fontSizeSm') },
+  { value: 'md', label: t('apps.settings.fontSizeMd') },
+  { value: 'lg', label: t('apps.settings.fontSizeLg') },
+  { value: 'xl', label: t('apps.settings.fontSizeXl') }
+])
+
+/** USelect 用フォント選択肢 */
+const fontSelectOptions = computed(() =>
+  fontOptions.value.map(f => ({ value: f.value, label: f.label }))
+)
+
+/** フォント選択の双方向バインディング */
+const selectedFont = computed({
+  get: () => store.font,
+  set: (v: AppFont) => applyFont(v)
+})
+
+/** UI スケール選択の双方向バインディング */
+const selectedUIScale = computed({
+  get: () => store.uiScale,
+  set: (v: AppUIScale) => store.setUIScale(v)
+})
+
+/** フォントサイズ選択の双方向バインディング */
+const selectedFontSize = computed({
+  get: () => store.fontSize,
+  set: (v: AppFontSize) => store.setFontSize(v)
+})
 
 /** Lucide Icons（@iconify-json/lucide）の ISC ライセンス全文 */
 const LUCIDE_ISC = `ISC License
@@ -203,6 +250,7 @@ onMounted(() => {
   const savedRadius = store.radius
   if (savedRadius in RADIUS_VALUES) {
     document.documentElement.style.setProperty('--ui-radius', RADIUS_VALUES[savedRadius])
+    document.documentElement.style.setProperty('--desktop-radius', DESKTOP_RADIUS_VALUES[savedRadius])
   }
 })
 </script>
@@ -280,6 +328,58 @@ onMounted(() => {
               />
             </div>
           </div>
+          <!-- UI サイズ -->
+          <div class="field">
+            <p class="field-label">
+              {{ $t('apps.settings.uiScale') }}
+            </p>
+            <USelect
+              v-model="selectedUIScale"
+              :items="uiScaleOptions"
+              value-key="value"
+              class="w-40"
+            />
+          </div>
+          <!-- 背景透過 -->
+          <div class="field">
+            <p class="field-label">
+              {{ $t('apps.settings.backgroundOpacity') }}
+              <span class="field-value-hint">{{ store.backgroundOpacity }}%</span>
+            </p>
+            <USlider
+              :model-value="store.backgroundOpacity"
+              :min="50"
+              :max="100"
+              :step="5"
+              class="w-full"
+              @update:model-value="v => store.setBackgroundOpacity(v ?? store.backgroundOpacity)"
+            />
+          </div>
+          <!-- 背景ぼかし -->
+          <div class="field field-inline">
+            <p class="field-label">
+              {{ $t('apps.settings.backgroundBlur') }}
+            </p>
+            <USwitch
+              :model-value="store.backgroundBlur"
+              @update:model-value="store.setBackgroundBlur($event)"
+            />
+          </div>
+          <!-- セーフエリア -->
+          <div class="field field-inline">
+            <div>
+              <p class="field-label">
+                {{ $t('apps.settings.safeArea') }}
+              </p>
+              <p class="field-desc">
+                {{ $t('apps.settings.safeAreaDesc') }}
+              </p>
+            </div>
+            <USwitch
+              :model-value="store.safeArea"
+              @update:model-value="store.setSafeArea($event)"
+            />
+          </div>
         </div>
       </template>
 
@@ -347,20 +447,35 @@ onMounted(() => {
           <h3 class="section-title">
             {{ $t('apps.settings.font') }}
           </h3>
-          <div class="font-options">
-            <button
-              v-for="f in fontOptions"
-              :key="f.value"
-              class="font-option"
-              :class="store.font === f.value ? 'active' : ''"
-              @click="applyFont(f.value)"
+          <!-- フォント選択 -->
+          <div class="field">
+            <p class="field-label">
+              {{ $t('apps.settings.fontFamily') }}
+            </p>
+            <USelect
+              v-model="selectedFont"
+              :items="fontSelectOptions"
+              value-key="value"
+              class="w-56"
+            />
+            <p
+              class="font-preview-sample"
+              :style="{ fontFamily: FONT_FAMILIES[store.font] }"
             >
-              <span class="font-label">{{ f.label }}</span>
-              <span
-                class="font-preview"
-                :style="{ fontFamily: FONT_FAMILIES[f.value] }"
-              >{{ f.preview }}</span>
-            </button>
+              {{ fontPreviewText }}
+            </p>
+          </div>
+          <!-- フォントサイズ -->
+          <div class="field">
+            <p class="field-label">
+              {{ $t('apps.settings.fontSize') }}
+            </p>
+            <USelect
+              v-model="selectedFontSize"
+              :items="fontSizeOptions"
+              value-key="value"
+              class="w-40"
+            />
           </div>
         </div>
       </template>
@@ -549,6 +664,58 @@ onMounted(() => {
                   />
                 </div>
               </div>
+              <!-- UI サイズ -->
+              <div class="field">
+                <p class="field-label">
+                  {{ $t('apps.settings.uiScale') }}
+                </p>
+                <USelect
+                  v-model="selectedUIScale"
+                  :items="uiScaleOptions"
+                  value-key="value"
+                  class="w-40"
+                />
+              </div>
+              <!-- 背景透過 -->
+              <div class="field">
+                <p class="field-label">
+                  {{ $t('apps.settings.backgroundOpacity') }}
+                  <span class="field-value-hint">{{ store.backgroundOpacity }}%</span>
+                </p>
+                <USlider
+                  :model-value="store.backgroundOpacity"
+                  :min="50"
+                  :max="100"
+                  :step="5"
+                  class="w-full"
+                  @update:model-value="v => store.setBackgroundOpacity(v ?? store.backgroundOpacity)"
+                />
+              </div>
+              <!-- 背景ぼかし -->
+              <div class="field field-inline">
+                <p class="field-label">
+                  {{ $t('apps.settings.backgroundBlur') }}
+                </p>
+                <USwitch
+                  :model-value="store.backgroundBlur"
+                  @update:model-value="store.setBackgroundBlur($event)"
+                />
+              </div>
+              <!-- セーフエリア -->
+              <div class="field field-inline">
+                <div>
+                  <p class="field-label">
+                    {{ $t('apps.settings.safeArea') }}
+                  </p>
+                  <p class="field-desc">
+                    {{ $t('apps.settings.safeAreaDesc') }}
+                  </p>
+                </div>
+                <USwitch
+                  :model-value="store.safeArea"
+                  @update:model-value="store.setSafeArea($event)"
+                />
+              </div>
             </div>
 
             <!-- 壁紙 -->
@@ -614,20 +781,35 @@ onMounted(() => {
               v-if="activeSection === 'font'"
               class="section-content"
             >
-              <div class="font-options">
-                <button
-                  v-for="f in fontOptions"
-                  :key="f.value"
-                  class="font-option"
-                  :class="store.font === f.value ? 'active' : ''"
-                  @click="applyFont(f.value)"
+              <!-- フォント選択 -->
+              <div class="field">
+                <p class="field-label">
+                  {{ $t('apps.settings.fontFamily') }}
+                </p>
+                <USelect
+                  v-model="selectedFont"
+                  :items="fontSelectOptions"
+                  value-key="value"
+                  class="w-56"
+                />
+                <p
+                  class="font-preview-sample"
+                  :style="{ fontFamily: FONT_FAMILIES[store.font] }"
                 >
-                  <span class="font-label">{{ f.label }}</span>
-                  <span
-                    class="font-preview"
-                    :style="{ fontFamily: FONT_FAMILIES[f.value] }"
-                  >{{ f.preview }}</span>
-                </button>
+                  {{ fontPreviewText }}
+                </p>
+              </div>
+              <!-- フォントサイズ -->
+              <div class="field">
+                <p class="field-label">
+                  {{ $t('apps.settings.fontSize') }}
+                </p>
+                <USelect
+                  v-model="selectedFontSize"
+                  :items="fontSizeOptions"
+                  value-key="value"
+                  class="w-40"
+                />
               </div>
             </div>
 
@@ -733,11 +915,39 @@ onMounted(() => {
   margin-bottom: 1.25rem;
 }
 
+.field-inline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
 .field-label {
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--ui-text-muted);
   margin: 0 0 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.field-value-hint {
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+.field-desc {
+  font-size: 0.75rem;
+  color: var(--ui-text-muted);
+  margin: 0;
+  opacity: 0.7;
+}
+
+.font-preview-sample {
+  margin-top: 0.5rem;
+  font-size: 1rem;
+  color: var(--ui-text-muted);
 }
 
 .option-row {

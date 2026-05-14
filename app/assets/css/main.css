@@ -102,6 +102,17 @@
   --color-stone-600: #57534e;
 }
 
+:root {
+  --desktop-radius: 0.75rem;
+  --desktop-bg-opacity: 90%;
+  --desktop-blur: 12px;
+  --desktop-zoom-num: 1;
+}
+
+html {
+  overflow: hidden;
+}
+
 body {
   font-family: var(--app-font, system-ui, -apple-system, sans-serif);
 }

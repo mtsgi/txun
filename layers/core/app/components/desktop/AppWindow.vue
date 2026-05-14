@@ -266,7 +266,7 @@ function onResizeStart(e: MouseEvent, dir: ResizeDir) {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 0.75rem;
+  border-radius: var(--desktop-radius);
   border: 1px solid var(--ui-border);
   background: var(--ui-bg);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
@@ -281,7 +281,7 @@ function onResizeStart(e: MouseEvent, dir: ResizeDir) {
   pointer-events: none;
   position: fixed;
   z-index: 9998;
-  border-radius: 0.5rem;
+  border-radius: calc(var(--desktop-radius) * 0.67);
   border: 2px solid var(--ui-primary);
   background: color-mix(in srgb, var(--ui-primary) 10%, transparent);
   transition: all 0.1s ease;

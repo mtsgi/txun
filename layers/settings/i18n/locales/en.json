@@ -18,7 +18,21 @@
       "wallpaperApply": "Apply",
       "wallpaperGradients": "Gradients",
       "wallpaperPhotos": "Photos",
-      "fontPreview": "The quick brown fox"
+      "fontPreview": "The quick brown fox",
+      "fontFamily": "Font",
+      "fontSize": "Font Size",
+      "fontSizeSm": "Small (14px)",
+      "fontSizeMd": "Medium (16px)",
+      "fontSizeLg": "Large (17px)",
+      "fontSizeXl": "Extra Large (18px)",
+      "uiScale": "UI Scale",
+      "uiScaleSm": "Small (90%)",
+      "uiScaleMd": "Medium (100%)",
+      "uiScaleLg": "Large (110%)",
+      "safeArea": "Safe Area Insets",
+      "safeAreaDesc": "Adds padding to avoid UI overlap with notch or home indicator.",
+      "backgroundOpacity": "Background Opacity",
+      "backgroundBlur": "Background Blur"
     }
   }
 }

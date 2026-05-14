@@ -48,7 +48,7 @@ const { desktops, activeId, addDesktop, removeDesktop, switchDesktop } = useVirt
   border: 1px solid var(--ui-border);
   background: color-mix(in srgb, var(--ui-bg-elevated) 80%, transparent);
   padding: 0.25rem 0.5rem;
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(var(--desktop-blur));
 }
 
 .vdesktop-btn {

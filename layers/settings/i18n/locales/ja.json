@@ -18,7 +18,21 @@
       "wallpaperApply": "適用",
       "wallpaperGradients": "グラデーション",
       "wallpaperPhotos": "フォト",
-      "fontPreview": "あいうえお Aa"
+      "fontPreview": "あいうえお Aa",
+      "fontFamily": "フォント",
+      "fontSize": "フォントサイズ",
+      "fontSizeSm": "小 (14px)",
+      "fontSizeMd": "中 (16px)",
+      "fontSizeLg": "やや大 (17px)",
+      "fontSizeXl": "大 (18px)",
+      "uiScale": "UI サイズ",
+      "uiScaleSm": "小 (90%)",
+      "uiScaleMd": "中 (100%)",
+      "uiScaleLg": "大 (110%)",
+      "safeArea": "セーフエリア余白",
+      "safeAreaDesc": "ノッチ・ホームインジケーターに UI が被らないよう余白を追加します。",
+      "backgroundOpacity": "背景透過",
+      "backgroundBlur": "背景のぼかし"
     }
   }
 }

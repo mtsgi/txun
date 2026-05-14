@@ -81,6 +81,12 @@ export type AppFont = 'system' | 'sans' | 'mono' | 'serif' | 'inter' | 'poppins'
 /** ボーダー半径の設定値 */
 export type AppRadius = 'none' | 'sm' | 'md' | 'lg' | 'xl'
 
+/** UI 全体のスケール設定値 */
+export type AppUIScale = 'sm' | 'md' | 'lg'
+
+/** ベースフォントサイズの設定値 */
+export type AppFontSize = 'sm' | 'md' | 'lg' | 'xl'
+
 /** ランチャーフォルダーを表すインターフェース */
 export interface LauncherFolder {
   /** フォルダー固有の ID */
@@ -115,6 +121,16 @@ export interface DesktopState {
   wallpaper: string
   /** ボーダー半径設定 */
   radius: AppRadius
+  /** UI 全体のスケール設定 */
+  uiScale: AppUIScale
+  /** セーフエリア余白を有効にするかどうか */
+  safeArea: boolean
+  /** 背景の不透明度（0-100） */
+  backgroundOpacity: number
+  /** 背景のぼかし（backdrop-filter blur）を有効にするかどうか */
+  backgroundBlur: boolean
+  /** ベースフォントサイズ設定 */
+  fontSize: AppFontSize
   /** ランチャーフォルダー一覧 */
   launcherFolders: LauncherFolder[]
 }
@@ -132,6 +148,11 @@ export const useDesktopStore = defineStore('desktop', {
     nextZIndex: 100,
     wallpaper: 'gradient-default',
     radius: 'md',
+    uiScale: 'md',
+    safeArea: false,
+    backgroundOpacity: 90,
+    backgroundBlur: true,
+    fontSize: 'md',
     launcherFolders: []
   }),
 
@@ -348,6 +369,46 @@ export const useDesktopStore = defineStore('desktop', {
      */
     setRadius(radius: AppRadius): void {
       this.radius = radius
+    },
+
+    /**
+     * UI 全体のスケールを変更する。
+     * @param scale - 変更先のスケール設定値
+     */
+    setUIScale(scale: AppUIScale): void {
+      this.uiScale = scale
+    },
+
+    /**
+     * セーフエリア余白の有効/無効を切り替える。
+     * @param enabled - true で有効化
+     */
+    setSafeArea(enabled: boolean): void {
+      this.safeArea = enabled
+    },
+
+    /**
+     * 背景の不透明度を変更する（0-100）。
+     * @param opacity - 変更先の不透明度（0-100 の整数）
+     */
+    setBackgroundOpacity(opacity: number): void {
+      this.backgroundOpacity = Math.max(0, Math.min(100, opacity))
+    },
+
+    /**
+     * 背景のぼかしエフェクト（backdrop-filter blur）の有効/無効を切り替える。
+     * @param enabled - true で有効化
+     */
+    setBackgroundBlur(enabled: boolean): void {
+      this.backgroundBlur = enabled
+    },
+
+    /**
+     * ベースフォントサイズを変更する。
+     * @param size - 変更先のフォントサイズ設定値
+     */
+    setFontSize(size: AppFontSize): void {
+      this.fontSize = size
     },
 
     /**

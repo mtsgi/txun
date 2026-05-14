@@ -144,9 +144,9 @@ const dateLabel = computed(() =>
   align-items: center;
   gap: 0.25rem;
   border-top: 1px solid var(--ui-border);
-  background: color-mix(in srgb, var(--ui-bg-elevated) 90%, transparent);
+  background: color-mix(in srgb, var(--ui-bg-elevated) var(--desktop-bg-opacity), transparent);
   padding: 0 0.5rem;
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(var(--desktop-blur));
 }
 
 .sep {

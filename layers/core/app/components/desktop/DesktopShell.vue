@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { AppFont, AppRadius } from '../../stores/desktop'
+import type { AppFont, AppRadius, AppUIScale, AppFontSize } from '../../stores/desktop'
 
 /** 永続化する設定データの型 */
 type UserSettings = {
@@ -9,15 +9,69 @@ type UserSettings = {
   primaryColor: string
   wallpaper: string
   radius: AppRadius
+  uiScale?: AppUIScale
+  safeArea?: boolean
+  backgroundOpacity?: number
+  backgroundBlur?: boolean
+  fontSize?: AppFontSize
 }
 
-/** CSS 変数 --ui-radius に設定する値のマッピング */
+/** CSS 変数 --ui-radius / --desktop-radius に設定する値のマッピング */
 const RADIUS_CSS: Record<AppRadius, string> = {
   none: '0',
   sm: '0.25rem',
   md: '0.5rem',
   lg: '0.75rem',
   xl: '1rem'
+}
+
+/** --desktop-radius（ウィンドウ・ランチャーなどカスタムコンポーネント用）のマッピング */
+const DESKTOP_RADIUS_CSS: Record<AppRadius, string> = {
+  none: '0',
+  sm: '0.5rem',
+  md: '0.75rem',
+  lg: '1rem',
+  xl: '1.25rem'
+}
+
+/** UI スケール → CSS zoom 数値のマッピング */
+const UI_SCALE_ZOOM: Record<AppUIScale, string> = {
+  sm: '0.9',
+  md: '1',
+  lg: '1.1'
+}
+
+/** フォントサイズ → px 値のマッピング */
+const FONT_SIZE_PX: Record<AppFontSize, string> = {
+  sm: '14px',
+  md: '16px',
+  lg: '17px',
+  xl: '18px'
+}
+
+function applyRadius(radius: AppRadius): void {
+  const uiCss = RADIUS_CSS[radius]
+  const desktopCss = DESKTOP_RADIUS_CSS[radius]
+  if (uiCss) document.documentElement.style.setProperty('--ui-radius', uiCss)
+  if (desktopCss) document.documentElement.style.setProperty('--desktop-radius', desktopCss)
+}
+
+function applyUIScale(scale: AppUIScale): void {
+  const zoom = UI_SCALE_ZOOM[scale] ?? '1'
+  document.documentElement.style.setProperty('--desktop-zoom-num', zoom)
+}
+
+function applyBackgroundOpacity(opacity: number): void {
+  document.documentElement.style.setProperty('--desktop-bg-opacity', `${opacity}%`)
+}
+
+function applyBackgroundBlur(enabled: boolean): void {
+  document.documentElement.style.setProperty('--desktop-blur', enabled ? '12px' : '0px')
+}
+
+function applyFontSize(size: AppFontSize): void {
+  const px = FONT_SIZE_PX[size]
+  if (px) document.documentElement.style.fontSize = px
 }
 
 const SETTINGS_KEY = 'user-settings'
@@ -64,11 +118,29 @@ onMounted(async () => {
     if (saved.wallpaper) store.setWallpaper(saved.wallpaper)
     if (saved.radius) {
       store.setRadius(saved.radius)
-      const radiusCss = RADIUS_CSS[saved.radius]
-      if (radiusCss) {
-        document.documentElement.style.setProperty('--ui-radius', radiusCss)
-      }
+      applyRadius(saved.radius)
     }
+    const uiScale = saved.uiScale ?? store.uiScale
+    store.setUIScale(uiScale)
+    applyUIScale(uiScale)
+    const safeArea = saved.safeArea ?? store.safeArea
+    store.setSafeArea(safeArea)
+    const bgOpacity = saved.backgroundOpacity ?? store.backgroundOpacity
+    store.setBackgroundOpacity(bgOpacity)
+    applyBackgroundOpacity(bgOpacity)
+    const bgBlur = saved.backgroundBlur ?? store.backgroundBlur
+    store.setBackgroundBlur(bgBlur)
+    applyBackgroundBlur(bgBlur)
+    const fontSize = saved.fontSize ?? store.fontSize
+    store.setFontSize(fontSize)
+    applyFontSize(fontSize)
+  } else {
+    // 初回起動時もデフォルト値を CSS に反映
+    applyRadius(store.radius)
+    applyUIScale(store.uiScale)
+    applyBackgroundOpacity(store.backgroundOpacity)
+    applyBackgroundBlur(store.backgroundBlur)
+    applyFontSize(store.fontSize)
   }
 })
 
@@ -79,7 +151,12 @@ watch(
     () => store.font,
     () => store.primaryColor,
     () => store.wallpaper,
-    () => store.radius
+    () => store.radius,
+    () => store.uiScale,
+    () => store.safeArea,
+    () => store.backgroundOpacity,
+    () => store.backgroundBlur,
+    () => store.fontSize
   ],
   async () => {
     await saveState(SETTINGS_KEY, {
@@ -88,10 +165,21 @@ watch(
       font: store.font,
       primaryColor: store.primaryColor,
       wallpaper: store.wallpaper,
-      radius: store.radius
+      radius: store.radius,
+      uiScale: store.uiScale,
+      safeArea: store.safeArea,
+      backgroundOpacity: store.backgroundOpacity,
+      backgroundBlur: store.backgroundBlur,
+      fontSize: store.fontSize
     })
   }
 )
+
+watch(() => store.uiScale, scale => applyUIScale(scale))
+watch(() => store.backgroundOpacity, opacity => applyBackgroundOpacity(opacity))
+watch(() => store.backgroundBlur, enabled => applyBackgroundBlur(enabled))
+watch(() => store.fontSize, size => applyFontSize(size))
+watch(() => store.radius, radius => applyRadius(radius))
 
 onUnmounted(() => {
   window.removeEventListener('resize', updateSize)
@@ -103,6 +191,7 @@ onUnmounted(() => {
   <div
     ref="shellRef"
     class="desktop-shell"
+    :class="{ 'safe-area': store.safeArea }"
   >
     <!-- Wallpaper -->
     <DesktopWallpaper />
@@ -150,9 +239,11 @@ onUnmounted(() => {
 <style lang="scss" scoped>
 .desktop-shell {
   position: relative;
-  width: 100vw;
-  height: 100vh;
+  // zoom で縮小拡大した際もビューポートをはみ出さないよう、zoom の逆数でサイズを補正する
+  width: calc(100vw / var(--desktop-zoom-num, 1));
+  height: calc(100vh / var(--desktop-zoom-num, 1));
   overflow: hidden;
+  zoom: var(--desktop-zoom-num, 1);
 }
 
 // PC: パネルフェード
@@ -177,6 +268,13 @@ onUnmounted(() => {
 .launcher-slide-leave-to {
   opacity: 0;
   transform: translateY(100%);
+}
+
+.desktop-shell.safe-area {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 .vdesktop-trigger {

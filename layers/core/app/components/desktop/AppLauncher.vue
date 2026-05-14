@@ -242,10 +242,10 @@ onMounted(() => {
 .launcher-content-panel {
   width: 320px;
   max-height: calc(100vh - 64px);
-  border-radius: 0.75rem;
+  border-radius: var(--desktop-radius);
   border: 1px solid var(--ui-border);
-  background: color-mix(in srgb, var(--ui-bg-elevated) 92%, transparent);
-  backdrop-filter: blur(16px);
+  background: color-mix(in srgb, var(--ui-bg-elevated) var(--desktop-bg-opacity), transparent);
+  backdrop-filter: blur(var(--desktop-blur));
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.24);
   display: flex;
   flex-direction: column;
@@ -258,7 +258,7 @@ onMounted(() => {
   inset: 0;
   z-index: 900;
   background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(var(--desktop-blur));
   display: flex;
   align-items: flex-end;
 }
@@ -266,8 +266,8 @@ onMounted(() => {
 .launcher-content-fullscreen {
   width: 100%;
   max-height: 85vh;
-  border-radius: 1.25rem 1.25rem 0 0;
-  background: var(--ui-bg-elevated);
+  border-radius: calc(var(--desktop-radius) + 0.5rem) calc(var(--desktop-radius) + 0.5rem) 0 0;
+  background: color-mix(in srgb, var(--ui-bg-elevated) var(--desktop-bg-opacity), transparent);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -326,7 +326,7 @@ onMounted(() => {
   align-items: center;
   gap: 0.375rem;
   padding: 0.5rem 0.25rem;
-  border-radius: 0.625rem;
+  border-radius: var(--ui-radius);
   background: transparent;
   border: none;
   cursor: pointer;
@@ -349,7 +349,7 @@ onMounted(() => {
   justify-content: center;
   width: 2.5rem;
   height: 2.5rem;
-  border-radius: 0.625rem;
+  border-radius: var(--ui-radius);
   background: var(--ui-bg-elevated);
   border: 1px solid var(--ui-border);
 }
