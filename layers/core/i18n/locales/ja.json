@@ -36,6 +36,9 @@
       },
       "taskManager": {
         "open": "タスクマネージャーを開く"
+      },
+      "settings": {
+        "open": "設定を開く"
       }
     }
   }

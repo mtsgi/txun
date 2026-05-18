@@ -324,7 +324,7 @@ onMounted(() => {
   align-items: center;
   gap: 0.5rem;
   padding: 0.375rem 0.5rem;
-  border-radius: 0.5rem;
+  border-radius: var(--ui-radius);
 
   &:not(.window-row-header):hover {
     background: var(--ui-bg-elevated);
@@ -388,7 +388,7 @@ onMounted(() => {
   flex-shrink: 0;
   width: 1.75rem;
   height: 1.75rem;
-  border-radius: 0.375rem;
+  border-radius: var(--ui-radius);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -419,7 +419,7 @@ onMounted(() => {
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem;
-  border-radius: 0.625rem;
+  border-radius: var(--desktop-radius);
   border: 1px solid var(--ui-border);
   background: var(--ui-bg-elevated);
   transition: border-color 0.15s;
@@ -461,7 +461,7 @@ onMounted(() => {
 
 .info-card {
   border: 1px solid var(--ui-border);
-  border-radius: 0.625rem;
+  border-radius: var(--desktop-radius);
   padding: 0.875rem 1rem;
   background: var(--ui-bg-elevated);
   display: flex;

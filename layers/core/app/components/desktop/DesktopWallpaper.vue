@@ -32,43 +32,59 @@ const { openSpotlight } = useSpotlight()
 const { addDesktop } = useVirtualDesktop()
 const { t } = useI18n()
 
-const contextMenuItems = computed(() => [
-  [
-    {
-      label: store.theme === 'dark' ? t('core.desktop.window.theme.light') : t('core.desktop.window.theme.dark'),
-      icon: store.theme === 'dark' ? 'i-lucide-sun' : 'i-lucide-moon',
-      onSelect: () => {
-        const newTheme = store.theme === 'dark' ? 'light' : 'dark'
-        store.setTheme(newTheme)
-        useColorMode().preference = newTheme
-      }
-    }
-  ],
-  [
-    ...(!isMobile.value
+const contextMenuItems = computed(() => {
+  const systemGroup = [
+    ...(store.apps.some(a => a.id === 'task-manager')
       ? [{
-          label: t('core.desktop.virtualDesktop.add'),
-          icon: 'i-lucide-plus',
-          onSelect: () => addDesktop()
+          label: t('core.desktop.taskManager.open'),
+          icon: 'i-lucide-activity',
+          onSelect: () => {
+            const app = store.apps.find(a => a.id === 'task-manager')
+            if (app) store.openWindow(app)
+          }
         }]
       : []),
-    {
-      label: t('core.desktop.spotlight.open'),
-      icon: 'i-lucide-search',
-      onSelect: () => openSpotlight()
-    }
-  ],
-  [
-    {
-      label: t('core.desktop.taskManager.open'),
-      icon: 'i-lucide-activity',
-      onSelect: () => {
-        const app = store.apps.find(a => a.id === 'task-manager')
-        if (app) store.openWindow(app)
-      }
-    }
+    ...(store.apps.some(a => a.id === 'settings')
+      ? [{
+          label: t('core.desktop.settings.open'),
+          icon: 'i-lucide-settings',
+          onSelect: () => {
+            const app = store.apps.find(a => a.id === 'settings')
+            if (app) store.openWindow(app)
+          }
+        }]
+      : [])
   ]
-])
+
+  return [
+    [
+      {
+        label: store.theme === 'dark' ? t('core.desktop.window.theme.light') : t('core.desktop.window.theme.dark'),
+        icon: store.theme === 'dark' ? 'i-lucide-sun' : 'i-lucide-moon',
+        onSelect: () => {
+          const newTheme = store.theme === 'dark' ? 'light' : 'dark'
+          store.setTheme(newTheme)
+          useColorMode().preference = newTheme
+        }
+      }
+    ],
+    [
+      ...(!isMobile.value
+        ? [{
+            label: t('core.desktop.virtualDesktop.add'),
+            icon: 'i-lucide-plus',
+            onSelect: () => addDesktop()
+          }]
+        : []),
+      {
+        label: t('core.desktop.spotlight.open'),
+        icon: 'i-lucide-search',
+        onSelect: () => openSpotlight()
+      }
+    ],
+    ...(systemGroup.length > 0 ? [systemGroup] : [])
+  ]
+})
 </script>
 
 <template>

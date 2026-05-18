@@ -268,7 +268,6 @@ function onResizeStart(e: MouseEvent, dir: ResizeDir) {
   overflow: hidden;
   border-radius: var(--desktop-radius);
   border: 1px solid var(--ui-border);
-  background: var(--ui-bg);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   user-select: none;
 
@@ -295,7 +294,8 @@ function onResizeStart(e: MouseEvent, dir: ResizeDir) {
   align-items: center;
   gap: 0.5rem;
   border-bottom: 1px solid var(--ui-border);
-  background: var(--ui-bg-elevated);
+  background: color-mix(in srgb, var(--ui-bg-elevated) var(--desktop-bg-opacity), transparent);
+  backdrop-filter: blur(var(--desktop-blur));
   padding: 0 0.75rem;
 }
 
@@ -328,6 +328,7 @@ function onResizeStart(e: MouseEvent, dir: ResizeDir) {
   flex: 1 1 0%;
   overflow: auto;
   container-type: inline-size;
+  background: var(--ui-bg);
 }
 
 .resize-handle {

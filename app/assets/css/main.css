@@ -116,3 +116,9 @@ html {
 body {
   font-family: var(--app-font, system-ui, -apple-system, sans-serif);
 }
+
+/* コンテキストメニュー・ドロップダウンメニューに背景透過とぼかしを適用 */
+[role="menu"] {
+  background: color-mix(in srgb, var(--ui-bg-elevated) var(--desktop-bg-opacity), transparent) !important;
+  backdrop-filter: blur(var(--desktop-blur));
+}

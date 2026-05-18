@@ -36,6 +36,9 @@
       },
       "taskManager": {
         "open": "Open Task Manager"
+      },
+      "settings": {
+        "open": "Open Settings"
       }
     }
   }
