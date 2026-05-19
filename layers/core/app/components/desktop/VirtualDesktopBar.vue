@@ -1,9 +1,27 @@
 <script setup lang="ts">
+import type { TaskbarPosition } from '../../stores/desktop'
+import type { CSSProperties } from 'vue'
+
+const props = defineProps<{
+  /** タスクバーの表示位置（バーの配置を決定するために使用） */
+  taskbarPosition: TaskbarPosition
+}>()
+
 const { desktops, activeId, addDesktop, removeDesktop, switchDesktop } = useVirtualDesktop()
+
+/** バーのインラインスタイル（タスクバー位置に応じて上端・下端を切り替え） */
+const barStyle = computed<CSSProperties>(() =>
+  props.taskbarPosition === 'top'
+    ? { bottom: '0.5rem', top: 'auto' }
+    : { top: '0.5rem', bottom: 'auto' }
+)
 </script>
 
 <template>
-  <div class="vdesktop-bar">
+  <div
+    class="vdesktop-bar"
+    :style="barStyle"
+  >
     <button
       v-for="desktop in desktops"
       :key="desktop.id"
@@ -38,7 +56,6 @@ const { desktops, activeId, addDesktop, removeDesktop, switchDesktop } = useVirt
 .vdesktop-bar {
   position: absolute;
   left: 50%;
-  top: 0.5rem;
   z-index: 10;
   display: flex;
   align-items: center;

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useDesktopStore } from '../../stores/desktop'
 import type { WindowState, AppIconColor } from '../../stores/desktop'
+import type { CSSProperties } from 'vue'
 
 const store = useDesktopStore()
 const { toggleLauncher, isOpen: launcherOpen } = useLauncher()
@@ -8,7 +9,71 @@ const { toggleSpotlight } = useSpotlight()
 
 defineProps<{ screenWidth: number, isMobile: boolean }>()
 
-const TASKBAR_HEIGHT = 48
+/** タスクバーサイズ設定値 → px 変換マップ */
+const TASKBAR_SIZE_PX = { sm: 36, md: 48, lg: 64 } as const
+
+/** タスクバーのサイズ（px） */
+const sizePx = computed(() => TASKBAR_SIZE_PX[store.taskbarSize] ?? 48)
+
+/** タスクバーが縦方向（左/右）かどうか */
+const isVertical = computed(() =>
+  store.taskbarPosition === 'left' || store.taskbarPosition === 'right'
+)
+
+/** タスクバーのインラインスタイル */
+const taskbarStyle = computed<CSSProperties>(() => {
+  const size = `${sizePx.value}px`
+  const borderColor = 'var(--ui-border)'
+  const base: CSSProperties = { position: 'absolute', display: 'flex', alignItems: 'center', gap: '0.25rem' }
+  const iconSize = store.taskbarSize === 'sm' ? '1.75rem' : store.taskbarSize === 'lg' ? '3rem' : '2.5rem'
+  const vars: CSSProperties = { '--taskbar-btn-icon-size': iconSize }
+  switch (store.taskbarPosition) {
+    case 'top':
+      return { ...vars, ...base, top: '0', left: '0', right: '0', height: size, flexDirection: 'row', borderTop: 'none', borderBottom: `1px solid ${borderColor}` }
+    case 'left':
+      return { ...vars, ...base, left: '0', top: '0', bottom: '0', width: size, flexDirection: 'column', justifyContent: 'flex-start', padding: '0.5rem 0', borderRight: `1px solid ${borderColor}`, borderTop: 'none' }
+    case 'right':
+      return { ...vars, ...base, right: '0', top: '0', bottom: '0', width: size, flexDirection: 'column', justifyContent: 'flex-start', padding: '0.5rem 0', borderLeft: `1px solid ${borderColor}`, borderTop: 'none' }
+    default:
+      return { ...vars, ...base, bottom: '0', left: '0', right: '0', height: size, flexDirection: 'row', borderTop: `1px solid ${borderColor}` }
+  }
+})
+
+/** タスクバーサイズ → UButton size マッピング */
+const btnSize = computed(() => {
+  switch (store.taskbarSize) {
+    case 'sm': return 'xs' as const
+    case 'lg': return 'md' as const
+    default: return 'sm' as const
+  }
+})
+
+/** task-list の justify-content（並び位置設定から）/ 縦向き時はカラム方向に変更 */
+const taskListStyle = computed<CSSProperties>(() => {
+  if (isVertical.value) {
+    return {
+      flexDirection: 'column',
+      justifyContent: 'flex-start',
+      overflowY: 'auto',
+      overflowX: 'hidden'
+    }
+  }
+  return { justifyContent: store.taskbarTaskAlign === 'start' ? 'flex-start' : store.taskbarTaskAlign === 'end' ? 'flex-end' : 'center' }
+})
+
+/** 時計マージン：縦向き時は上方向 auto、横向き時は左 auto */
+const clockStyle = computed<CSSProperties>(() =>
+  isVertical.value ? { marginBlockStart: 'auto' } : { marginLeft: 'auto' }
+)
+
+/** タスクボタン内アイコンのフォントサイズ（タスクバーサイズに連動） */
+const taskIconSize = computed(() => {
+  switch (store.taskbarSize) {
+    case 'sm': return '16' as const
+    case 'lg': return '24' as const
+    default: return '20' as const
+  }
+})
 
 /** Click a task button: restore if minimized, else minimize */
 function onTaskClick(win: WindowState) {
@@ -58,21 +123,21 @@ const dateLabel = computed(() =>
 <template>
   <div
     class="taskbar"
-    :style="{ height: `${TASKBAR_HEIGHT}px` }"
+    :style="taskbarStyle"
   >
     <!-- App launcher -->
     <UButton
       icon="i-lucide-layout-grid"
       :variant="launcherOpen ? 'soft' : 'ghost'"
       :color="launcherOpen ? 'primary' : 'neutral'"
-      size="sm"
+      :size="btnSize"
       :aria-label="$t('core.desktop.taskbar.launcher')"
       :aria-expanded="launcherOpen"
       @click="toggleLauncher"
     />
 
     <USeparator
-      orientation="vertical"
+      :orientation="isVertical ? 'horizontal' : 'vertical'"
       class="sep"
     />
 
@@ -82,50 +147,60 @@ const dateLabel = computed(() =>
         icon="i-lucide-search"
         variant="ghost"
         color="neutral"
-        size="sm"
+        :size="btnSize"
         :aria-label="$t('core.desktop.spotlight.open')"
         @click="toggleSpotlight"
       />
     </UTooltip>
 
     <USeparator
-      orientation="vertical"
+      :orientation="isVertical ? 'horizontal' : 'vertical'"
       class="sep"
     />
 
     <!-- Open windows -->
-    <div class="task-list">
+    <div
+      class="task-list"
+      :style="taskListStyle"
+    >
       <UTooltip
         v-for="win in store.activeWindows"
         :key="win.id"
         :text="win.title"
       >
         <UButton
-          size="sm"
+          :size="btnSize"
           :variant="win.isMinimized ? 'ghost' : 'soft'"
           :color="store.topWindow?.id === win.id ? getWindowAppColor(win) : 'neutral'"
-          :class="['task-btn', { 'task-btn-icon': isMobile }]"
+          :class="['task-btn', {
+            'task-btn-icon': !isVertical && (isMobile || store.taskbarTaskDisplay === 'icon'),
+            'task-btn-vertical': isVertical
+          }]"
           @click="onTaskClick(win)"
         >
           <UIcon
             :name="win.icon"
             class="task-icon"
+            :size="taskIconSize"
           />
           <span
-            v-if="!isMobile"
-            class="task-label"
+            v-if="!isMobile && store.taskbarTaskDisplay !== 'icon'"
+            :class="['task-label', { 'task-label-vertical': isVertical }]"
           >{{ win.title }}</span>
         </UButton>
       </UTooltip>
     </div>
 
     <!-- Clock -->
-    <div class="clock">
+    <div
+      class="clock"
+      :style="clockStyle"
+    >
       <div class="clock-time">
         {{ timeLabel }}
       </div>
       <div
-        v-if="!isMobile"
+        v-if="!isMobile && !isVertical"
         class="clock-date"
       >
         {{ dateLabel }}
@@ -137,13 +212,9 @@ const dateLabel = computed(() =>
 <style lang="scss" scoped>
 .taskbar {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  border-top: 1px solid var(--ui-border);
   background: color-mix(in srgb, var(--ui-bg-elevated) var(--desktop-bg-opacity), transparent);
   padding: 0 0.5rem;
   backdrop-filter: blur(var(--desktop-blur));
@@ -160,6 +231,8 @@ const dateLabel = computed(() =>
   align-items: center;
   gap: 0.25rem;
   overflow-x: auto;
+  overflow-y: hidden;
+  flex-wrap: nowrap;
 }
 
 .task-btn {
@@ -167,16 +240,21 @@ const dateLabel = computed(() =>
   flex-shrink: 0;
 
   &.task-btn-icon {
-    max-width: 2.5rem;
-    min-width: 2.5rem;
+    max-width: var(--taskbar-btn-icon-size, 2.5rem);
+    min-width: var(--taskbar-btn-icon-size, 2.5rem);
     padding-inline: 0;
+    justify-content: center;
+  }
+
+  &.task-btn-vertical {
+    width: 100%;
+    flex-direction: column;
     justify-content: center;
   }
 }
 
 .task-icon {
   flex-shrink: 0;
-  font-size: 0.875rem;
 }
 
 .task-label {
@@ -185,12 +263,19 @@ const dateLabel = computed(() =>
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 0.75rem;
+
+  &.task-label-vertical {
+    writing-mode: vertical-lr;
+    max-height: 5rem;
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: clip;
+  }
 }
 
 .clock {
-  margin-left: auto;
   flex-shrink: 0;
-  text-align: right;
+  text-align: center;
   line-height: 1.25;
 
   .clock-time {
@@ -199,7 +284,7 @@ const dateLabel = computed(() =>
   }
 
   .clock-date {
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     color: var(--ui-text-muted);
   }
 }

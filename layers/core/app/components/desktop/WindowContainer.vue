@@ -2,11 +2,13 @@
 import { resolveComponent } from 'vue'
 import { useDesktopStore } from '../../stores/desktop'
 import type { WindowState } from '../../stores/desktop'
+import type { TaskbarInsets } from '../../utils/window-manager'
 
 const props = defineProps<{
   screenWidth: number
   screenHeight: number
   taskbarHeight?: number
+  taskbarInsets?: TaskbarInsets
   isMobile: boolean
 }>()
 
@@ -35,6 +37,7 @@ function getAppComponent(win: WindowState) {
         :screen-width="screenWidth"
         :screen-height="screenHeight"
         :taskbar-height="taskbarHeight"
+        :taskbar-insets="taskbarInsets"
         :is-mobile="props.isMobile"
       >
         <component

@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { useDesktopStore } from '../../stores/desktop'
-import type { AppMeta } from '../../stores/desktop'
+import type { AppMeta, TaskbarPosition } from '../../stores/desktop'
+import type { CSSProperties } from 'vue'
 
 const props = defineProps<{
   /** モバイルモードかどうか（true: 全画面, false: パネル） */
   isMobile: boolean
   /** 画面幅（px） */
   screenWidth: number
+  /** タスクバーの表示位置 */
+  taskbarPosition: TaskbarPosition
+  /** タスクバーのサイズ（px） */
+  taskbarSizePx: number
 }>()
 
 const store = useDesktopStore()
@@ -107,6 +112,17 @@ function onOverlayClick(event: MouseEvent): void {
   }
 }
 
+/** PC パネルのインラインスタイル（タスクバー位置に応じて変更） */
+const launcherPanelStyle = computed<CSSProperties>(() => {
+  const offset = `${props.taskbarSizePx + 4}px`
+  switch (props.taskbarPosition) {
+    case 'top': return { top: offset, left: '0' }
+    case 'left': return { left: offset, top: '0' }
+    case 'right': return { right: offset, top: '0' }
+    default: return { bottom: offset, left: '0' }
+  }
+})
+
 // ランチャーが開いたら検索欄にフォーカス
 onMounted(() => {
   nextTick(() => searchInputRef.value?.input?.focus())
@@ -116,6 +132,7 @@ onMounted(() => {
 <template>
   <div
     :class="['launcher-root', props.isMobile ? 'launcher-fullscreen' : 'launcher-panel']"
+    :style="!props.isMobile ? launcherPanelStyle : undefined"
     @click="props.isMobile ? onOverlayClick($event) : undefined"
   >
     <div
@@ -233,8 +250,6 @@ onMounted(() => {
 // ---- PC: パネルモード ----
 .launcher-panel {
   position: absolute;
-  bottom: 48px;
-  left: 0;
   z-index: 900;
   padding: 0.25rem;
 }

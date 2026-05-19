@@ -1,3 +1,18 @@
+/**
+ * タスクバーによって削られる有効領域の四辺インセットを表す型。
+ * 各値はタスクバーが占有する幅（px）。
+ */
+export type TaskbarInsets = {
+  /** 上辺のインセット（px） */
+  top: number
+  /** 下辺のインセット（px） */
+  bottom: number
+  /** 左辺のインセット（px） */
+  left: number
+  /** 右辺のインセット（px） */
+  right: number
+}
+
 /** ウィンドウの座標とサイズを表すインターフェース */
 export interface WindowBounds {
   /** 左端の X 座標（px） */
@@ -62,34 +77,40 @@ export function detectSnapZone(
  * @param zone - スナップ先ゾーン
  * @param screenWidth - 画面幅（px）
  * @param screenHeight - 画面高（px）
- * @param taskbarHeight - タスクバーの高さ（px）。デフォルト 48
+ * @param taskbarHeight - タスクバーの高さ（px）。taskbarInsets 指定時は無視される。デフォルト 48
+ * @param taskbarInsets - タスクバーによる四辺インセット（指定時は taskbarHeight より優先）
  * @returns スナップ後のウィンドウ境界
  */
 export function applySnapZone(
   zone: SnapZone,
   screenWidth: number,
   screenHeight: number,
-  taskbarHeight = 48
+  taskbarHeight = 48,
+  taskbarInsets?: TaskbarInsets
 ): WindowBounds {
-  const availH = screenHeight - taskbarHeight
-  const halfW = Math.floor(screenWidth / 2)
+  const insets = taskbarInsets ?? { top: 0, bottom: taskbarHeight, left: 0, right: 0 }
+  const originX = insets.left
+  const originY = insets.top
+  const availW = screenWidth - insets.left - insets.right
+  const availH = screenHeight - insets.top - insets.bottom
+  const halfW = Math.floor(availW / 2)
   const halfH = Math.floor(availH / 2)
 
   switch (zone) {
     case 'left':
-      return { x: 0, y: 0, width: halfW, height: availH }
+      return { x: originX, y: originY, width: halfW, height: availH }
     case 'right':
-      return { x: halfW, y: 0, width: screenWidth - halfW, height: availH }
+      return { x: originX + halfW, y: originY, width: availW - halfW, height: availH }
     case 'top-left':
-      return { x: 0, y: 0, width: halfW, height: halfH }
+      return { x: originX, y: originY, width: halfW, height: halfH }
     case 'top-right':
-      return { x: halfW, y: 0, width: screenWidth - halfW, height: halfH }
+      return { x: originX + halfW, y: originY, width: availW - halfW, height: halfH }
     case 'bottom-left':
-      return { x: 0, y: halfH, width: halfW, height: availH - halfH }
+      return { x: originX, y: originY + halfH, width: halfW, height: availH - halfH }
     case 'bottom-right':
-      return { x: halfW, y: halfH, width: screenWidth - halfW, height: availH - halfH }
+      return { x: originX + halfW, y: originY + halfH, width: availW - halfW, height: availH - halfH }
     case 'maximize':
-      return { x: 0, y: 0, width: screenWidth, height: availH }
+      return { x: originX, y: originY, width: availW, height: availH }
   }
 }
 
@@ -99,8 +120,9 @@ export function applySnapZone(
  * @param bounds - クランプ前のウィンドウ境界
  * @param screenWidth - 画面幅（px）
  * @param screenHeight - 画面高（px）
- * @param taskbarHeight - タスクバーの高さ（px）。デフォルト 48
+ * @param taskbarHeight - タスクバーの高さ（px）。taskbarInsets 指定時は無視される。デフォルト 48
  * @param minVisible - 画面内に残す最小ピクセル数。デフォルト 60
+ * @param taskbarInsets - タスクバーによる四辺インセット（指定時は taskbarHeight より優先）
  * @returns クランプ後のウィンドウ境界
  */
 export function clampPosition(
@@ -108,12 +130,14 @@ export function clampPosition(
   screenWidth: number,
   screenHeight: number,
   taskbarHeight = 48,
-  minVisible = 60
+  minVisible = 60,
+  taskbarInsets?: TaskbarInsets
 ): WindowBounds {
-  const maxX = screenWidth - minVisible
-  const maxY = screenHeight - taskbarHeight - minVisible
-  const minX = minVisible - bounds.width
-  const minY = 0
+  const insets = taskbarInsets ?? { top: 0, bottom: taskbarHeight, left: 0, right: 0 }
+  const maxX = screenWidth - insets.right - minVisible
+  const maxY = screenHeight - insets.bottom - minVisible
+  const minX = insets.left + minVisible - bounds.width
+  const minY = insets.top
 
   return {
     ...bounds,
@@ -130,7 +154,8 @@ export function clampPosition(
  * @param defaultHeight - ウィンドウのデフォルト高さ（px）
  * @param screenWidth - 画面幅（px）
  * @param screenHeight - 画面高（px）
- * @param taskbarHeight - タスクバーの高さ（px）。デフォルト 48
+ * @param taskbarHeight - タスクバーの高さ（px）。taskbarInsets 指定時は無視される。デフォルト 48
+ * @param taskbarInsets - タスクバーによる四辺インセット（指定時は taskbarHeight より優先）
  * @returns 初期ウィンドウ境界
  */
 export function cascadePosition(
@@ -139,16 +164,20 @@ export function cascadePosition(
   defaultHeight: number,
   screenWidth: number,
   screenHeight: number,
-  taskbarHeight = 48
+  taskbarHeight = 48,
+  taskbarInsets?: TaskbarInsets
 ): WindowBounds {
+  const insets = taskbarInsets ?? { top: 0, bottom: taskbarHeight, left: 0, right: 0 }
   const STEP = 30
-  const maxSteps = Math.max(1, Math.floor((Math.min(screenWidth, screenHeight) - 200) / STEP))
+  const availW = screenWidth - insets.left - insets.right
+  const availH = screenHeight - insets.top - insets.bottom
+  const maxSteps = Math.max(1, Math.floor((Math.min(availW, availH) - 200) / STEP))
   const step = existingCount % maxSteps
 
   return {
-    x: 80 + step * STEP,
-    y: 40 + step * STEP,
-    width: Math.min(defaultWidth, screenWidth - 120),
-    height: Math.min(defaultHeight, screenHeight - taskbarHeight - 80)
+    x: insets.left + 80 + step * STEP,
+    y: insets.top + 40 + step * STEP,
+    width: Math.min(defaultWidth, availW - 120),
+    height: Math.min(defaultHeight, availH - 80)
   }
 }

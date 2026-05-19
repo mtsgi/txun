@@ -120,3 +120,72 @@ describe('cascadePosition', () => {
     expect(b.height).toBeLessThanOrEqual(H - TH)
   })
 })
+
+describe('applySnapZone with taskbarInsets', () => {
+  it('left taskbar: left snap origin respects left inset', () => {
+    const insets = { top: 0, bottom: 0, left: 64, right: 0 }
+    const b = applySnapZone('left', W, H, TH, insets)
+    expect(b.x).toBe(64)
+    expect(b.y).toBe(0)
+    expect(b.width).toBe((W - 64) / 2)
+    expect(b.height).toBe(H)
+  })
+
+  it('top taskbar: maximize fills below taskbar', () => {
+    const insets = { top: 48, bottom: 0, left: 0, right: 0 }
+    const b = applySnapZone('maximize', W, H, TH, insets)
+    expect(b.y).toBe(48)
+    expect(b.height).toBe(H - 48)
+  })
+
+  it('right taskbar: right snap excludes right inset', () => {
+    const insets = { top: 0, bottom: 0, left: 0, right: 64 }
+    const b = applySnapZone('right', W, H, TH, insets)
+    expect(b.x + b.width).toBe(W - 64)
+  })
+})
+
+describe('clampPosition with taskbarInsets', () => {
+  it('left taskbar: at least minVisible pixels visible beyond inset', () => {
+    const insets = { top: 0, bottom: 0, left: 64, right: 0 }
+    const b = { x: 0, y: 100, width: 400, height: 300 }
+    const result = clampPosition(b, W, H, TH, 60, insets)
+    // window right edge must be at least minVisible(60) px past the left inset
+    expect(result.x + b.width - insets.left).toBeGreaterThanOrEqual(60)
+  })
+
+  it('top taskbar: clamps y minimum to top inset', () => {
+    const insets = { top: 48, bottom: 0, left: 0, right: 0 }
+    const b = { x: 100, y: 0, width: 400, height: 300 }
+    const result = clampPosition(b, W, H, TH, 60, insets)
+    expect(result.y).toBeGreaterThanOrEqual(48)
+  })
+
+  it('bottom taskbar (default behavior preserved)', () => {
+    const insets = { top: 0, bottom: 48, left: 0, right: 0 }
+    const b = { x: 200, y: H, width: 600, height: 400 }
+    const result = clampPosition(b, W, H, TH, 60, insets)
+    expect(result.y).toBeLessThan(H - 48)
+  })
+})
+
+describe('cascadePosition with taskbarInsets', () => {
+  it('left taskbar: first window starts right of taskbar', () => {
+    const insets = { top: 0, bottom: 0, left: 64, right: 0 }
+    const b = cascadePosition(0, 800, 600, W, H, TH, insets)
+    expect(b.x).toBeGreaterThanOrEqual(64)
+  })
+
+  it('top taskbar: first window starts below taskbar', () => {
+    const insets = { top: 48, bottom: 0, left: 0, right: 0 }
+    const b = cascadePosition(0, 800, 600, W, H, TH, insets)
+    expect(b.y).toBeGreaterThanOrEqual(48)
+  })
+
+  it('width does not exceed available width with insets', () => {
+    const insets = { top: 0, bottom: 0, left: 64, right: 64 }
+    const b = cascadePosition(0, 9999, 9999, W, H, TH, insets)
+    expect(b.width).toBeLessThanOrEqual(W - 128)
+    expect(b.height).toBeLessThanOrEqual(H)
+  })
+})

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { AppFont, AppRadius, AppUIScale, AppFontSize } from '../../stores/desktop'
+import type { AppFont, AppRadius, AppUIScale, AppFontSize, TaskbarPosition, TaskbarSize, TaskbarTaskAlign, TaskbarTaskDisplay } from '../../stores/desktop'
+import type { TaskbarInsets } from '../../utils/window-manager'
 
 /** 永続化する設定データの型 */
 type UserSettings = {
@@ -14,6 +15,10 @@ type UserSettings = {
   backgroundOpacity?: number
   backgroundBlur?: boolean
   fontSize?: AppFontSize
+  taskbarPosition?: TaskbarPosition
+  taskbarSize?: TaskbarSize
+  taskbarTaskAlign?: TaskbarTaskAlign
+  taskbarTaskDisplay?: TaskbarTaskDisplay
 }
 
 /** CSS 変数 --ui-radius / --desktop-radius に設定する値のマッピング */
@@ -79,16 +84,63 @@ const MOBILE_BREAKPOINT = 768
 const shellRef = ref<HTMLElement | null>(null)
 const screenWidth = ref(0)
 const screenHeight = ref(0)
-const TASKBAR_HEIGHT = 48
 const vDesktopVisible = ref(false)
-
-const isMobile = computed(() => screenWidth.value < MOBILE_BREAKPOINT)
 
 const store = useDesktopStore()
 const { isOpen: launcherOpen, initLauncher } = useLauncher()
 const { openSpotlight } = useSpotlight()
 const { setTheme, setLocale } = useWindowManager()
 const { saveState, loadState } = useDesktopStorage()
+
+const isMobile = computed(() => screenWidth.value < MOBILE_BREAKPOINT)
+
+/** タスクバーサイズ設定値 → px 変換マップ */
+const TASKBAR_SIZE_PX: Record<TaskbarSize, number> = { sm: 36, md: 48, lg: 64 }
+
+/** タスクバービューポートサイズ（px） */
+const taskbarSizePx = computed(() => TASKBAR_SIZE_PX[store.taskbarSize] ?? 48)
+
+/** タスクバー位置・サイズから計算したウィンドウ領域の四辺インセット */
+const taskbarInsets = computed<TaskbarInsets>(() => {
+  const s = taskbarSizePx.value
+  switch (store.taskbarPosition) {
+    case 'top': return { top: s, bottom: 0, left: 0, right: 0 }
+    case 'left': return { top: 0, bottom: 0, left: s, right: 0 }
+    case 'right': return { top: 0, bottom: 0, left: 0, right: s }
+    default: return { top: 0, bottom: s, left: 0, right: 0 }
+  }
+})
+
+/** ランチャーを開いたときの Transition 名（タスクバー位置に応じて変更） */
+const launcherTransitionName = computed(() => {
+  if (isMobile.value) return 'launcher-slide'
+  switch (store.taskbarPosition) {
+    case 'top': return 'launcher-fade-down'
+    case 'left': return 'launcher-fade-right'
+    case 'right': return 'launcher-fade-left'
+    default: return 'launcher-fade-up'
+  }
+})
+
+/** 仮想デスクトップバーのホバー判定領域スタイル（タスクバー位置に応じて競合を回避） */
+const vdesktopTriggerStyle = computed<import('vue').CSSProperties>(() => {
+  const size = `${taskbarSizePx.value}px`
+  switch (store.taskbarPosition) {
+    case 'top':
+      return { bottom: '0', left: '0', right: '0', height: size }
+    case 'left':
+      return { top: '0', left: size, right: '0', height: size }
+    case 'right':
+      return { top: '0', left: '0', right: size, height: size }
+    default:
+      return { top: '0', left: '0', right: '0', height: size }
+  }
+})
+
+/** 仮想デスクトップバーのスライドトランジション名（タスクバー位置に応じて方向変更） */
+const vdesktopTransitionName = computed(() =>
+  store.taskbarPosition === 'top' ? 'vdesktop-slide-up' : 'vdesktop-slide-down'
+)
 
 function onKeydown(e: KeyboardEvent) {
   if (e.ctrlKey && e.key === 'k') {
@@ -134,6 +186,10 @@ onMounted(async () => {
     const fontSize = saved.fontSize ?? store.fontSize
     store.setFontSize(fontSize)
     applyFontSize(fontSize)
+    if (saved.taskbarPosition) store.setTaskbarPosition(saved.taskbarPosition)
+    if (saved.taskbarSize) store.setTaskbarSize(saved.taskbarSize)
+    if (saved.taskbarTaskAlign) store.setTaskbarTaskAlign(saved.taskbarTaskAlign)
+    if (saved.taskbarTaskDisplay) store.setTaskbarTaskDisplay(saved.taskbarTaskDisplay)
   } else {
     // 初回起動時もデフォルト値を CSS に反映
     applyRadius(store.radius)
@@ -156,7 +212,11 @@ watch(
     () => store.safeArea,
     () => store.backgroundOpacity,
     () => store.backgroundBlur,
-    () => store.fontSize
+    () => store.fontSize,
+    () => store.taskbarPosition,
+    () => store.taskbarSize,
+    () => store.taskbarTaskAlign,
+    () => store.taskbarTaskDisplay
   ],
   async () => {
     await saveState(SETTINGS_KEY, {
@@ -170,7 +230,11 @@ watch(
       safeArea: store.safeArea,
       backgroundOpacity: store.backgroundOpacity,
       backgroundBlur: store.backgroundBlur,
-      fontSize: store.fontSize
+      fontSize: store.fontSize,
+      taskbarPosition: store.taskbarPosition,
+      taskbarSize: store.taskbarSize,
+      taskbarTaskAlign: store.taskbarTaskAlign,
+      taskbarTaskDisplay: store.taskbarTaskDisplay
     })
   }
 )
@@ -200,11 +264,15 @@ onUnmounted(() => {
     <div
       v-if="!isMobile"
       class="vdesktop-trigger"
+      :style="vdesktopTriggerStyle"
       @mouseenter="vDesktopVisible = true"
       @mouseleave="vDesktopVisible = false"
     >
-      <Transition name="vdesktop-slide">
-        <DesktopVirtualDesktopBar v-if="vDesktopVisible" />
+      <Transition :name="vdesktopTransitionName">
+        <DesktopVirtualDesktopBar
+          v-if="vDesktopVisible"
+          :taskbar-position="store.taskbarPosition"
+        />
       </Transition>
     </div>
 
@@ -212,7 +280,7 @@ onUnmounted(() => {
     <DesktopWindowContainer
       :screen-width="screenWidth"
       :screen-height="screenHeight"
-      :taskbar-height="TASKBAR_HEIGHT"
+      :taskbar-insets="taskbarInsets"
       :is-mobile="isMobile"
     />
 
@@ -226,11 +294,13 @@ onUnmounted(() => {
     <DesktopSpotlight />
 
     <!-- App Launcher -->
-    <Transition :name="isMobile ? 'launcher-slide' : 'launcher-fade'">
+    <Transition :name="launcherTransitionName">
       <DesktopAppLauncher
         v-if="launcherOpen"
         :is-mobile="isMobile"
         :screen-width="screenWidth"
+        :taskbar-position="store.taskbarPosition"
+        :taskbar-size-px="taskbarSizePx"
       />
     </Transition>
   </div>
@@ -246,16 +316,52 @@ onUnmounted(() => {
   zoom: var(--desktop-zoom-num, 1);
 }
 
-// PC: パネルフェード
-.launcher-fade-enter-active,
-.launcher-fade-leave-active {
+// PC: 下から上にフェード（タスクバーは下配置）
+.launcher-fade-up-enter-active,
+.launcher-fade-up-leave-active {
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
-.launcher-fade-enter-from,
-.launcher-fade-leave-to {
+.launcher-fade-up-enter-from,
+.launcher-fade-up-leave-to {
   opacity: 0;
   transform: translateY(8px);
+}
+
+// PC: 上から下にフェード（タスクバーは上配置）
+.launcher-fade-down-enter-active,
+.launcher-fade-down-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.launcher-fade-down-enter-from,
+.launcher-fade-down-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+// PC: 左から右にフェード（タスクバーは左配置）
+.launcher-fade-right-enter-active,
+.launcher-fade-right-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.launcher-fade-right-enter-from,
+.launcher-fade-right-leave-to {
+  opacity: 0;
+  transform: translateX(-8px);
+}
+
+// PC: 右から左にフェード（タスクバーは右配置）
+.launcher-fade-left-enter-active,
+.launcher-fade-left-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.launcher-fade-left-enter-from,
+.launcher-fade-left-leave-to {
+  opacity: 0;
+  transform: translateX(8px);
 }
 
 // SP: ボトムシートスライド
@@ -279,23 +385,33 @@ onUnmounted(() => {
 
 .vdesktop-trigger {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 48px;
   z-index: 20;
   display: flex;
   justify-content: center;
+  align-items: center;
 }
 
-.vdesktop-slide-enter-active,
-.vdesktop-slide-leave-active {
+// 上から下にスライド（タスクバー下/左/右の場合: バーは上端に表示）
+.vdesktop-slide-down-enter-active,
+.vdesktop-slide-down-leave-active {
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
-.vdesktop-slide-enter-from,
-.vdesktop-slide-leave-to {
+.vdesktop-slide-down-enter-from,
+.vdesktop-slide-down-leave-to {
   opacity: 0;
-  transform: translateX(-50%) translateY(-50%);
+  transform: translateX(-50%) translateY(-8px);
+}
+
+// 下から上にスライド（タスクバー上の場合: バーは下端に表示）
+.vdesktop-slide-up-enter-active,
+.vdesktop-slide-up-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.vdesktop-slide-up-enter-from,
+.vdesktop-slide-up-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(8px);
 }
 </style>

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { clampPosition } from '../utils/window-manager'
+import type { TaskbarInsets } from '../utils/window-manager'
 
 /** ウィンドウ一つ分の状態を表すインターフェース */
 export interface WindowState {
@@ -87,6 +88,18 @@ export type AppUIScale = 'sm' | 'md' | 'lg'
 /** ベースフォントサイズの設定値 */
 export type AppFontSize = 'sm' | 'md' | 'lg' | 'xl'
 
+/** タスクバーの表示位置 */
+export type TaskbarPosition = 'top' | 'bottom' | 'left' | 'right'
+
+/** タスクバーの大きさ */
+export type TaskbarSize = 'sm' | 'md' | 'lg'
+
+/** タスクリストのアイテム並び位置 */
+export type TaskbarTaskAlign = 'start' | 'center' | 'end'
+
+/** タスクリストのアイテム表示形式 */
+export type TaskbarTaskDisplay = 'icon' | 'icon-label'
+
 /** ランチャーフォルダーを表すインターフェース */
 export interface LauncherFolder {
   /** フォルダー固有の ID */
@@ -133,6 +146,14 @@ export interface DesktopState {
   fontSize: AppFontSize
   /** ランチャーフォルダー一覧 */
   launcherFolders: LauncherFolder[]
+  /** タスクバーの表示位置 */
+  taskbarPosition: TaskbarPosition
+  /** タスクバーの大きさ */
+  taskbarSize: TaskbarSize
+  /** タスクリストのアイテム並び位置 */
+  taskbarTaskAlign: TaskbarTaskAlign
+  /** タスクリストのアイテム表示形式 */
+  taskbarTaskDisplay: TaskbarTaskDisplay
 }
 
 export const useDesktopStore = defineStore('desktop', {
@@ -153,7 +174,11 @@ export const useDesktopStore = defineStore('desktop', {
     backgroundOpacity: 90,
     backgroundBlur: true,
     fontSize: 'md',
-    launcherFolders: []
+    launcherFolders: [],
+    taskbarPosition: 'bottom',
+    taskbarSize: 'md',
+    taskbarTaskAlign: 'start',
+    taskbarTaskDisplay: 'icon-label'
   }),
 
   getters: {
@@ -246,14 +271,14 @@ export const useDesktopStore = defineStore('desktop', {
      * 最大化中は preMaximize に復元用境界を保存する。
      * @param id - 最大化をトグルするウィンドウの ID
      */
-    toggleMaximize(id: string, screenWidth = 1280, screenHeight = 720, taskbarHeight = 48): void {
+    toggleMaximize(id: string, screenWidth = 1280, screenHeight = 720, taskbarHeight = 48, taskbarInsets?: TaskbarInsets): void {
       const w = this.windows.find(w => w.id === id)
       if (!w) return
       if (w.isMaximized) {
         if (w.preMaximize) {
           const clamped = clampPosition(
             { x: w.preMaximize.x, y: w.preMaximize.y, width: w.preMaximize.width, height: w.preMaximize.height },
-            screenWidth, screenHeight, taskbarHeight
+            screenWidth, screenHeight, taskbarHeight, 60, taskbarInsets
           )
           w.x = clamped.x
           w.y = clamped.y
@@ -409,6 +434,38 @@ export const useDesktopStore = defineStore('desktop', {
      */
     setFontSize(size: AppFontSize): void {
       this.fontSize = size
+    },
+
+    /**
+     * タスクバーの表示位置を変更する。
+     * @param position - 変更先の表示位置
+     */
+    setTaskbarPosition(position: TaskbarPosition): void {
+      this.taskbarPosition = position
+    },
+
+    /**
+     * タスクバーの大きさを変更する。
+     * @param size - 変更先の大きさ設定値
+     */
+    setTaskbarSize(size: TaskbarSize): void {
+      this.taskbarSize = size
+    },
+
+    /**
+     * タスクリストのアイテム並び位置を変更する。
+     * @param align - 変更先の並び位置設定値
+     */
+    setTaskbarTaskAlign(align: TaskbarTaskAlign): void {
+      this.taskbarTaskAlign = align
+    },
+
+    /**
+     * タスクリストのアイテム表示形式を変更する。
+     * @param display - 変更先の表示形式設定値
+     */
+    setTaskbarTaskDisplay(display: TaskbarTaskDisplay): void {
+      this.taskbarTaskDisplay = display
     },
 
     /**

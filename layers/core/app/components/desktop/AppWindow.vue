@@ -2,6 +2,7 @@
 import { detectSnapZone, applySnapZone, clampPosition } from '../../utils/window-manager'
 import { useDesktopStore } from '../../stores/desktop'
 import type { WindowState } from '../../stores/desktop'
+import type { TaskbarInsets } from '../../utils/window-manager'
 
 const { t } = useI18n()
 
@@ -10,11 +11,16 @@ const props = defineProps<{
   screenWidth: number
   screenHeight: number
   taskbarHeight?: number
+  taskbarInsets?: TaskbarInsets
   isMobile: boolean
 }>()
 
 const store = useDesktopStore()
-const taskbarH = computed(() => props.taskbarHeight ?? 48)
+/** taskbarInsets 優先、未指定時は taskbarHeight から bottom-only insets を構築 */
+const insets = computed<TaskbarInsets>(() =>
+  props.taskbarInsets ?? { top: 0, bottom: props.taskbarHeight ?? 48, left: 0, right: 0 }
+)
+const taskbarH = computed(() => insets.value.bottom)
 const MIN_WIDTH = 240
 const MIN_HEIGHT = 140
 
@@ -26,11 +32,12 @@ const snapZone = ref<ReturnType<typeof detectSnapZone>>(null)
 
 const windowStyle = computed(() => {
   if (props.isMobile || props.window.isMaximized) {
+    const ins = insets.value
     return {
-      left: '0',
-      top: '0',
-      width: `${props.screenWidth}px`,
-      height: `${props.screenHeight - taskbarH.value}px`,
+      left: `${ins.left}px`,
+      top: `${ins.top}px`,
+      width: `${props.screenWidth - ins.left - ins.right}px`,
+      height: `${props.screenHeight - ins.top - ins.bottom}px`,
       borderRadius: '0',
       boxShadow: 'none',
       zIndex: props.window.zIndex
@@ -47,7 +54,7 @@ const windowStyle = computed(() => {
 
 const snapPreviewStyle = computed(() => {
   if (!snapZone.value) return null
-  const b = applySnapZone(snapZone.value, props.screenWidth, props.screenHeight, taskbarH.value)
+  const b = applySnapZone(snapZone.value, props.screenWidth, props.screenHeight, taskbarH.value, insets.value)
   return {
     left: `${b.x}px`,
     top: `${b.y}px`,
@@ -84,13 +91,13 @@ function onTitlebarMouseDown(e: MouseEvent) {
       ? detectSnapZone(ev.clientX, ev.clientY, props.screenWidth, props.screenHeight)
       : null
     if (zone === 'maximize') {
-      store.toggleMaximize(props.window.id, props.screenWidth, props.screenHeight, taskbarH.value)
+      store.toggleMaximize(props.window.id, props.screenWidth, props.screenHeight, taskbarH.value, insets.value)
     } else if (zone) {
-      store.updateWindowBounds(props.window.id, applySnapZone(zone, props.screenWidth, props.screenHeight, taskbarH.value))
+      store.updateWindowBounds(props.window.id, applySnapZone(zone, props.screenWidth, props.screenHeight, taskbarH.value, insets.value))
     } else {
       const clamped = clampPosition(
         { x: props.window.x, y: props.window.y, width: props.window.width, height: props.window.height },
-        props.screenWidth, props.screenHeight, taskbarH.value
+        props.screenWidth, props.screenHeight, taskbarH.value, 60, insets.value
       )
       store.updateWindowBounds(props.window.id, { x: clamped.x, y: clamped.y })
     }
@@ -104,7 +111,7 @@ function onTitlebarMouseDown(e: MouseEvent) {
 }
 
 function onTitlebarDblClick() {
-  store.toggleMaximize(props.window.id, props.screenWidth, props.screenHeight, taskbarH.value)
+  store.toggleMaximize(props.window.id, props.screenWidth, props.screenHeight, taskbarH.value, insets.value)
 }
 
 type ResizeDir = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw'
