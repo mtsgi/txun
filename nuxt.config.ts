@@ -12,7 +12,8 @@ export default defineNuxtConfig({
     'layers/calendar',
     'layers/clock',
     'layers/image-viewer',
-    'layers/sticky-notes'
+    'layers/sticky-notes',
+    'layers/camera'
   ],
 
   modules: [

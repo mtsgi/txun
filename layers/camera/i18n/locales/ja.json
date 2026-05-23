@@ -1,0 +1,35 @@
+{
+  "apps": {
+    "camera": {
+      "name": "カメラ",
+      "permissionRequired": "カメラへのアクセスを許可してください",
+      "permissionRequiredDesc": "このアプリはカメラを使用するためブラウザの権限が必要です。",
+      "allowCamera": "カメラを許可",
+      "permissionDenied": "カメラへのアクセスが拒否されています",
+      "permissionDeniedDesc": "ブラウザのアドレスバーにあるカメラアイコンをクリックして権限を許可してください。",
+      "noDevices": "カメラデバイスが見つかりません",
+      "noDevicesDesc": "端末にカメラが接続されているか確認してください。",
+      "notSupported": "このブラウザはカメラ API に対応していません",
+      "startCamera": "カメラを起動",
+      "capture": "撮影",
+      "download": "ダウンロード",
+      "delete": "削除",
+      "switchCamera": "カメラを切り替え",
+      "selectDevice": "カメラを選択",
+      "photos": "撮影済み写真",
+      "noPhotos": "撮影した写真がありません",
+      "controls": {
+        "zoom": "ズーム",
+        "exposureMode": "露出モード",
+        "exposureCompensation": "露出補正",
+        "focusMode": "フォーカスモード",
+        "focusDistance": "フォーカス距離",
+        "whiteBalance": "ホワイトバランス",
+        "iso": "ISO 感度",
+        "torch": "ライト",
+        "brightness": "明るさ",
+        "contrast": "コントラスト"
+      }
+    }
+  }
+}

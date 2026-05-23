@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const deviceStore = useDeviceStore()
+const cameraStore = useCameraStore()
 
 /** 接続試行中の API 識別子（'bluetooth' | 'hid' | 'serial' | null） */
 const deviceConnecting = ref<string | null>(null)
@@ -10,6 +11,8 @@ const hasBluetooth = computed(() => import.meta.client && 'bluetooth' in navigat
 const hasHid = computed(() => import.meta.client && 'hid' in navigator)
 /** ブラウザの Web Serial API 対応状況 */
 const hasSerial = computed(() => import.meta.client && 'serial' in navigator)
+/** ブラウザの MediaDevices API 対応状況 */
+const hasCameraApi = computed(() => import.meta.client && !!navigator.mediaDevices)
 
 /** Bluetooth デバイスへの接続を試みる */
 async function handleConnectBluetooth(): Promise<void> {
@@ -58,6 +61,10 @@ function pollGamepads(): void {
 onMounted(() => {
   deviceStore.initGamepad()
   gamepadRafId = requestAnimationFrame(pollGamepads)
+  // カメラデバイスの列挙
+  if (hasCameraApi.value) {
+    cameraStore.enumerateDevices()
+  }
 })
 
 onUnmounted(() => {
@@ -332,6 +339,95 @@ onUnmounted(() => {
         </div>
       </div>
     </div>
+    <!-- カメラ -->
+    <div class="field">
+      <div class="device-section-header">
+        <p class="field-label">
+          <UIcon
+            name="i-lucide-camera"
+            class="device-api-icon"
+          />
+          {{ $t('apps.settings.deviceCamera') }}
+        </p>
+        <UButton
+          v-if="hasCameraApi"
+          size="xs"
+          icon="i-lucide-refresh-cw"
+          :label="$t('apps.settings.deviceCameraRefresh')"
+          variant="outline"
+          color="neutral"
+          @click="cameraStore.enumerateDevices()"
+        />
+      </div>
+      <UAlert
+        v-if="!hasCameraApi"
+        icon="i-lucide-info"
+        color="neutral"
+        variant="soft"
+        :description="$t('apps.settings.deviceNotSupported')"
+        class="device-unsupported"
+      />
+      <template v-else>
+        <!-- 権限バッジ + ImageCapture 対応バッジ -->
+        <div class="camera-badges">
+          <div class="camera-badge-item">
+            <span class="camera-badge-label">{{ $t('apps.settings.deviceCameraPermission') }}</span>
+            <UBadge
+              size="xs"
+              :label="cameraStore.hasPermission === true
+                ? $t('apps.settings.deviceCameraPermissionGranted')
+                : cameraStore.hasPermission === false
+                  ? $t('apps.settings.deviceCameraPermissionDenied')
+                  : $t('apps.settings.deviceCameraPermissionPending')"
+              :color="cameraStore.hasPermission === true ? 'success' : cameraStore.hasPermission === false ? 'error' : 'neutral'"
+              variant="soft"
+            />
+          </div>
+          <div class="camera-badge-item">
+            <span class="camera-badge-label">{{ $t('apps.settings.deviceCameraImageCaptureSupport') }}</span>
+            <UBadge
+              size="xs"
+              :label="cameraStore.hasImageCaptureSupport
+                ? $t('apps.settings.deviceCameraSupported')
+                : $t('apps.settings.deviceCameraNotSupported')"
+              :color="cameraStore.hasImageCaptureSupport ? 'success' : 'neutral'"
+              variant="soft"
+            />
+          </div>
+        </div>
+        <!-- デバイス一覧 -->
+        <div
+          v-if="cameraStore.devices.length === 0"
+          class="device-empty"
+        >
+          {{ $t('apps.settings.deviceCameraNoDevices') }}
+        </div>
+        <div
+          v-else
+          class="device-list"
+        >
+          <div
+            v-for="d in cameraStore.devices"
+            :key="d.deviceId"
+            class="device-item"
+          >
+            <UIcon
+              name="i-lucide-camera"
+              class="device-item-icon"
+            />
+            <span class="device-item-name">{{ d.label || d.deviceId }}</span>
+            <span class="device-item-meta">{{ d.deviceId.slice(0, 8) }}</span>
+            <UBadge
+              v-if="d.deviceId === cameraStore.activeDeviceId && cameraStore.isStreaming"
+              size="xs"
+              :label="$t('apps.settings.deviceCameraLive')"
+              color="error"
+              variant="soft"
+            />
+          </div>
+        </div>
+      </template>
+    </div>
   </div>
 </template>
 
@@ -541,5 +637,23 @@ onUnmounted(() => {
     border-radius: 50%;
     transform: translate(-50%, -50%);
   }
+}
+
+.camera-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.camera-badge-item {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.camera-badge-label {
+  font-size: 0.75rem;
+  color: var(--ui-text-muted);
 }
 </style>

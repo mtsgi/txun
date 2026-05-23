@@ -1,0 +1,35 @@
+{
+  "apps": {
+    "camera": {
+      "name": "Camera",
+      "permissionRequired": "Allow camera access",
+      "permissionRequiredDesc": "This app needs browser permission to use your camera.",
+      "allowCamera": "Allow Camera",
+      "permissionDenied": "Camera access denied",
+      "permissionDeniedDesc": "Click the camera icon in the browser address bar to allow access.",
+      "noDevices": "No camera devices found",
+      "noDevicesDesc": "Make sure a camera is connected to your device.",
+      "notSupported": "Camera API is not supported in this browser",
+      "startCamera": "Start Camera",
+      "capture": "Capture",
+      "download": "Download",
+      "delete": "Delete",
+      "switchCamera": "Switch Camera",
+      "selectDevice": "Select Camera",
+      "photos": "Captured Photos",
+      "noPhotos": "No photos captured yet",
+      "controls": {
+        "zoom": "Zoom",
+        "exposureMode": "Exposure Mode",
+        "exposureCompensation": "Exposure Compensation",
+        "focusMode": "Focus Mode",
+        "focusDistance": "Focus Distance",
+        "whiteBalance": "White Balance",
+        "iso": "ISO",
+        "torch": "Torch",
+        "brightness": "Brightness",
+        "contrast": "Contrast"
+      }
+    }
+  }
+}

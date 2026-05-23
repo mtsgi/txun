@@ -5,3 +5,6 @@ export type { WindowState, VirtualDesktop, AppMeta, DesktopState, AppFont } from
 
 export { useDeviceStore } from '../stores/device'
 export type { BluetoothDeviceMeta, HidDeviceMeta, SerialPortMeta, GamepadState, DeviceState } from '../stores/device'
+
+export { useCameraStore } from '../stores/camera'
+export type { CameraDevice, CameraCapabilities, CameraSettings, CameraConstraints, CameraState } from '../stores/camera'

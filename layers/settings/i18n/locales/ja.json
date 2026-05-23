@@ -65,7 +65,19 @@
       "taskbarTaskAlignEnd": "右",
       "taskbarTaskDisplay": "タスクの表示",
       "taskbarTaskDisplayIcon": "アイコン",
-      "taskbarTaskDisplayIconLabel": "アイコンとラベル"
+      "taskbarTaskDisplayIconLabel": "アイコンとラベル",
+      "deviceCamera": "カメラ",
+      "deviceCameraPermission": "権限",
+      "deviceCameraPermissionGranted": "許可済み",
+      "deviceCameraPermissionDenied": "拒否",
+      "deviceCameraPermissionPending": "未確認",
+      "deviceCameraDeviceId": "デバイス ID",
+      "deviceCameraImageCaptureSupport": "ImageCapture API",
+      "deviceCameraRefresh": "デバイスを更新",
+      "deviceCameraNoDevices": "カメラデバイスなし",
+      "deviceCameraSupported": "対応",
+      "deviceCameraNotSupported": "非対応",
+      "deviceCameraLive": "LIVE"
     }
   }
 }

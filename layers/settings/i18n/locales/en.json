@@ -65,7 +65,19 @@
       "taskbarTaskAlignEnd": "End",
       "taskbarTaskDisplay": "Task Display",
       "taskbarTaskDisplayIcon": "Icon only",
-      "taskbarTaskDisplayIconLabel": "Icon and label"
+      "taskbarTaskDisplayIconLabel": "Icon and label",
+      "deviceCamera": "Camera",
+      "deviceCameraPermission": "Permission",
+      "deviceCameraPermissionGranted": "Granted",
+      "deviceCameraPermissionDenied": "Denied",
+      "deviceCameraPermissionPending": "Not requested",
+      "deviceCameraDeviceId": "Device ID",
+      "deviceCameraImageCaptureSupport": "ImageCapture API",
+      "deviceCameraRefresh": "Refresh Devices",
+      "deviceCameraNoDevices": "No camera devices",
+      "deviceCameraSupported": "Supported",
+      "deviceCameraNotSupported": "Not supported",
+      "deviceCameraLive": "LIVE"
     }
   }
 }

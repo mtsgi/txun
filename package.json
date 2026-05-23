@@ -15,7 +15,8 @@
     "layers/sticky-notes",
     "layers/task-manager",
     "layers/terminal",
-    "layers/text-editor"
+    "layers/text-editor",
+    "layers/camera"
   ],
   "scripts": {
     "build": "nuxt build",
