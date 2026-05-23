@@ -10,6 +10,11 @@ export default defineNuxtConfig({
       path: './components/apps',
       global: true,
       prefix: 'Apps'
+    },
+    {
+      path: './components/settings',
+      global: true,
+      prefix: 'Settings'
     }
   ],
 
