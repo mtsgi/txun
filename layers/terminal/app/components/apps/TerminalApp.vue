@@ -1,6 +1,7 @@
 <script setup lang="ts">
 defineProps<{ windowId: string }>()
 
+const { t } = useI18n()
 const { notify } = useDesktopNotification()
 
 interface HistoryEntry {
@@ -10,23 +11,23 @@ interface HistoryEntry {
 
 const inputLine = ref('')
 const history = ref<HistoryEntry[]>([
-  { input: '', output: 'TxunOS Terminal v0.1.0\nType `help` for available commands.\n' }
+  { input: '', output: `${t('apps.terminal.welcome')}\n${t('apps.terminal.welcomeHint')}\n` }
 ])
 const inputRef = ref<HTMLInputElement | null>(null)
 const outputRef = ref<HTMLDivElement | null>(null)
 const historyIdx = ref(-1)
 const inputHistory = ref<string[]>([])
 
-const COMMANDS: Record<string, (args: string[]) => string> = {
+const commands = computed<Record<string, (args: string[]) => string>>(() => ({
   help: () => [
-    'Available commands:',
-    '  help          — show this help',
-    '  echo <msg>    — print message',
-    '  clear         — clear terminal',
-    '  date          — show current date/time',
-    '  whoami        — show current user',
-    '  ls            — list virtual directory',
-    '  notify <msg>  — send desktop notification'
+    t('apps.terminal.help.title'),
+    `  help          — ${t('apps.terminal.help.help')}`,
+    `  echo <msg>    — ${t('apps.terminal.help.echo')}`,
+    `  clear         — ${t('apps.terminal.help.clear')}`,
+    `  date          — ${t('apps.terminal.help.date')}`,
+    `  whoami        — ${t('apps.terminal.help.whoami')}`,
+    `  ls            — ${t('apps.terminal.help.ls')}`,
+    `  notify <msg>  — ${t('apps.terminal.help.notify')}`
   ].join('\n'),
   echo: args => args.join(' '),
   date: () => new Date().toString(),
@@ -34,11 +35,11 @@ const COMMANDS: Record<string, (args: string[]) => string> = {
   ls: () => 'Desktop/  Documents/  Downloads/',
   clear: () => '__CLEAR__',
   notify: (args) => {
-    const msg = args.join(' ') || 'Hello from terminal!'
+    const msg = args.join(' ') || t('apps.terminal.notificationDefault')
     notify(msg, { type: 'info', icon: 'i-lucide-terminal' })
-    return `Notification sent: "${msg}"`
+    return t('apps.terminal.notificationSent', { msg })
   }
-}
+}))
 
 function execute(cmd: string) {
   const trimmed = cmd.trim()
@@ -47,8 +48,8 @@ function execute(cmd: string) {
   historyIdx.value = -1
 
   const [name = '', ...args] = trimmed.split(/\s+/)
-  const handler = COMMANDS[name ?? '']
-  const output = handler ? handler(args) : `Command not found: ${name}`
+  const handler = commands.value[name ?? '']
+  const output = handler ? handler(args) : t('apps.terminal.commandNotFound', { name })
 
   if (output === '__CLEAR__') {
     history.value = []

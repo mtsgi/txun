@@ -1,7 +1,22 @@
 {
   "apps": {
     "terminal": {
-      "name": "Terminal"
+      "name": "Terminal",
+      "welcome": "TxunOS Terminal v1.0",
+      "welcomeHint": "Type `help` for available commands.",
+      "commandNotFound": "Command not found: {name}",
+      "notificationSent": "Notification sent: \"{msg}\"",
+      "notificationDefault": "Hello from terminal!",
+      "help": {
+        "title": "Available commands:",
+        "help": "show this help",
+        "echo": "print message",
+        "clear": "clear terminal",
+        "date": "show current date/time",
+        "whoami": "show current user",
+        "ls": "list virtual directory",
+        "notify": "send desktop notification"
+      }
     }
   }
 }

@@ -1,7 +1,22 @@
 {
   "apps": {
     "terminal": {
-      "name": "ターミナル"
+      "name": "ターミナル",
+      "welcome": "TxunOS Terminal v1.0",
+      "welcomeHint": "`help` を入力すると利用可能なコマンドが表示されます。",
+      "commandNotFound": "コマンドが見つかりません: {name}",
+      "notificationSent": "通知を送信しました: \"{msg}\"",
+      "notificationDefault": "Hello from terminal!",
+      "help": {
+        "title": "利用可能なコマンド:",
+        "help": "このヘルプを表示",
+        "echo": "メッセージを表示",
+        "clear": "ターミナルをクリア",
+        "date": "現在の日時を表示",
+        "whoami": "現在のユーザーを表示",
+        "ls": "仮想ディレクトリを一覧表示",
+        "notify": "デスクトップ通知を送信"
+      }
     }
   }
 }

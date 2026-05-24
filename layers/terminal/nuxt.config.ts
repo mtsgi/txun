@@ -2,7 +2,7 @@ export default defineNuxtConfig({
   $meta: {
     description: 'TxunOS Built-in App Layer - terminal',
     name: 'txunos-terminal',
-    version: '1.0.0'
+    version: '1.0.1'
   },
 
   components: [
