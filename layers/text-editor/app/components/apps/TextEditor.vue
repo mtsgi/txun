@@ -50,8 +50,15 @@ function formatEntryName(path: string): string {
   return segments.at(-1) ?? 'untitled.md'
 }
 
-function resetEditor(): void {
+function beginProgrammaticContentUpdate(): void {
   suppressDirty.value = true
+  void nextTick(() => {
+    suppressDirty.value = false
+  })
+}
+
+function resetEditor(): void {
+  beginProgrammaticContentUpdate()
   content.value = ''
   currentFilePath.value = null
   filename.value = 'untitled.md'
@@ -105,7 +112,7 @@ async function openEntry(entry: FileSystemEntry): Promise<void> {
   localError.value = null
   try {
     const text = await fileSystem.readTextFile(entry.path, mountId)
-    suppressDirty.value = true
+    beginProgrammaticContentUpdate()
     content.value = text
     currentFilePath.value = entry.path
     filename.value = entry.name

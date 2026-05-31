@@ -186,7 +186,7 @@ function mapError(error: unknown, path?: string): DesktopFileSystemError {
 }
 
 function assertValidEntryName(name: string): void {
-  if (!name || name.includes('/')) {
+  if (!name || name === '.' || name === '..' || name.includes('/') || name.includes('\\')) {
     throw new DesktopFileSystemError('INVALID_PATH', 'Invalid entry name', name)
   }
 }
@@ -701,6 +701,9 @@ export const useFileSystemStore = defineStore('filesystem', {
 
       try {
         const sourceEntry = await this.getEntryHandle(srcPath, mountId)
+        if (srcPath === dstPath || (sourceEntry.kind === 'directory' && dstPath.startsWith(`${srcPath}/`))) {
+          throw new DesktopFileSystemError('INVALID_PATH', 'Cannot copy entry into itself', dstPath)
+        }
 
         const dstParentPath = dirnameFsPath(dstPath)
         const dstName = basenameFsPath(dstPath)
