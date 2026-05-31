@@ -13,14 +13,18 @@ describe('Nuxt integration smoke', () => {
       'calculator',
       'calendar',
       'clock',
+      'dev-tools',
       'file-manager',
       'image-viewer',
       'settings',
       'sticky-notes',
       'task-manager',
       'terminal',
-      'text-editor'
+      'text-editor',
+      'camera',
+      'music-player',
+      'video-player'
     ]))
-    expect(appIds).toHaveLength(11)
+    expect(appIds).toHaveLength(15)
   })
 })

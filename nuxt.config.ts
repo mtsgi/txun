@@ -11,6 +11,7 @@ export default defineNuxtConfig({
     'layers/calculator',
     'layers/calendar',
     'layers/clock',
+    'layers/dev-tools',
     'layers/image-viewer',
     'layers/sticky-notes',
     'layers/camera',

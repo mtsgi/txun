@@ -1,0 +1,45 @@
+{
+  "apps": {
+    "devTools": {
+      "name": "DevTools",
+      "tabJson": "JSON Beautifier",
+      "tabBase64Url": "Base64/URL",
+      "tabUuid": "UUID Generator",
+      "tabHash": "Hash Generator",
+      "json": {
+        "inputPlaceholder": "Enter JSON here...",
+        "format": "Format",
+        "minify": "Minify",
+        "clear": "Clear",
+        "copy": "Copy",
+        "copied": "Copied to clipboard",
+        "invalidJson": "Invalid JSON format: {error}"
+      },
+      "codec": {
+        "inputPlaceholder": "Enter text to convert...",
+        "outputPlaceholder": "Result...",
+        "b64Encode": "Base64 Encode",
+        "b64Decode": "Base64 Decode",
+        "urlEncode": "URL Encode",
+        "urlDecode": "URL Decode",
+        "clear": "Clear",
+        "copy": "Copy",
+        "copied": "Copied to clipboard"
+      },
+      "uuid": {
+        "generate": "Generate UUID",
+        "generateMultiple": "Generate ({count}x)",
+        "clear": "Clear",
+        "copy": "Copy",
+        "copied": "Copied to clipboard"
+      },
+      "hash": {
+        "inputPlaceholder": "Enter text to hash...",
+        "outputPlaceholder": "Hash result...",
+        "clear": "Clear",
+        "copy": "Copy",
+        "copied": "Copied to clipboard"
+      }
+    }
+  }
+}

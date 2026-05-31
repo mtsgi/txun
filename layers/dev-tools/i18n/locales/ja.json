@@ -1,0 +1,45 @@
+{
+  "apps": {
+    "devTools": {
+      "name": "デベロッパーツール",
+      "tabJson": "JSON整形",
+      "tabBase64Url": "Base64/URL",
+      "tabUuid": "UUID生成",
+      "tabHash": "Hash生成",
+      "json": {
+        "inputPlaceholder": "ここにJSONを入力してください...",
+        "format": "整形",
+        "minify": "ミニファイ",
+        "clear": "クリア",
+        "copy": "コピー",
+        "copied": "クリップボードにコピーしました",
+        "invalidJson": "無効なJSON形式です: {error}"
+      },
+      "codec": {
+        "inputPlaceholder": "変換するテキストを入力...",
+        "outputPlaceholder": "変換結果...",
+        "b64Encode": "Base64エンコード",
+        "b64Decode": "Base64デコード",
+        "urlEncode": "URLエンコード",
+        "urlDecode": "URLデコード",
+        "clear": "クリア",
+        "copy": "コピー",
+        "copied": "コピーしました"
+      },
+      "uuid": {
+        "generate": "UUIDを生成",
+        "generateMultiple": "複数生成 ({count}個)",
+        "clear": "クリア",
+        "copy": "コピー",
+        "copied": "コピーしました"
+      },
+      "hash": {
+        "inputPlaceholder": "ハッシュ化するテキストを入力...",
+        "outputPlaceholder": "ハッシュ結果...",
+        "clear": "クリア",
+        "copy": "コピー",
+        "copied": "コピーしました"
+      }
+    }
+  }
+}

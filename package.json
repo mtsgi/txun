@@ -9,6 +9,7 @@
     "layers/calculator",
     "layers/calendar",
     "layers/clock",
+    "layers/dev-tools",
     "layers/file-manager",
     "layers/image-viewer",
     "layers/settings",
