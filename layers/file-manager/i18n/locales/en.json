@@ -7,7 +7,23 @@
       "open": "Open",
       "rename": "Rename",
       "delete": "Delete",
-      "sidebar": "Sidebar"
+      "sidebar": "Sidebar",
+      "unsupported": "File System Access API is not available in this browser.",
+      "noMounts": "No working directory is configured. Add one from Settings > File System.",
+      "addMount": "Add Working Directory",
+      "mount": "Working Directory",
+      "mountAdded": "Working directory added: {name}",
+      "refresh": "Refresh",
+      "up": "Up",
+      "newFolder": "New Folder",
+      "newFile": "New File",
+      "newFolderPrompt": "Enter a folder name",
+      "newFilePrompt": "Enter a file name",
+      "renamePrompt": "Enter a new name",
+      "deleteConfirm": "Delete {name}?",
+      "rootDirectories": "Root",
+      "loading": "Loading...",
+      "errorGeneric": "An error occurred during file operations"
     }
   }
 }

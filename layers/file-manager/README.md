@@ -21,6 +21,12 @@ export default defineNuxtConfig({
 - App component: `app/components/apps/FileManager.vue`
 - App registration plugin: `app/plugins/register-file-manager.ts`
 - Locale files: `i18n/locales/ja.json`, `i18n/locales/en.json`
+- Shared filesystem operations via `@txun/core` FileSystem store/composable
+
+## Working Directory
+
+`Settings > File System` で作業ディレクトリを追加すると、Files から実ディレクトリ一覧・作成・削除・改名が利用できます。
+マウント切替はツールバーのセレクタから行います。
 
 ## Peer Dependencies
 

@@ -7,7 +7,23 @@
       "open": "開く",
       "rename": "名前変更",
       "delete": "削除",
-      "sidebar": "サイドバー"
+      "sidebar": "サイドバー",
+      "unsupported": "このブラウザでは File System Access API が利用できません。",
+      "noMounts": "作業ディレクトリが未設定です。Settings の File System タブから追加してください。",
+      "addMount": "作業ディレクトリ追加",
+      "mount": "作業ディレクトリ",
+      "mountAdded": "作業ディレクトリを追加しました: {name}",
+      "refresh": "更新",
+      "up": "上へ",
+      "newFolder": "新規フォルダ",
+      "newFile": "新規ファイル",
+      "newFolderPrompt": "作成するフォルダ名を入力してください",
+      "newFilePrompt": "作成するファイル名を入力してください",
+      "renamePrompt": "新しい名前を入力してください",
+      "deleteConfirm": "{name} を削除しますか？",
+      "rootDirectories": "ルート直下",
+      "loading": "読み込み中...",
+      "errorGeneric": "ファイル操作中にエラーが発生しました"
     }
   }
 }

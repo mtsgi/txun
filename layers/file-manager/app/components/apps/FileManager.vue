@@ -1,33 +1,101 @@
 <script setup lang="ts">
+import type { FileSystemEntry } from '#layers/txunos-core/app/stores/filesystem'
+
 defineProps<{ windowId: string }>()
 
-interface FSEntry {
-  name: string
-  type: 'file' | 'dir'
-  size?: number
-  modified?: Date
-}
-
 const currentPath = ref('/')
-const selectedItem = ref<string | null>(null)
+const selectedItemPath = ref<string | null>(null)
 const showSidebar = ref(true)
+const isLoading = ref(false)
+const rootLoading = ref(false)
+const entries = ref<FileSystemEntry[]>([])
+const rootDirectories = ref<FileSystemEntry[]>([])
+const localError = ref<string | null>(null)
+const addingMount = ref(false)
+const creatingEntry = ref(false)
 
 const { t } = useI18n()
+const { notify } = useDesktopNotification()
+const fileSystem = useFileSystem()
 
-const fsTree: Record<string, FSEntry[]> = {
-  '/': [
-    { name: 'Desktop', type: 'dir' },
-    { name: 'Documents', type: 'dir' },
-    { name: 'Downloads', type: 'dir' }
-  ],
-  '/Desktop': [
-    { name: 'README.txt', type: 'file', size: 128, modified: new Date() }
-  ],
-  '/Documents': [],
-  '/Downloads': []
+const mountOptions = computed(() =>
+  fileSystem.mounts.value.map(mount => ({
+    label: mount.name,
+    value: mount.id
+  }))
+)
+
+const selectedMountId = computed({
+  get: (): string => fileSystem.activeMountId.value ?? '',
+  set: (mountId: string) => {
+    void fileSystem.setActiveMount(mountId || null)
+  }
+})
+
+const hasMount = computed(() => !!fileSystem.activeMountId.value)
+
+function toErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message
+  return t('apps.fileManager.errorGeneric')
 }
 
-const entries = computed<FSEntry[]>(() => fsTree[currentPath.value] ?? [])
+function buildPath(name: string): string {
+  return fileSystem.resolvePath(currentPath.value, name)
+}
+
+async function loadEntries(): Promise<void> {
+  if (!fileSystem.activeMountId.value) {
+    entries.value = []
+    return
+  }
+
+  isLoading.value = true
+  localError.value = null
+  try {
+    entries.value = await fileSystem.listDirectory(currentPath.value, fileSystem.activeMountId.value)
+  } catch (error) {
+    localError.value = toErrorMessage(error)
+    entries.value = []
+  } finally {
+    isLoading.value = false
+  }
+}
+
+async function loadRootDirectories(): Promise<void> {
+  if (!fileSystem.activeMountId.value) {
+    rootDirectories.value = []
+    return
+  }
+
+  rootLoading.value = true
+  try {
+    const rootEntries = await fileSystem.listDirectory('/', fileSystem.activeMountId.value)
+    rootDirectories.value = rootEntries.filter(entry => entry.kind === 'directory')
+  } catch {
+    rootDirectories.value = []
+  } finally {
+    rootLoading.value = false
+  }
+}
+
+async function reloadAll(): Promise<void> {
+  await Promise.all([loadEntries(), loadRootDirectories()])
+}
+
+async function handleAddMount(): Promise<void> {
+  addingMount.value = true
+  try {
+    const mount = await fileSystem.addMount()
+    if (mount) {
+      notify(t('apps.fileManager.mountAdded', { name: mount.name }), { type: 'success' })
+    }
+  } catch (error) {
+    localError.value = toErrorMessage(error)
+  } finally {
+    addingMount.value = false
+    await reloadAll()
+  }
+}
 
 /** UBreadcrumb 用リンク配列 */
 const breadcrumbLinks = computed(() => {
@@ -44,29 +112,12 @@ const breadcrumbLinks = computed(() => {
   ]
 })
 
-/** UTree 用ツリーアイテム */
-const treeItems = computed(() => [
-  {
-    label: '/',
-    icon: 'i-lucide-hard-drive',
-    defaultExpanded: true,
-    path: '/',
-    children: Object.keys(fsTree)
-      .filter(k => k !== '/' && (k.match(/\//g) ?? []).length === 1)
-      .map(k => ({
-        label: k.split('/').pop() ?? k,
-        icon: 'i-lucide-folder',
-        path: k
-      }))
-  }
-])
-
 /** UContextMenu のアイテム */
-const contextMenuItems = computed(() => (entry: FSEntry) => [
+const contextMenuItems = computed(() => (entry: FileSystemEntry) => [
   [
     {
       label: t('apps.fileManager.open'),
-      icon: entry.type === 'dir' ? 'i-lucide-folder-open' : 'i-lucide-file-text',
+      icon: entry.kind === 'directory' ? 'i-lucide-folder-open' : 'i-lucide-file-text',
       onSelect: () => navigate(entry)
     }
   ],
@@ -74,35 +125,111 @@ const contextMenuItems = computed(() => (entry: FSEntry) => [
     {
       label: t('apps.fileManager.rename'),
       icon: 'i-lucide-pencil',
-      onSelect: () => {}
+      onSelect: () => {
+        void renameEntry(entry)
+      }
     },
     {
       label: t('apps.fileManager.delete'),
       icon: 'i-lucide-trash-2',
       color: 'error' as const,
-      onSelect: () => {}
+      onSelect: () => {
+        void deleteEntry(entry)
+      }
     }
   ]
 ])
 
-function navigate(entry: FSEntry) {
-  if (entry.type !== 'dir') return
-  const next = currentPath.value === '/'
-    ? '/' + entry.name
-    : currentPath.value + '/' + entry.name
-  currentPath.value = next
-  selectedItem.value = null
+async function createFolder(): Promise<void> {
+  if (!fileSystem.activeMountId.value) return
+  const name = window.prompt(t('apps.fileManager.newFolderPrompt'))?.trim()
+  if (!name) return
+
+  creatingEntry.value = true
+  try {
+    await fileSystem.mkdir(buildPath(name), fileSystem.activeMountId.value, false)
+    await reloadAll()
+  } catch (error) {
+    localError.value = toErrorMessage(error)
+  } finally {
+    creatingEntry.value = false
+  }
 }
 
-function goTo(path: string) {
+async function createFile(): Promise<void> {
+  if (!fileSystem.activeMountId.value) return
+  const name = window.prompt(t('apps.fileManager.newFilePrompt'))?.trim()
+  if (!name) return
+
+  creatingEntry.value = true
+  try {
+    await fileSystem.touch(buildPath(name), fileSystem.activeMountId.value)
+    await reloadAll()
+  } catch (error) {
+    localError.value = toErrorMessage(error)
+  } finally {
+    creatingEntry.value = false
+  }
+}
+
+async function renameEntry(entry: FileSystemEntry): Promise<void> {
+  if (!fileSystem.activeMountId.value) return
+  const nextName = window.prompt(t('apps.fileManager.renamePrompt'), entry.name)?.trim()
+  if (!nextName || nextName === entry.name) return
+
+  try {
+    await fileSystem.rename(entry.path, nextName, fileSystem.activeMountId.value)
+    await reloadAll()
+  } catch (error) {
+    localError.value = toErrorMessage(error)
+  }
+}
+
+async function deleteEntry(entry: FileSystemEntry): Promise<void> {
+  if (!fileSystem.activeMountId.value) return
+  const accepted = window.confirm(t('apps.fileManager.deleteConfirm', { name: entry.name }))
+  if (!accepted) return
+
+  try {
+    await fileSystem.deleteEntry(entry.path, fileSystem.activeMountId.value, entry.kind === 'directory')
+    await reloadAll()
+  } catch (error) {
+    localError.value = toErrorMessage(error)
+  }
+}
+
+function navigate(entry: FileSystemEntry): void {
+  if (entry.kind !== 'directory') return
+  currentPath.value = entry.path
+  selectedItemPath.value = null
+}
+
+function goTo(path: string): void {
   currentPath.value = path
-  selectedItem.value = null
+  selectedItemPath.value = null
 }
 
-/** UTree のノード選択ハンドラ */
-function onTreeSelect(node: { path?: string }) {
-  if (node.path) goTo(node.path)
+function goUp(): void {
+  if (currentPath.value === '/') return
+  const parts = currentPath.value.slice(1).split('/')
+  parts.pop()
+  goTo(parts.length > 0 ? `/${parts.join('/')}` : '/')
 }
+
+watch(() => fileSystem.activeMountId.value, async () => {
+  currentPath.value = '/'
+  selectedItemPath.value = null
+  await reloadAll()
+})
+
+watch(currentPath, async () => {
+  await loadEntries()
+})
+
+onMounted(async () => {
+  await fileSystem.restoreMounts()
+  await reloadAll()
+})
 </script>
 
 <template>
@@ -117,13 +244,59 @@ function onTreeSelect(node: { path?: string }) {
         :aria-label="$t('apps.fileManager.sidebar')"
         @click="showSidebar = !showSidebar"
       />
+      <USelect
+        v-model="selectedMountId"
+        :items="mountOptions"
+        value-key="value"
+        class="mount-select"
+        :placeholder="$t('apps.fileManager.mount')"
+      />
+      <UButton
+        size="xs"
+        variant="ghost"
+        color="primary"
+        icon="i-lucide-folder-plus"
+        :label="$t('apps.fileManager.addMount')"
+        :loading="addingMount"
+        @click="handleAddMount"
+      />
       <UButton
         size="xs"
         variant="ghost"
         color="neutral"
         icon="i-lucide-arrow-left"
         :disabled="currentPath === '/'"
-        @click="goTo(currentPath.split('/').slice(0, -1).join('/') || '/')"
+        :label="$t('apps.fileManager.up')"
+        @click="goUp"
+      />
+      <UButton
+        size="xs"
+        variant="ghost"
+        color="neutral"
+        icon="i-lucide-refresh-cw"
+        :label="$t('apps.fileManager.refresh')"
+        :loading="isLoading"
+        @click="reloadAll"
+      />
+      <UButton
+        size="xs"
+        variant="ghost"
+        color="neutral"
+        icon="i-lucide-folder-plus"
+        :label="$t('apps.fileManager.newFolder')"
+        :disabled="!hasMount"
+        :loading="creatingEntry"
+        @click="createFolder"
+      />
+      <UButton
+        size="xs"
+        variant="ghost"
+        color="neutral"
+        icon="i-lucide-file-plus"
+        :label="$t('apps.fileManager.newFile')"
+        :disabled="!hasMount"
+        :loading="creatingEntry"
+        @click="createFile"
       />
       <UBreadcrumb
         :links="breadcrumbLinks"
@@ -131,25 +304,82 @@ function onTreeSelect(node: { path?: string }) {
       />
     </div>
 
+    <UAlert
+      v-if="!fileSystem.isSupported.value"
+      icon="i-lucide-info"
+      color="neutral"
+      variant="soft"
+      :description="$t('apps.fileManager.unsupported')"
+      class="state-alert"
+    />
+
+    <UAlert
+      v-else-if="!hasMount"
+      icon="i-lucide-folder-search"
+      color="neutral"
+      variant="soft"
+      :description="$t('apps.fileManager.noMounts')"
+      class="state-alert"
+    />
+
+    <UAlert
+      v-if="localError"
+      icon="i-lucide-triangle-alert"
+      color="error"
+      variant="soft"
+      :description="localError"
+      class="state-alert"
+    />
+
     <!-- main area -->
-    <div class="main-area">
+    <div
+      v-if="fileSystem.isSupported.value && hasMount"
+      class="main-area"
+    >
       <!-- sidebar -->
       <Transition name="sidebar-slide">
         <div
           v-if="showSidebar"
           class="sidebar"
         >
-          <UTree
-            :items="treeItems"
-            @update:model-value="onTreeSelect"
-          />
+          <p class="sidebar-title">
+            {{ $t('apps.fileManager.rootDirectories') }}
+          </p>
+          <div
+            v-if="rootLoading"
+            class="sidebar-empty"
+          >
+            {{ $t('apps.fileManager.loading') }}
+          </div>
+          <div
+            v-else-if="rootDirectories.length === 0"
+            class="sidebar-empty"
+          >
+            {{ $t('apps.fileManager.empty') }}
+          </div>
+          <button
+            v-for="entry in rootDirectories"
+            :key="entry.path"
+            class="sidebar-item"
+            :class="currentPath === entry.path ? 'active' : ''"
+            @click="goTo(entry.path)"
+          >
+            <UIcon name="i-lucide-folder" />
+            <span>{{ entry.name }}</span>
+          </button>
         </div>
       </Transition>
 
       <!-- file grid -->
       <div class="file-grid">
         <div
-          v-if="entries.length === 0"
+          v-if="isLoading"
+          class="empty"
+        >
+          {{ $t('apps.fileManager.loading') }}
+        </div>
+        <div
+          v-else-if="entries.length === 0"
           class="empty"
         >
           {{ $t('apps.fileManager.empty') }}
@@ -165,13 +395,13 @@ function onTreeSelect(node: { path?: string }) {
           >
             <button
               class="file-item"
-              :class="selectedItem === entry.name ? 'selected' : ''"
-              @click="selectedItem = entry.name"
+              :class="selectedItemPath === entry.path ? 'selected' : ''"
+              @click="selectedItemPath = entry.path"
               @dblclick="navigate(entry)"
             >
               <UIcon
-                :name="entry.type === 'dir' ? 'i-lucide-folder' : 'i-lucide-file-text'"
-                :class="['file-icon', entry.type === 'dir' ? 'icon-dir' : 'icon-file']"
+                :name="entry.kind === 'directory' ? 'i-lucide-folder' : 'i-lucide-file-text'"
+                :class="['file-icon', entry.kind === 'directory' ? 'icon-dir' : 'icon-file']"
               />
               <span>{{ entry.name }}</span>
             </button>
@@ -181,7 +411,8 @@ function onTreeSelect(node: { path?: string }) {
     </div>
 
     <div class="status-bar">
-      {{ entries.length }} {{ $t('apps.fileManager.items') }}
+      <span>{{ currentPath }}</span>
+      <span>{{ entries.length }} {{ $t('apps.fileManager.items') }}</span>
     </div>
   </div>
 </template>
@@ -196,10 +427,15 @@ function onTreeSelect(node: { path?: string }) {
     display: flex;
     align-items: center;
     gap: 0.25rem;
+    flex-wrap: wrap;
     padding: 0.375rem 0.5rem;
     border-bottom: 1px solid var(--ui-border);
     background: var(--ui-bg-elevated);
     flex-shrink: 0;
+  }
+
+  .mount-select {
+    min-width: 12rem;
   }
 
   .breadcrumb {
@@ -223,6 +459,48 @@ function onTreeSelect(node: { path?: string }) {
     border-right: 1px solid var(--ui-border);
     padding: 0.5rem;
     background: var(--ui-bg-elevated);
+
+    .sidebar-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem;
+      color: var(--ui-text-muted);
+    }
+
+    .sidebar-empty {
+      font-size: 0.75rem;
+      color: var(--ui-text-muted);
+      padding: 0.5rem 0;
+    }
+
+    .sidebar-item {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border: none;
+      background: transparent;
+      color: inherit;
+      border-radius: var(--ui-radius);
+      padding: 0.375rem 0.5rem;
+      cursor: pointer;
+      text-align: left;
+
+      &:hover {
+        background: var(--ui-bg);
+      }
+
+      &.active {
+        background: color-mix(in srgb, var(--ui-primary) 10%, transparent);
+      }
+
+      span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 0.75rem;
+      }
+    }
   }
 
   // サイドバー スライドアニメーション
@@ -305,12 +583,25 @@ function onTreeSelect(node: { path?: string }) {
   }
 
   .status-bar {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
     flex-shrink: 0;
     padding: 0.25rem 0.75rem;
     border-top: 1px solid var(--ui-border);
     background: var(--ui-bg-elevated);
     font-size: 0.75rem;
     color: var(--ui-text-muted);
+
+    span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .state-alert {
+    margin: 0.5rem;
   }
 }
 </style>

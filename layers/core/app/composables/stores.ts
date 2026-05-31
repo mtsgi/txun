@@ -8,3 +8,13 @@ export type { BluetoothDeviceMeta, HidDeviceMeta, SerialPortMeta, GamepadState, 
 
 export { useCameraStore } from '../stores/camera'
 export type { CameraDevice, CameraCapabilities, CameraSettings, CameraConstraints, CameraState } from '../stores/camera'
+
+export { useFileSystemStore } from '../stores/filesystem'
+export type {
+  FileSystemMount,
+  FileSystemEntry,
+  FileSystemPermissionState,
+  FileSystemErrorCode,
+  FileSystemState,
+  DesktopFileSystemError
+} from '../stores/filesystem'

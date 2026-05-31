@@ -4,7 +4,23 @@
       "name": "テキストエディタ",
       "open": "開く",
       "save": "保存",
-      "placeholder": "テキストを入力…"
+      "placeholder": "テキストを入力…",
+      "mount": "作業ディレクトリ",
+      "addMount": "追加",
+      "mountAdded": "作業ディレクトリを追加しました: {name}",
+      "browser": "ブラウザ",
+      "refresh": "更新",
+      "up": "上へ",
+      "new": "新規",
+      "newFilePrompt": "保存するファイル名を入力してください",
+      "discardConfirm": "未保存の変更があります。破棄しますか？",
+      "saved": "保存しました: {name}",
+      "unsupported": "このブラウザは File System Access API に対応していません。",
+      "noMounts": "作業ディレクトリが未設定です。Settings の File System から追加してください。",
+      "loading": "読み込み中...",
+      "empty": "このフォルダにファイルはありません",
+      "unsaved": "未保存ドキュメント",
+      "errorGeneric": "ファイル操作中にエラーが発生しました"
     }
   }
 }

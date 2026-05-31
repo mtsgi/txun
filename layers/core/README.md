@@ -21,11 +21,13 @@ export default defineNuxtConfig({
 - Desktop shell components and window management UI
 - Pinia desktop store (`useDesktopStore`)
 - Core composables for launcher, spotlight, storage, and window control
+- File System store/composable (`useFileSystemStore`, `useFileSystem`)
 - Core i18n locale resources (`core.desktop.*`)
 
 ## Exports
 
 - `@txun/core/stores/desktop`
+- `@txun/core/stores/filesystem`
 
 ## Peer Dependencies
 

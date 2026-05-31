@@ -7,6 +7,39 @@
       "commandNotFound": "Command not found: {name}",
       "notificationSent": "Notification sent: \"{msg}\"",
       "notificationDefault": "Hello from terminal!",
+      "mount": "Working Directory",
+      "addMount": "Add Working Directory",
+      "noMount": "No working directory is configured. Add one from Settings > File System.",
+      "mountAdded": "Working directory added: {name}",
+      "mountChanged": "Switched working directory: {name}",
+      "mountNotFound": "Working directory not found: {target}",
+      "emptyDirectory": "Directory is empty",
+      "usage": {
+        "use": "usage: use [mountId | mountName]",
+        "cat": "usage: cat [path]",
+        "mkdir": "usage: mkdir [path]",
+        "touch": "usage: touch [path]",
+        "rm": "usage: rm [path]",
+        "mv": "usage: mv [from] [to]",
+        "cp": "usage: cp [from] [to]"
+      },
+      "result": {
+        "mkdir": "Directory created: {path}",
+        "touch": "File created: {path}",
+        "rm": "Removed: {path}",
+        "mv": "Moved: {from} -> {to}",
+        "cp": "Copied: {from} -> {to}"
+      },
+      "error": {
+        "unsupported": "File System Access API is not supported in this browser.",
+        "noMount": "No working directory selected.",
+        "notFound": "Path not found: {path}",
+        "notDirectory": "Not a directory: {path}",
+        "notFile": "Not a file: {path}",
+        "permissionDenied": "Permission denied. Re-grant access from Settings.",
+        "invalidPath": "Invalid path.",
+        "general": "An error occurred during file operations."
+      },
       "help": {
         "title": "Available commands:",
         "help": "show this help",
@@ -14,7 +47,17 @@
         "clear": "clear terminal",
         "date": "show current date/time",
         "whoami": "show current user",
-        "ls": "list virtual directory",
+        "pwd": "show current directory",
+        "ls": "list directory entries",
+        "cd": "change current directory",
+        "cat": "print text file content",
+        "mkdir": "create directory",
+        "touch": "create empty file",
+        "rm": "remove file or directory",
+        "mv": "move file or directory",
+        "cp": "copy file or directory",
+        "mounts": "list mounted working directories",
+        "use": "switch active working directory",
         "notify": "send desktop notification"
       }
     }

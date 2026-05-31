@@ -7,7 +7,20 @@
       "zoomIn": "Zoom In",
       "zoomOut": "Zoom Out",
       "reset": "Reset",
-      "rotate": "Rotate"
+      "rotate": "Rotate",
+      "mount": "Working Directory",
+      "addMount": "Add",
+      "mountAdded": "Working directory added: {name}",
+      "browser": "Browser",
+      "refresh": "Refresh",
+      "up": "Up",
+      "loading": "Loading...",
+      "empty": "No images in this folder",
+      "emptyHint": "Select an image file from the browser panel",
+      "notImage": "Please select an image file",
+      "unsupported": "This browser does not support the File System Access API.",
+      "noMounts": "No working directory configured. Add one from Settings > File System.",
+      "errorGeneric": "Failed to load image"
     }
   }
 }

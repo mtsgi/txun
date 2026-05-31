@@ -16,6 +16,7 @@
 - 日本語 / 英語 i18n（`@nuxtjs/i18n`）
 - ライト / ダークテーマ（Nuxt UI カラーモード）
 - IndexedDB への状態保存
+- File System Access API による作業ディレクトリ連携（Files / Terminal）
 - Nuxt Layers による拡張しやすい構成
 
 ---
@@ -208,6 +209,14 @@ txunos/
 | `useWindowManager` | ウィンドウ操作 + `setTheme` / `setLocale` 同期 |
 | `useVirtualDesktop` | 仮想デスクトップ操作 |
 | `useDesktopStorage` | IndexedDB 保存・復元 |
+| `useFileSystem` | File System Access API のマウント管理と共通ファイル操作 |
+
+### File System API 導線
+
+- `Settings > File System` で作業ディレクトリを追加
+- 追加したディレクトリは `Files` と `Terminal` で共通利用
+- マウントハンドルは IndexedDB（structured clone）で復元
+- 非対応ブラウザでは機能を無効化して案内表示
 
 ### ウィンドウ管理ユーティリティ
 

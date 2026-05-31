@@ -1,23 +1,28 @@
 <script setup lang="ts">
-const props = defineProps<{ windowId: string }>()
+import type { FileSystemEntry } from '#layers/txunos-core/app/stores/filesystem'
+
+defineProps<{ windowId: string }>()
 
 const { t } = useI18n()
-const store = useDesktopStore()
+const { notify } = useDesktopNotification()
+const fileSystem = useFileSystem()
+
+const VIDEO_EXTENSIONS = new Set([
+  '.mp4', '.webm', '.mov', '.m4v', '.ogg', '.ogv', '.mkv', '.avi'
+])
 
 /** ビデオアイテム情報 */
 interface VideoItem {
   /** 表示名（ファイル名から拡張子を除いた値） */
   name: string
-  /** Object URL */
+  /** マウント内ルート基準パス */
+  path: string
+  /** 再生に使う Object URL */
   url: string
-  /** 元の File オブジェクト */
-  file: File
 }
 
 /** リピートモード */
 type RepeatMode = 'none' | 'one' | 'all'
-
-// ─── 状態 ──────────────────────────────────────────────────
 
 /** プレイリスト */
 const videos = ref<VideoItem[]>([])
@@ -31,7 +36,7 @@ const isShuffle = ref(false)
 const repeatMode = ref<RepeatMode>('none')
 /** 再生位置（秒） */
 const currentTime = ref(0)
-/** ビデオの総再生時間（秒） */
+/** 総再生時間（秒） */
 const duration = ref(0)
 /** 音量（0〜1） */
 const volume = ref(0.8)
@@ -39,84 +44,161 @@ const volume = ref(0.8)
 const isMuted = ref(false)
 /** 再生速度 */
 const playbackRate = ref(1)
-/** ドラッグオーバー中フラグ */
-const isDragOver = ref(false)
-/** プレイリストパネル表示フラグ */
+/** ローカルエラーメッセージ */
+const localError = ref<string | null>(null)
+
+const browserPath = ref('/')
+const entries = ref<FileSystemEntry[]>([])
+const isLoadingEntries = ref(false)
+const addingMount = ref(false)
+const showBrowser = ref(true)
 const showPlaylist = ref(true)
-/** コントロールバー表示フラグ（自動非表示） */
-const showControls = ref(true)
-/** ビデオのメタ情報（幅・高さ） */
-const videoInfo = ref<{ width: number, height: number } | null>(null)
-/** コンテナ幅（ResizeObserver で更新） */
-const containerWidth = ref(800)
 
-// ─── DOM 参照 ─────────────────────────────────────────────
-
-/** `<video>` 要素への参照 */
+const containerRef = ref<HTMLElement | null>(null)
+const containerWidth = ref(900)
 const videoRef = ref<HTMLVideoElement | null>(null)
-/** ファイル入力への参照 */
-const fileInputRef = ref<HTMLInputElement | null>(null)
-/** コンテナ要素への参照 */
-const containerRef = ref<HTMLDivElement | null>(null)
 
-// ─── 自動非表示タイマー ────────────────────────────────────
+const isCompact = computed(() => containerWidth.value < 980)
+const overlayVisible = computed(() => isCompact.value && (showBrowser.value || showPlaylist.value))
 
-/** コントロール自動非表示タイマー ID */
-let hideControlsTimer: ReturnType<typeof setTimeout> | null = null
+const mountOptions = computed(() =>
+  fileSystem.mounts.value.map(mount => ({
+    label: mount.name,
+    value: mount.id
+  }))
+)
 
-/** コントロールのアクティビティをリセットし 3 秒後に非表示にする */
-function resetHideControlsTimer(): void {
-  showControls.value = true
-  if (hideControlsTimer !== null) {
-    clearTimeout(hideControlsTimer)
-    hideControlsTimer = null
+const hasMount = computed(() => !!fileSystem.activeMountId.value)
+
+const selectedMountId = computed({
+  get: (): string => fileSystem.activeMountId.value ?? '',
+  set: (mountId: string) => {
+    void fileSystem.setActiveMount(mountId || null)
   }
-  if (isPlaying.value) {
-    hideControlsTimer = setTimeout(() => {
-      showControls.value = false
-    }, 3000)
+})
+
+/** 再生速度の選択肢 */
+const playbackRates = [0.5, 0.75, 1, 1.25, 1.5, 2] as const
+
+/** 再生速度メニュー項目 */
+const playbackRateItems = computed(() =>
+  playbackRates.map(rate => ({
+    label: rate === 1 ? `${rate}x (標準)` : `${rate}x`,
+    onSelect: () => setPlaybackRate(rate)
+  }))
+)
+
+function toErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message
+  return t('apps.videoPlayer.errorGeneric')
+}
+
+function isVideoPath(path: string): boolean {
+  const lower = path.toLowerCase()
+  return Array.from(VIDEO_EXTENSIONS).some(ext => lower.endsWith(ext))
+}
+
+function goTo(path: string): void {
+  browserPath.value = path
+}
+
+function goUp(): void {
+  if (browserPath.value === '/') return
+  const parts = browserPath.value.split('/').filter(Boolean)
+  parts.pop()
+  browserPath.value = parts.length > 0 ? `/${parts.join('/')}` : '/'
+}
+
+async function loadEntries(): Promise<void> {
+  const mountId = fileSystem.activeMountId.value
+  if (!mountId) {
+    entries.value = []
+    return
+  }
+
+  isLoadingEntries.value = true
+  localError.value = null
+  try {
+    entries.value = await fileSystem.listDirectory(browserPath.value, mountId)
+  } catch (error) {
+    localError.value = toErrorMessage(error)
+    entries.value = []
+  } finally {
+    isLoadingEntries.value = false
   }
 }
 
-// ─── ResizeObserver ────────────────────────────────────────
-
-onMounted(() => {
-  if (!containerRef.value) return
-  containerWidth.value = containerRef.value.clientWidth
-
-  const ro = new ResizeObserver((entries) => {
-    const entry = entries[0]
-    if (entry) containerWidth.value = entry.contentRect.width
-  })
-  ro.observe(containerRef.value)
-  onUnmounted(() => ro.disconnect())
-})
-
-/** 幅が 600px 未満をコンパクトモードと判定 */
-const isCompact = computed(() => containerWidth.value < 600)
-
-// コンパクトモード時にプレイリストを自動非表示
-watch(isCompact, (compact) => {
-  if (compact) showPlaylist.value = false
-})
-
-// ─── ファイル管理 ──────────────────────────────────────────
-
-/** File オブジェクトからビデオ名を生成する（拡張子除去） */
-function videoNameFromFile(file: File): string {
-  return file.name.replace(/\.[^.]+$/, '') || t('apps.videoPlayer.unknownVideo')
+async function handleAddMount(): Promise<void> {
+  addingMount.value = true
+  try {
+    const mount = await fileSystem.addMount()
+    if (mount) {
+      notify(t('apps.videoPlayer.mountAdded', { name: mount.name }), { type: 'success' })
+    }
+  } catch (error) {
+    localError.value = toErrorMessage(error)
+  } finally {
+    addingMount.value = false
+  }
 }
 
-/** FileList / File[] からビデオをプレイリストに追加する */
-function addFiles(files: FileList | File[]): void {
-  const videoFiles = Array.from(files).filter(f => f.type.startsWith('video/'))
-  for (const file of videoFiles) {
-    const url = URL.createObjectURL(file)
-    videos.value.push({ name: videoNameFromFile(file), url, file })
+/** ファイル名からビデオ名を生成する（拡張子除去） */
+function videoNameFromPath(path: string): string {
+  const filename = path.split('/').filter(Boolean).at(-1) ?? ''
+  return filename.replace(/\.[^.]+$/, '') || t('apps.videoPlayer.unknownVideo')
+}
+
+/** ファイルエントリーをプレイリストへ追加する */
+async function addVideoFromEntry(entry: FileSystemEntry, autoPlay = false): Promise<void> {
+  if (entry.kind !== 'file') return
+
+  if (!isVideoPath(entry.path)) {
+    notify(t('apps.videoPlayer.notVideo'), { type: 'warning' })
+    return
   }
-  // 初回追加時は先頭を選択
-  if (currentIndex.value === -1 && videos.value.length > 0) {
-    loadVideo(0)
+
+  const mountId = fileSystem.activeMountId.value
+  if (!mountId) return
+
+  const existingIndex = videos.value.findIndex(item => item.path === entry.path)
+  if (existingIndex >= 0) {
+    if (autoPlay) {
+      loadVideo(existingIndex)
+      await togglePlay(true)
+    }
+    return
+  }
+
+  try {
+    const blob = await fileSystem.readFileBlob(entry.path, mountId)
+    const url = URL.createObjectURL(blob)
+    const nextIndex = videos.value.length
+    videos.value.push({
+      name: videoNameFromPath(entry.path),
+      path: entry.path,
+      url
+    })
+
+    if (currentIndex.value === -1) {
+      loadVideo(nextIndex)
+    }
+
+    if (autoPlay) {
+      loadVideo(nextIndex)
+      await togglePlay(true)
+    }
+  } catch (error) {
+    localError.value = toErrorMessage(error)
+  }
+}
+
+/** 現在ディレクトリのビデオファイルを全てプレイリストへ追加する */
+async function addAllFromDirectory(): Promise<void> {
+  const candidates = entries.value.filter(entry => entry.kind === 'file' && isVideoPath(entry.path))
+  if (candidates.length === 0) return
+
+  for (const entry of candidates) {
+    await addVideoFromEntry(entry)
   }
 }
 
@@ -124,6 +206,7 @@ function addFiles(files: FileList | File[]): void {
 function removeVideo(index: number): void {
   const item = videos.value[index]
   if (!item) return
+  const wasPlaying = isPlaying.value
   URL.revokeObjectURL(item.url)
   videos.value.splice(index, 1)
 
@@ -134,17 +217,15 @@ function removeVideo(index: number): void {
     if (videos.value.length > 0) {
       const next = Math.min(index, videos.value.length - 1)
       loadVideo(next)
+      if (wasPlaying) void togglePlay(true)
     } else {
       currentIndex.value = -1
       currentTime.value = 0
       duration.value = 0
-      videoInfo.value = null
       if (videoRef.value) videoRef.value.src = ''
     }
   }
 }
-
-// ─── 再生制御 ──────────────────────────────────────────────
 
 /** 指定インデックスのビデオを `<video>` にロードする */
 function loadVideo(index: number): void {
@@ -153,33 +234,33 @@ function loadVideo(index: number): void {
   currentIndex.value = index
   videoRef.value.src = item.url
   videoRef.value.load()
+  videoRef.value.volume = volume.value
+  videoRef.value.muted = isMuted.value
   videoRef.value.playbackRate = playbackRate.value
   currentTime.value = 0
   duration.value = 0
-  videoInfo.value = null
 }
 
 /** 再生 / 一時停止を切り替える */
-async function togglePlay(): Promise<void> {
+async function togglePlay(forcePlay = false): Promise<void> {
   if (!videoRef.value) return
   if (currentIndex.value === -1 && videos.value.length > 0) {
     loadVideo(0)
   }
-  if (isPlaying.value) {
+
+  if (!forcePlay && isPlaying.value) {
     videoRef.value.pause()
   } else {
     try {
       await videoRef.value.play()
     } catch {
-      // 自動再生ポリシーやユーザー操作なし等で再生が拒否された場合は状態を維持
       isPlaying.value = false
-      showControls.value = true
     }
   }
 }
 
 /** 次のビデオを再生する */
-function nextVideo(): void {
+async function nextVideo(): Promise<void> {
   if (videos.value.length === 0) return
   let next: number
   if (isShuffle.value) {
@@ -189,20 +270,21 @@ function nextVideo(): void {
     if (next >= videos.value.length) next = 0
   }
   loadVideo(next)
-  if (isPlaying.value) videoRef.value?.play()
+  if (isPlaying.value) await togglePlay(true)
 }
 
-/** 前のビデオを再生する（再生位置が 3 秒以上の場合は先頭へ戻る） */
-function prevVideo(): void {
+/** 前のビデオを再生する（再生位置が 3 秒以上なら先頭へ戻す） */
+async function prevVideo(): Promise<void> {
   if (videos.value.length === 0) return
   if (currentTime.value > 3) {
     if (videoRef.value) videoRef.value.currentTime = 0
     return
   }
+
   let prev = currentIndex.value - 1
   if (prev < 0) prev = videos.value.length - 1
   loadVideo(prev)
-  if (isPlaying.value) videoRef.value?.play()
+  if (isPlaying.value) await togglePlay(true)
 }
 
 /** 再生速度を変更する */
@@ -233,7 +315,33 @@ const repeatIcon = computed(() => {
 /** リピートがアクティブかどうか */
 const repeatActive = computed(() => repeatMode.value !== 'none')
 
-// ─── Picture-in-Picture ───────────────────────────────────
+/** シークバー操作時に再生位置を更新する */
+function handleSeek(event: Event): void {
+  const input = event.target as HTMLInputElement
+  if (!videoRef.value) return
+  videoRef.value.currentTime = Number(input.value)
+}
+
+/** 音量スライダー操作時に音量を更新する */
+function handleVolumeChange(event: Event): void {
+  const input = event.target as HTMLInputElement
+  volume.value = Number(input.value)
+  if (videoRef.value) {
+    videoRef.value.volume = volume.value
+    if (volume.value > 0) {
+      isMuted.value = false
+      videoRef.value.muted = false
+    }
+  }
+}
+
+/** 秒数を mm:ss 形式へ変換する */
+function formatTime(sec: number): string {
+  if (!isFinite(sec) || sec < 0) return '0:00'
+  const minutes = Math.floor(sec / 60)
+  const seconds = Math.floor(sec % 60)
+  return `${minutes}:${String(seconds).padStart(2, '0')}`
+}
 
 /** PiP をトグルする */
 async function togglePiP(): Promise<void> {
@@ -250,8 +358,6 @@ async function togglePiP(): Promise<void> {
   }
 }
 
-// ─── フルスクリーン ────────────────────────────────────────
-
 /** フルスクリーンをトグルする */
 async function toggleFullscreen(): Promise<void> {
   if (!videoRef.value || !document.fullscreenEnabled) return
@@ -266,89 +372,6 @@ async function toggleFullscreen(): Promise<void> {
   }
 }
 
-// ─── シーク / 音量 ────────────────────────────────────────
-
-/** シークバー操作時に再生位置を更新する */
-function handleSeek(e: Event): void {
-  const input = e.target as HTMLInputElement
-  if (!videoRef.value) return
-  videoRef.value.currentTime = Number(input.value)
-}
-
-/** 音量スライダー操作時に音量を更新する */
-function handleVolumeChange(e: Event): void {
-  const input = e.target as HTMLInputElement
-  volume.value = Number(input.value)
-  if (videoRef.value) {
-    videoRef.value.volume = volume.value
-    if (volume.value > 0) isMuted.value = false
-  }
-}
-
-// ─── 時間フォーマット ──────────────────────────────────────
-
-/** 秒数を mm:ss 形式の文字列に変換する */
-function formatTime(sec: number): string {
-  if (!isFinite(sec) || sec < 0) return '0:00'
-  const m = Math.floor(sec / 60)
-  const s = Math.floor(sec % 60)
-  return `${m}:${String(s).padStart(2, '0')}`
-}
-
-// ─── キーボードショートカット ──────────────────────────────
-
-/** キーボードショートカットを処理する（このウィンドウが最前面の場合のみ動作） */
-function handleKeydown(e: KeyboardEvent): void {
-  // このウィンドウが最前面でない場合は無視
-  if (store.topWindow?.id !== props.windowId) return
-  // フォーム要素内の操作は無視
-  if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
-
-  switch (e.key) {
-    case ' ':
-      e.preventDefault()
-      togglePlay()
-      break
-    case 'ArrowLeft':
-      e.preventDefault()
-      if (videoRef.value) {
-        videoRef.value.currentTime = Math.max(0, videoRef.value.currentTime - 5)
-      }
-      break
-    case 'ArrowRight':
-      e.preventDefault()
-      if (videoRef.value) {
-        videoRef.value.currentTime = Math.min(duration.value, videoRef.value.currentTime + 5)
-      }
-      break
-    case 'ArrowUp':
-      e.preventDefault()
-      volume.value = Math.min(1, volume.value + 0.1)
-      if (videoRef.value) {
-        videoRef.value.volume = volume.value
-        if (volume.value > 0) {
-          isMuted.value = false
-          videoRef.value.muted = false
-        }
-      }
-      break
-    case 'ArrowDown':
-      e.preventDefault()
-      volume.value = Math.max(0, volume.value - 0.1)
-      if (videoRef.value) {
-        videoRef.value.volume = volume.value
-        if (volume.value === 0) {
-          isMuted.value = true
-          videoRef.value.muted = true
-        }
-      }
-      break
-  }
-  resetHideControlsTimer()
-}
-
-// ─── video イベントハンドラ ────────────────────────────────
-
 function onTimeUpdate(): void {
   if (videoRef.value) currentTime.value = videoRef.value.currentTime
 }
@@ -356,7 +379,6 @@ function onTimeUpdate(): void {
 function onLoadedMetadata(): void {
   if (!videoRef.value) return
   duration.value = videoRef.value.duration
-  videoInfo.value = { width: videoRef.value.videoWidth, height: videoRef.value.videoHeight }
   videoRef.value.volume = volume.value
   videoRef.value.muted = isMuted.value
   videoRef.value.playbackRate = playbackRate.value
@@ -364,357 +386,344 @@ function onLoadedMetadata(): void {
 
 function onPlay(): void {
   isPlaying.value = true
-  resetHideControlsTimer()
 }
 
 function onPause(): void {
   isPlaying.value = false
-  showControls.value = true
-  if (hideControlsTimer !== null) {
-    clearTimeout(hideControlsTimer)
-    hideControlsTimer = null
-  }
 }
 
 function onEnded(): void {
   isPlaying.value = false
   if (repeatMode.value === 'one') {
-    videoRef.value?.play()
+    void togglePlay(true)
     return
   }
+
   if (repeatMode.value === 'all' || currentIndex.value < videos.value.length - 1) {
-    nextVideo()
+    void nextVideo()
   }
 }
 
-// ─── ドラッグ&ドロップ ─────────────────────────────────────
-
-function onDragOver(e: DragEvent): void {
-  e.preventDefault()
-  isDragOver.value = true
-}
-
-function onDragLeave(): void {
-  isDragOver.value = false
-}
-
-function onDrop(e: DragEvent): void {
-  e.preventDefault()
-  isDragOver.value = false
-  const files = e.dataTransfer?.files
-  if (files && files.length > 0) addFiles(files)
-}
-
-// ─── ファイルピッカー ──────────────────────────────────────
-
-function openFilePicker(): void {
-  fileInputRef.value?.click()
-}
-
-function onFileInputChange(e: Event): void {
-  const input = e.target as HTMLInputElement
-  if (input.files && input.files.length > 0) {
-    addFiles(input.files)
-    input.value = ''
+async function openEntry(entry: FileSystemEntry): Promise<void> {
+  if (entry.kind === 'directory') {
+    goTo(entry.path)
+    return
   }
+
+  await addVideoFromEntry(entry, true)
+  if (isCompact.value) showBrowser.value = false
 }
 
-// ─── ライフサイクル ────────────────────────────────────────
+function toggleBrowserPanel(): void {
+  if (isCompact.value && !showBrowser.value) {
+    showPlaylist.value = false
+  }
+  showBrowser.value = !showBrowser.value
+}
+
+function togglePlaylistPanel(): void {
+  if (isCompact.value && !showPlaylist.value) {
+    showBrowser.value = false
+  }
+  showPlaylist.value = !showPlaylist.value
+}
 
 onMounted(() => {
-  window.addEventListener('keydown', handleKeydown)
+  if (containerRef.value) {
+    containerWidth.value = containerRef.value.clientWidth
+    const resizeObserver = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (entry) containerWidth.value = entry.contentRect.width
+    })
+    resizeObserver.observe(containerRef.value)
+    onUnmounted(() => resizeObserver.disconnect())
+  }
+
   if (videoRef.value) {
     videoRef.value.volume = volume.value
   }
+
+  void fileSystem.restoreMounts().then(loadEntries)
 })
 
-onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeydown)
-  if (hideControlsTimer !== null) {
-    clearTimeout(hideControlsTimer)
-    hideControlsTimer = null
-  }
+onBeforeUnmount(() => {
   for (const item of videos.value) {
     URL.revokeObjectURL(item.url)
   }
 })
 
-// ─── 現在のビデオ名 ────────────────────────────────────────
+watch(isCompact, (compact) => {
+  if (compact) {
+    showBrowser.value = false
+    showPlaylist.value = false
+  }
+})
+
+watch(() => fileSystem.activeMountId.value, async () => {
+  browserPath.value = '/'
+  await loadEntries()
+})
+
+watch(browserPath, async () => {
+  await loadEntries()
+})
 
 /** 現在再生中のビデオ名を返す */
 const currentVideoName = computed((): string => {
   const item = videos.value[currentIndex.value]
   return item?.name ?? ''
 })
-
-/** 再生速度の選択肢 */
-const playbackRates = [0.5, 0.75, 1, 1.25, 1.5, 2] as const
-
-/** 再生速度メニュー項目 */
-const playbackRateItems = computed(() =>
-  playbackRates.map(rate => ({
-    label: rate === 1 ? `${rate}x (標準)` : `${rate}x`,
-    onSelect: () => setPlaybackRate(rate)
-  }))
-)
 </script>
 
 <template>
   <div
     ref="containerRef"
-    class="video-player flex h-full bg-black select-none overflow-hidden"
-    @dragover="onDragOver"
-    @dragleave="onDragLeave"
-    @drop="onDrop"
+    class="video-player"
   >
-    <!-- 非表示ファイル入力 -->
-    <input
-      ref="fileInputRef"
-      type="file"
-      accept="video/*"
-      multiple
-      class="hidden"
-      @change="onFileInputChange"
-    >
-
-    <!-- メインビデオエリア -->
-    <div
-      class="relative flex-1 flex items-center justify-center bg-black overflow-hidden"
-      @mousemove="resetHideControlsTimer"
-      @click="togglePlay"
-    >
-      <!-- ビデオ未読込み時: ドロップゾーン -->
-      <div
-        v-if="videos.length === 0"
-        class="absolute inset-0 flex flex-col items-center justify-center gap-4 cursor-pointer"
-        :class="isDragOver ? 'bg-purple-500/10 border-2 border-dashed border-purple-500' : 'border-2 border-dashed border-white/10'"
-        @click.stop="openFilePicker"
-      >
-        <UIcon
-          name="i-lucide-video"
-          class="text-5xl text-white/30"
-        />
-        <p class="text-white/50 text-sm text-center px-6">
-          {{ t('apps.videoPlayer.noVideos') }}
-        </p>
+    <div class="toolbar">
+      <div class="toolbar-left">
         <UButton
-          icon="i-lucide-plus"
-          :label="t('apps.videoPlayer.addFiles')"
+          icon="i-lucide-folder-tree"
+          :label="isCompact ? undefined : t('apps.videoPlayer.browser')"
+          size="sm"
+          variant="ghost"
           color="neutral"
-          variant="outline"
-          @click.stop="openFilePicker"
+          @click="toggleBrowserPanel"
+        />
+        <UButton
+          icon="i-lucide-list-video"
+          :label="isCompact ? undefined : (showPlaylist ? t('apps.videoPlayer.hidePlaylist') : t('apps.videoPlayer.showPlaylist'))"
+          size="sm"
+          variant="ghost"
+          color="neutral"
+          @click="togglePlaylistPanel"
+        />
+        <USelect
+          v-model="selectedMountId"
+          :items="mountOptions"
+          value-key="value"
+          class="mount-select"
+          :placeholder="t('apps.videoPlayer.mount')"
+        />
+        <UButton
+          icon="i-lucide-folder-plus"
+          :label="isCompact ? undefined : t('apps.videoPlayer.addMount')"
+          size="sm"
+          variant="ghost"
+          color="primary"
+          :loading="addingMount"
+          @click="handleAddMount"
+        />
+        <UButton
+          icon="i-lucide-arrow-up"
+          :label="isCompact ? undefined : t('apps.videoPlayer.up')"
+          size="sm"
+          variant="ghost"
+          color="neutral"
+          :disabled="!hasMount || browserPath === '/'"
+          @click="goUp"
+        />
+        <UButton
+          icon="i-lucide-refresh-cw"
+          :label="isCompact ? undefined : t('apps.videoPlayer.refresh')"
+          size="sm"
+          variant="ghost"
+          color="neutral"
+          :loading="isLoadingEntries"
+          :disabled="!hasMount"
+          @click="loadEntries"
+        />
+        <UButton
+          icon="i-lucide-list-plus"
+          :label="isCompact ? undefined : t('apps.videoPlayer.addAll')"
+          size="sm"
+          variant="ghost"
+          color="neutral"
+          :disabled="!hasMount"
+          @click="addAllFromDirectory"
         />
       </div>
-
-      <!-- ビデオ要素 -->
-      <video
-        ref="videoRef"
-        class="max-w-full max-h-full object-contain"
-        :class="{ hidden: videos.length === 0 }"
-        preload="metadata"
-        @timeupdate="onTimeUpdate"
-        @loadedmetadata="onLoadedMetadata"
-        @play="onPlay"
-        @pause="onPause"
-        @ended="onEnded"
-      />
-
-      <!-- ドラッグオーバーレイ（ビデオ読込み後） -->
-      <Transition name="fade">
-        <div
-          v-if="isDragOver && videos.length > 0"
-          class="absolute inset-0 flex items-center justify-center bg-purple-500/20 border-2 border-dashed border-purple-400 pointer-events-none z-10"
-        >
-          <span class="text-white font-medium text-sm bg-black/50 px-4 py-2 rounded-lg">
-            {{ t('apps.videoPlayer.addFiles') }}
-          </span>
-        </div>
-      </Transition>
-
-      <!-- コントロールバー（自動非表示） -->
-      <Transition name="controls">
-        <div
-          v-if="videos.length > 0 && showControls"
-          class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-4 pt-8 pb-3 flex flex-col gap-2 z-10"
-          @click.stop
-        >
-          <!-- プログレスバー -->
-          <div class="flex items-center gap-2 text-xs text-white/70">
-            <span class="w-10 text-right tabular-nums">{{ formatTime(currentTime) }}</span>
-            <input
-              type="range"
-              class="flex-1 accent-purple-400 h-1 cursor-pointer"
-              :min="0"
-              :max="duration || 0"
-              :value="currentTime"
-              step="0.1"
-              @input="handleSeek"
-              @click.stop
-            >
-            <span class="w-10 tabular-nums">{{ formatTime(duration) }}</span>
-          </div>
-
-          <!-- コントロールボタン群 -->
-          <div class="flex items-center gap-1">
-            <!-- 再生/一時停止 -->
-            <UButton
-              :icon="isPlaying ? 'i-lucide-pause' : 'i-lucide-play'"
-              variant="ghost"
-              size="sm"
-              color="neutral"
-              class="text-white hover:bg-white/20"
-              @click.stop="togglePlay"
-            />
-            <!-- 前へ -->
-            <UButton
-              icon="i-lucide-skip-back"
-              variant="ghost"
-              size="sm"
-              color="neutral"
-              :disabled="videos.length === 0"
-              class="text-white hover:bg-white/20"
-              @click.stop="prevVideo"
-            />
-            <!-- 次へ -->
-            <UButton
-              icon="i-lucide-skip-forward"
-              variant="ghost"
-              size="sm"
-              color="neutral"
-              :disabled="videos.length === 0"
-              class="text-white hover:bg-white/20"
-              @click.stop="nextVideo"
-            />
-
-            <!-- 音量 -->
-            <UButton
-              :icon="isMuted || volume === 0 ? 'i-lucide-volume-x' : 'i-lucide-volume-2'"
-              variant="ghost"
-              size="sm"
-              color="neutral"
-              class="text-white hover:bg-white/20"
-              :title="isMuted ? t('apps.videoPlayer.unmute') : t('apps.videoPlayer.mute')"
-              @click.stop="toggleMute"
-            />
-            <input
-              type="range"
-              class="w-20 accent-purple-400 h-1 cursor-pointer"
-              :min="0"
-              :max="1"
-              step="0.05"
-              :value="isMuted ? 0 : volume"
-              @input="handleVolumeChange"
-              @click.stop
-            >
-
-            <!-- ビデオ名（中央） -->
-            <span
-              v-if="currentVideoName && !isCompact"
-              class="flex-1 text-xs text-white/80 truncate text-center px-2"
-              :title="currentVideoName"
-            >{{ currentVideoName }}</span>
-            <span
-              v-else
-              class="flex-1"
-            />
-
-            <!-- 再生速度 -->
-            <UDropdownMenu
-              :items="playbackRateItems"
-              :content="{ align: 'end' }"
-            >
-              <UButton
-                variant="ghost"
-                size="xs"
-                color="neutral"
-                class="text-white/70 hover:bg-white/20 tabular-nums font-mono"
-                :label="`${playbackRate}x`"
-                @click.stop
-              />
-            </UDropdownMenu>
-
-            <!-- シャッフル -->
-            <UButton
-              icon="i-lucide-shuffle"
-              variant="ghost"
-              size="sm"
-              color="neutral"
-              :class="['hover:bg-white/20', isShuffle ? 'text-purple-400' : 'text-white']"
-              :title="t('apps.videoPlayer.shuffle')"
-              @click.stop="isShuffle = !isShuffle"
-            />
-
-            <!-- リピート -->
-            <UButton
-              :icon="repeatIcon"
-              variant="ghost"
-              size="sm"
-              color="neutral"
-              :class="['hover:bg-white/20', repeatActive ? 'text-purple-400' : 'text-white']"
-              :title="t(`apps.videoPlayer.repeat${repeatMode.charAt(0).toUpperCase() + repeatMode.slice(1)}`)"
-              @click.stop="cycleRepeat"
-            />
-
-            <!-- プレイリストトグル -->
-            <UButton
-              icon="i-lucide-list-video"
-              variant="ghost"
-              size="sm"
-              color="neutral"
-              :class="['hover:bg-white/20', showPlaylist ? 'text-purple-400' : 'text-white']"
-              :title="showPlaylist ? t('apps.videoPlayer.hidePlaylist') : t('apps.videoPlayer.showPlaylist')"
-              @click.stop="showPlaylist = !showPlaylist"
-            />
-
-            <!-- PiP -->
-            <UButton
-              icon="i-lucide-picture-in-picture"
-              variant="ghost"
-              size="sm"
-              color="neutral"
-              class="text-white hover:bg-white/20"
-              :title="t('apps.videoPlayer.pip')"
-              @click.stop="togglePiP"
-            />
-
-            <!-- フルスクリーン -->
-            <UButton
-              icon="i-lucide-maximize"
-              variant="ghost"
-              size="sm"
-              color="neutral"
-              class="text-white hover:bg-white/20"
-              :title="t('apps.videoPlayer.fullscreen')"
-              @click.stop="toggleFullscreen"
-            />
-          </div>
-        </div>
-      </Transition>
     </div>
 
-    <!-- プレイリストパネル -->
-    <Transition name="slide-right">
-      <div
-        v-if="showPlaylist"
-        class="flex flex-col bg-(--ui-bg) border-l border-(--ui-border) overflow-hidden"
-        :style="{ width: isCompact ? '100%' : '220px' }"
-      >
-        <!-- パネルヘッダー -->
-        <div class="flex items-center justify-between px-3 py-2 border-b border-(--ui-border) shrink-0">
-          <span class="text-xs font-semibold text-(--ui-text-muted) uppercase tracking-wider">
-            {{ t('apps.videoPlayer.playlist') }}
-            <span class="ml-1">({{ videos.length }})</span>
-          </span>
-          <div class="flex items-center gap-1">
-            <UButton
-              icon="i-lucide-plus"
-              size="xs"
-              variant="ghost"
-              color="neutral"
-              :title="t('apps.videoPlayer.addFiles')"
-              @click="openFilePicker"
+    <UAlert
+      v-if="!fileSystem.isSupported.value"
+      icon="i-lucide-info"
+      color="neutral"
+      variant="soft"
+      :description="t('apps.videoPlayer.unsupported')"
+      class="state-alert"
+    />
+
+    <UAlert
+      v-else-if="!hasMount"
+      icon="i-lucide-folder-search"
+      color="neutral"
+      variant="soft"
+      :description="t('apps.videoPlayer.noMounts')"
+      class="state-alert"
+    />
+
+    <UAlert
+      v-if="localError"
+      icon="i-lucide-triangle-alert"
+      color="error"
+      variant="soft"
+      :description="localError"
+      class="state-alert"
+    />
+
+    <div
+      v-if="overlayVisible"
+      class="overlay-backdrop"
+      @click="showBrowser = false; showPlaylist = false"
+    />
+
+    <div class="content">
+      <div class="main-panel">
+        <div class="video-stage">
+          <video
+            ref="videoRef"
+            class="video-element"
+            :class="{ hidden: videos.length === 0 }"
+            preload="metadata"
+            @timeupdate="onTimeUpdate"
+            @loadedmetadata="onLoadedMetadata"
+            @play="onPlay"
+            @pause="onPause"
+            @ended="onEnded"
+          />
+
+          <div
+            v-if="videos.length === 0"
+            class="empty-state"
+          >
+            <UIcon
+              name="i-lucide-video-off"
+              class="empty-icon"
             />
+            <p>{{ t('apps.videoPlayer.noVideos') }}</p>
+          </div>
+        </div>
+
+        <div class="timeline-row">
+          <span>{{ formatTime(currentTime) }}</span>
+          <input
+            type="range"
+            :min="0"
+            :max="duration || 0"
+            :value="currentTime"
+            step="0.1"
+            @input="handleSeek"
+          >
+          <span>{{ formatTime(duration) }}</span>
+        </div>
+
+        <div class="control-row">
+          <UButton
+            icon="i-lucide-skip-back"
+            variant="ghost"
+            size="sm"
+            color="neutral"
+            :disabled="videos.length === 0"
+            @click="prevVideo"
+          />
+          <UButton
+            :icon="isPlaying ? 'i-lucide-pause' : 'i-lucide-play'"
+            variant="solid"
+            size="md"
+            color="primary"
+            :disabled="videos.length === 0"
+            @click="togglePlay()"
+          />
+          <UButton
+            icon="i-lucide-skip-forward"
+            variant="ghost"
+            size="sm"
+            color="neutral"
+            :disabled="videos.length === 0"
+            @click="nextVideo"
+          />
+
+          <UButton
+            icon="i-lucide-shuffle"
+            variant="ghost"
+            size="sm"
+            :color="isShuffle ? 'primary' : 'neutral'"
+            @click="isShuffle = !isShuffle"
+          />
+          <UButton
+            :icon="repeatIcon"
+            variant="ghost"
+            size="sm"
+            :color="repeatActive ? 'primary' : 'neutral'"
+            @click="cycleRepeat"
+          />
+          <UButton
+            :icon="isMuted || volume === 0 ? 'i-lucide-volume-x' : 'i-lucide-volume-2'"
+            variant="ghost"
+            size="sm"
+            color="neutral"
+            :title="isMuted ? t('apps.videoPlayer.unmute') : t('apps.videoPlayer.mute')"
+            @click="toggleMute"
+          />
+          <input
+            type="range"
+            class="volume-slider"
+            :min="0"
+            :max="1"
+            step="0.05"
+            :value="isMuted ? 0 : volume"
+            @input="handleVolumeChange"
+          >
+
+          <UDropdownMenu
+            :items="playbackRateItems"
+            :content="{ align: 'end' }"
+          >
             <UButton
+              variant="ghost"
+              size="xs"
+              color="neutral"
+              :label="`${playbackRate}x`"
+            />
+          </UDropdownMenu>
+
+          <UButton
+            icon="i-lucide-picture-in-picture"
+            variant="ghost"
+            size="sm"
+            color="neutral"
+            :title="t('apps.videoPlayer.pip')"
+            @click="togglePiP"
+          />
+          <UButton
+            icon="i-lucide-maximize"
+            variant="ghost"
+            size="sm"
+            color="neutral"
+            :title="t('apps.videoPlayer.fullscreen')"
+            @click="toggleFullscreen"
+          />
+        </div>
+
+        <p
+          v-if="currentVideoName"
+          class="current-name"
+        >
+          {{ currentVideoName }}
+        </p>
+      </div>
+
+      <Transition name="panel-slide">
+        <aside
+          v-if="showPlaylist"
+          class="playlist-panel"
+          :class="{ compact: isCompact }"
+        >
+          <div class="panel-header">
+            <span>{{ t('apps.videoPlayer.playlist') }} ({{ videos.length }})</span>
+            <UButton
+              v-if="isCompact"
               icon="i-lucide-x"
               size="xs"
               variant="ghost"
@@ -722,122 +731,347 @@ const playbackRateItems = computed(() =>
               @click="showPlaylist = false"
             />
           </div>
-        </div>
 
-        <!-- ビデオ一覧 -->
-        <div
-          v-if="videos.length === 0"
-          class="flex flex-col items-center justify-center flex-1 gap-2 text-(--ui-text-muted)"
-        >
-          <UIcon
-            name="i-lucide-video-off"
-            class="text-3xl opacity-30"
-          />
-          <p class="text-xs text-center px-4">
-            {{ t('apps.videoPlayer.noVideos') }}
-          </p>
-          <UButton
-            icon="i-lucide-plus"
-            size="xs"
-            variant="outline"
-            color="neutral"
-            :label="t('apps.videoPlayer.addFiles')"
-            @click="openFilePicker"
-          />
-        </div>
-
-        <ul
-          v-else
-          class="flex-1 overflow-y-auto"
-        >
-          <li
-            v-for="(item, index) in videos"
-            :key="item.url"
-            class="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-(--ui-bg-elevated) transition-colors group"
-            :class="{ 'bg-(--ui-bg-elevated)': index === currentIndex }"
-            @click="loadVideo(index); if (!isPlaying) togglePlay()"
+          <div
+            v-if="videos.length === 0"
+            class="panel-empty"
           >
-            <!-- 再生中インジケーター -->
-            <div class="w-4 shrink-0 flex items-center justify-center">
-              <UIcon
-                v-if="index === currentIndex && isPlaying"
-                name="i-lucide-volume-2"
-                class="text-purple-500 text-xs"
-              />
-              <span
-                v-else-if="index !== currentIndex"
-                class="text-xs text-(--ui-text-muted) group-hover:hidden"
-              >{{ index + 1 }}</span>
-              <UIcon
-                v-if="index !== currentIndex || !isPlaying"
-                name="i-lucide-play"
-                class="text-xs text-(--ui-text-muted) hidden group-hover:block"
-              />
-            </div>
+            {{ t('apps.videoPlayer.noVideos') }}
+          </div>
 
-            <!-- ビデオ名 -->
-            <span
-              class="flex-1 text-xs truncate"
-              :class="index === currentIndex ? 'text-purple-500 font-medium' : 'text-(--ui-text)'"
-              :title="item.name"
-            >{{ item.name }}</span>
+          <ul
+            v-else
+            class="playlist"
+          >
+            <li
+              v-for="(item, index) in videos"
+              :key="item.path"
+              class="playlist-item"
+              :class="{ active: index === currentIndex }"
+              @click="loadVideo(index); if (!isPlaying) togglePlay(true)"
+            >
+              <span>{{ item.name }}</span>
+              <UButton
+                icon="i-lucide-x"
+                variant="ghost"
+                size="xs"
+                color="neutral"
+                :title="t('apps.videoPlayer.removeVideo')"
+                @click.stop="removeVideo(index)"
+              />
+            </li>
+          </ul>
+        </aside>
+      </Transition>
 
-            <!-- 削除ボタン -->
+      <Transition name="panel-slide-right">
+        <aside
+          v-if="showBrowser && hasMount && fileSystem.isSupported.value"
+          class="browser-panel"
+          :class="{ compact: isCompact }"
+        >
+          <div class="panel-header">
+            <span>{{ browserPath }}</span>
             <UButton
+              v-if="isCompact"
               icon="i-lucide-x"
-              variant="ghost"
               size="xs"
+              variant="ghost"
               color="neutral"
-              class="opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-              :title="t('apps.videoPlayer.removeVideo')"
-              @click.stop="removeVideo(index)"
+              @click="showBrowser = false"
             />
-          </li>
-        </ul>
+          </div>
 
-        <!-- フッター: ファイル追加 -->
-        <div class="shrink-0 px-3 py-2 border-t border-(--ui-border)">
-          <UButton
-            icon="i-lucide-plus"
-            :label="t('apps.videoPlayer.addFiles')"
-            size="xs"
-            variant="outline"
-            color="neutral"
-            class="w-full justify-center"
-            @click="openFilePicker"
-          />
-        </div>
-      </div>
-    </Transition>
+          <div
+            v-if="isLoadingEntries"
+            class="panel-empty"
+          >
+            {{ t('apps.videoPlayer.loading') }}
+          </div>
+
+          <div
+            v-else-if="entries.length === 0"
+            class="panel-empty"
+          >
+            {{ t('apps.videoPlayer.empty') }}
+          </div>
+
+          <button
+            v-for="entry in entries"
+            :key="entry.path"
+            class="browser-item"
+            @click="openEntry(entry)"
+          >
+            <UIcon :name="entry.kind === 'directory' ? 'i-lucide-folder' : 'i-lucide-file-video'" />
+            <span>{{ entry.name }}</span>
+          </button>
+        </aside>
+      </Transition>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-.controls-enter-active,
-.controls-leave-active {
-  transition: opacity 0.3s ease;
-}
-.controls-enter-from,
-.controls-leave-to {
-  opacity: 0;
+.video-player {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--ui-bg);
+  min-height: 0;
+  overflow: hidden;
 }
 
-.slide-right-enter-active,
-.slide-right-leave-active {
+.toolbar {
+  border-bottom: 1px solid var(--ui-border);
+  background: var(--ui-bg-elevated);
+  padding: 0.375rem 0.5rem;
+  flex-shrink: 0;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.mount-select {
+  min-width: 12rem;
+  max-width: 16rem;
+}
+
+.state-alert {
+  margin: 0.5rem;
+}
+
+.overlay-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 35%);
+  z-index: 10;
+}
+
+.content {
+  flex: 1 1 0%;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}
+
+.main-panel {
+  flex: 1 1 0%;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem;
+  gap: 0.75rem;
+}
+
+.video-stage {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  background: #000;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.video-element {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.video-element.hidden {
+  display: none;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  color: rgb(255 255 255 / 70%);
+  text-align: center;
+  padding: 1rem;
+}
+
+.empty-icon {
+  font-size: 2rem;
+  opacity: 0.7;
+}
+
+.timeline-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--ui-text-muted);
+}
+
+.timeline-row input {
+  width: 100%;
+}
+
+.control-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.volume-slider {
+  width: 6rem;
+}
+
+.current-name {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--ui-text-muted);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.playlist-panel,
+.browser-panel {
+  width: 16rem;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--ui-bg-elevated);
+  border-left: 1px solid var(--ui-border);
+  overflow: auto;
+  padding: 0.5rem;
+}
+
+.playlist-panel.compact,
+.browser-panel.compact {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: min(88%, 22rem);
+  z-index: 20;
+  box-shadow: 0 14px 28px rgb(0 0 0 / 25%);
+}
+
+.playlist-panel.compact {
+  left: 0;
+  border-left: none;
+  border-right: 1px solid var(--ui-border);
+}
+
+.browser-panel.compact {
+  right: 0;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--ui-text-muted);
+  margin-bottom: 0.5rem;
+  min-height: 1.5rem;
+}
+
+.panel-header span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.panel-empty {
+  font-size: 0.75rem;
+  color: var(--ui-text-muted);
+  padding: 0.5rem 0;
+}
+
+.playlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.playlist-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: 0.35rem;
+  cursor: pointer;
+}
+
+.playlist-item:hover {
+  background: var(--ui-bg);
+}
+
+.playlist-item.active {
+  background: color-mix(in srgb, var(--ui-primary) 10%, transparent);
+}
+
+.playlist-item span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8rem;
+}
+
+.browser-item {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: 0.35rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.browser-item:hover {
+  background: var(--ui-bg);
+}
+
+.browser-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8rem;
+}
+
+.panel-slide-enter-active,
+.panel-slide-leave-active,
+.panel-slide-right-enter-active,
+.panel-slide-right-leave-active {
   transition: transform 0.2s ease, opacity 0.2s ease;
 }
-.slide-right-enter-from,
-.slide-right-leave-to {
-  transform: translateX(100%);
+
+.panel-slide-enter-from,
+.panel-slide-leave-to {
+  transform: translateX(-10px);
+  opacity: 0;
+}
+
+.panel-slide-right-enter-from,
+.panel-slide-right-leave-to {
+  transform: translateX(10px);
   opacity: 0;
 }
 </style>

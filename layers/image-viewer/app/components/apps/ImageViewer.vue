@@ -1,93 +1,170 @@
 <script setup lang="ts">
+import type { FileSystemEntry } from '#layers/txunos-core/app/stores/filesystem'
+
 defineProps<{ windowId: string }>()
 
 const { t } = useI18n()
+const { notify } = useDesktopNotification()
+const fileSystem = useFileSystem()
 
-/** 表示中の画像 data URL */
+const IMAGE_EXTENSIONS = new Set([
+  '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.ico', '.avif', '.tif', '.tiff'
+])
+
+/** 表示中の画像 URL */
 const imageUrl = ref<string | null>(null)
 /** ズーム倍率 */
 const zoom = ref(1)
 /** 回転角度（度） */
 const rotation = ref(0)
-/** ドラッグオーバー中か */
-const isDragOver = ref(false)
-/** 隠しファイル入力 */
-const fileInput = ref<HTMLInputElement | null>(null)
-/** 画像のオリジナル情報 */
+/** 画像情報 */
 const imageInfo = ref<{ name: string, size: string } | null>(null)
 
-/** コンテナ幅によるレスポンシブ判定 */
+const localError = ref<string | null>(null)
+const browserPath = ref('/')
+const entries = ref<FileSystemEntry[]>([])
+const isLoadingEntries = ref(false)
+const addingMount = ref(false)
+const showBrowser = ref(true)
+
 const containerRef = ref<HTMLElement | null>(null)
 const containerWidth = ref(700)
 
-onMounted(() => {
-  if (!containerRef.value) return
-  containerWidth.value = containerRef.value.clientWidth
-  const ro = new ResizeObserver((entries) => {
-    const entry = entries[0]
-    if (entry) containerWidth.value = entry.contentRect.width
-  })
-  ro.observe(containerRef.value)
-  onUnmounted(() => ro.disconnect())
+let currentObjectUrl: string | null = null
+
+const isCompact = computed(() => containerWidth.value < 860)
+
+const mountOptions = computed(() =>
+  fileSystem.mounts.value.map(mount => ({
+    label: mount.name,
+    value: mount.id
+  }))
+)
+
+const hasMount = computed(() => !!fileSystem.activeMountId.value)
+
+const selectedMountId = computed({
+  get: (): string => fileSystem.activeMountId.value ?? '',
+  set: (mountId: string) => {
+    void fileSystem.setActiveMount(mountId || null)
+  }
 })
 
-/** 幅が 480px 未満をコンパクトモードと判定 */
-const isCompact = computed(() => containerWidth.value < 480)
+function toErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message
+  return t('apps.imageViewer.errorGeneric')
+}
 
-/** ファイルを読み込んで表示する */
-function loadFile(file: File): void {
-  if (!file.type.startsWith('image/')) return
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    imageUrl.value = e.target?.result as string
+function isImageFile(path: string): boolean {
+  const lower = path.toLowerCase()
+  return Array.from(IMAGE_EXTENSIONS).some(ext => lower.endsWith(ext))
+}
+
+function goTo(path: string): void {
+  browserPath.value = path
+}
+
+function goUp(): void {
+  if (browserPath.value === '/') return
+  const parts = browserPath.value.split('/').filter(Boolean)
+  parts.pop()
+  browserPath.value = parts.length > 0 ? `/${parts.join('/')}` : '/'
+}
+
+async function loadEntries(): Promise<void> {
+  const mountId = fileSystem.activeMountId.value
+  if (!mountId) {
+    entries.value = []
+    return
+  }
+
+  isLoadingEntries.value = true
+  localError.value = null
+  try {
+    entries.value = await fileSystem.listDirectory(browserPath.value, mountId)
+  } catch (error) {
+    localError.value = toErrorMessage(error)
+    entries.value = []
+  } finally {
+    isLoadingEntries.value = false
+  }
+}
+
+async function openEntry(entry: FileSystemEntry): Promise<void> {
+  if (entry.kind === 'directory') {
+    goTo(entry.path)
+    return
+  }
+
+  if (!isImageFile(entry.path)) {
+    notify(t('apps.imageViewer.notImage'), { type: 'warning' })
+    return
+  }
+
+  const mountId = fileSystem.activeMountId.value
+  if (!mountId) return
+
+  localError.value = null
+  try {
+    const blob = await fileSystem.readFileBlob(entry.path, mountId)
+    if (currentObjectUrl) {
+      URL.revokeObjectURL(currentObjectUrl)
+      currentObjectUrl = null
+    }
+
+    currentObjectUrl = URL.createObjectURL(blob)
+    imageUrl.value = currentObjectUrl
     zoom.value = 1
     rotation.value = 0
     imageInfo.value = {
-      name: file.name,
-      size: formatFileSize(file.size)
+      name: entry.name,
+      size: formatFileSize(blob.size)
     }
+
+    if (isCompact.value) showBrowser.value = false
+  } catch (error) {
+    localError.value = toErrorMessage(error)
   }
-  reader.readAsDataURL(file)
 }
 
-/** ファイルサイズを人間可読形式にフォーマットする */
+/** ファイルサイズを人間可読形式へ変換する */
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
-/** ドロップ時の処理 */
-function handleDrop(event: DragEvent): void {
-  isDragOver.value = false
-  const file = event.dataTransfer?.files[0]
-  if (file) loadFile(file)
+async function handleAddMount(): Promise<void> {
+  addingMount.value = true
+  try {
+    const mount = await fileSystem.addMount()
+    if (mount) {
+      notify(t('apps.imageViewer.mountAdded', { name: mount.name }), { type: 'success' })
+    }
+  } catch (error) {
+    localError.value = toErrorMessage(error)
+  } finally {
+    addingMount.value = false
+  }
 }
 
-/** ファイル選択ダイアログから読み込む */
-function handleFileInput(event: Event): void {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (file) loadFile(file)
-}
-
-/** ズームイン */
+/** ズームインする */
 function zoomIn(): void {
-  zoom.value = Math.min(zoom.value * 1.25, 8)
+  zoom.value = Math.min(zoom.value + 0.1, 5)
 }
 
-/** ズームアウト */
+/** ズームアウトする */
 function zoomOut(): void {
-  zoom.value = Math.max(zoom.value / 1.25, 0.1)
+  zoom.value = Math.max(zoom.value - 0.1, 0.1)
 }
 
-/** ズームをリセット */
+/** ズームと回転をリセットする */
 function zoomReset(): void {
   zoom.value = 1
   rotation.value = 0
 }
 
-/** 90度回転 */
+/** 画像を 90 度回転する */
 function rotate(): void {
   rotation.value = (rotation.value + 90) % 360
 }
@@ -99,6 +176,40 @@ const imageTransform = computed(
 
 /** ズームパーセント表示 */
 const zoomPercent = computed(() => `${Math.round(zoom.value * 100)}%`)
+
+watch(isCompact, (compact) => {
+  if (compact) showBrowser.value = false
+})
+
+watch(() => fileSystem.activeMountId.value, async () => {
+  browserPath.value = '/'
+  await loadEntries()
+})
+
+watch(browserPath, async () => {
+  await loadEntries()
+})
+
+onMounted(() => {
+  if (containerRef.value) {
+    containerWidth.value = containerRef.value.clientWidth
+    const resizeObserver = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (entry) containerWidth.value = entry.contentRect.width
+    })
+    resizeObserver.observe(containerRef.value)
+    onUnmounted(() => resizeObserver.disconnect())
+  }
+
+  void fileSystem.restoreMounts().then(loadEntries)
+})
+
+onBeforeUnmount(() => {
+  if (currentObjectUrl) {
+    URL.revokeObjectURL(currentObjectUrl)
+    currentObjectUrl = null
+  }
+})
 </script>
 
 <template>
@@ -107,29 +218,57 @@ const zoomPercent = computed(() => `${Math.round(zoom.value * 100)}%`)
     class="image-viewer"
     :class="{ compact: isCompact }"
   >
-    <!-- ツールバー -->
     <div class="iv-toolbar">
       <div class="iv-toolbar-left">
-        <input
-          ref="fileInput"
-          type="file"
-          accept="image/*"
-          class="hidden-input"
-          @change="handleFileInput"
-        >
         <UButton
-          icon="i-lucide-folder-open"
-          :label="isCompact ? undefined : t('apps.imageViewer.open')"
+          icon="i-lucide-panel-left"
+          :label="isCompact ? undefined : t('apps.imageViewer.browser')"
           variant="ghost"
           color="neutral"
           size="sm"
-          @click="fileInput?.click()"
+          @click="showBrowser = !showBrowser"
+        />
+        <USelect
+          v-model="selectedMountId"
+          :items="mountOptions"
+          value-key="value"
+          class="mount-select"
+          :placeholder="t('apps.imageViewer.mount')"
+        />
+        <UButton
+          icon="i-lucide-folder-plus"
+          :label="isCompact ? undefined : t('apps.imageViewer.addMount')"
+          variant="ghost"
+          color="primary"
+          size="sm"
+          :loading="addingMount"
+          @click="handleAddMount"
+        />
+        <UButton
+          icon="i-lucide-arrow-up"
+          :label="isCompact ? undefined : t('apps.imageViewer.up')"
+          variant="ghost"
+          color="neutral"
+          size="sm"
+          :disabled="!hasMount || browserPath === '/'"
+          @click="goUp"
+        />
+        <UButton
+          icon="i-lucide-refresh-cw"
+          :label="isCompact ? undefined : t('apps.imageViewer.refresh')"
+          variant="ghost"
+          color="neutral"
+          size="sm"
+          :loading="isLoadingEntries"
+          :disabled="!hasMount"
+          @click="loadEntries"
         />
         <span
           v-if="imageInfo && !isCompact"
           class="iv-filename"
         >{{ imageInfo.name }}</span>
       </div>
+
       <div class="iv-toolbar-right">
         <UButton
           icon="i-lucide-zoom-out"
@@ -167,43 +306,101 @@ const zoomPercent = computed(() => `${Math.round(zoom.value * 100)}%`)
       </div>
     </div>
 
-    <!-- 画像表示エリア -->
+    <UAlert
+      v-if="!fileSystem.isSupported.value"
+      icon="i-lucide-info"
+      color="neutral"
+      variant="soft"
+      :description="t('apps.imageViewer.unsupported')"
+      class="state-alert"
+    />
+
+    <UAlert
+      v-else-if="!hasMount"
+      icon="i-lucide-folder-search"
+      color="neutral"
+      variant="soft"
+      :description="t('apps.imageViewer.noMounts')"
+      class="state-alert"
+    />
+
+    <UAlert
+      v-if="localError"
+      icon="i-lucide-triangle-alert"
+      color="error"
+      variant="soft"
+      :description="localError"
+      class="state-alert"
+    />
+
     <div
-      class="iv-canvas"
-      :class="{ dragover: isDragOver }"
-      @dragover.prevent="isDragOver = true"
-      @dragleave="isDragOver = false"
-      @drop.prevent="handleDrop"
-    >
-      <template v-if="imageUrl">
-        <img
-          :src="imageUrl"
-          alt=""
-          class="iv-image"
-          :style="{ transform: imageTransform }"
-          draggable="false"
+      v-if="showBrowser && isCompact"
+      class="browser-backdrop"
+      @click="showBrowser = false"
+    />
+
+    <div class="iv-body">
+      <Transition name="browser-slide">
+        <aside
+          v-if="showBrowser && hasMount && fileSystem.isSupported.value"
+          class="browser"
+          :class="{ compact: isCompact }"
         >
-      </template>
-      <template v-else>
-        <div class="iv-empty">
-          <UIcon
-            name="i-lucide-image"
-            class="iv-empty-icon"
-          />
-          <p class="iv-empty-text">
-            {{ t('apps.imageViewer.dropHere') }}
+          <p class="browser-path">
+            {{ browserPath }}
           </p>
-          <UButton
-            :label="t('apps.imageViewer.open')"
-            variant="outline"
-            color="neutral"
-            @click="fileInput?.click()"
-          />
-        </div>
-      </template>
+
+          <div
+            v-if="isLoadingEntries"
+            class="browser-empty"
+          >
+            {{ t('apps.imageViewer.loading') }}
+          </div>
+
+          <div
+            v-else-if="entries.length === 0"
+            class="browser-empty"
+          >
+            {{ t('apps.imageViewer.empty') }}
+          </div>
+
+          <button
+            v-for="entry in entries"
+            :key="entry.path"
+            class="browser-item"
+            @click="openEntry(entry)"
+          >
+            <UIcon :name="entry.kind === 'directory' ? 'i-lucide-folder' : 'i-lucide-file-image'" />
+            <span>{{ entry.name }}</span>
+          </button>
+        </aside>
+      </Transition>
+
+      <div class="iv-canvas">
+        <template v-if="imageUrl">
+          <img
+            :src="imageUrl"
+            alt=""
+            class="iv-image"
+            :style="{ transform: imageTransform }"
+            draggable="false"
+          >
+        </template>
+
+        <template v-else>
+          <div class="iv-empty">
+            <UIcon
+              name="i-lucide-image"
+              class="iv-empty-icon"
+            />
+            <p class="iv-empty-text">
+              {{ t('apps.imageViewer.emptyHint') }}
+            </p>
+          </div>
+        </template>
+      </div>
     </div>
 
-    <!-- ステータスバー -->
     <div
       v-if="imageInfo"
       class="iv-statusbar"
@@ -222,10 +419,7 @@ const zoomPercent = computed(() => `${Math.round(zoom.value * 100)}%`)
   height: 100%;
   background: var(--ui-bg);
   overflow: hidden;
-}
-
-.hidden-input {
-  display: none;
+  position: relative;
 }
 
 .iv-toolbar {
@@ -236,29 +430,105 @@ const zoomPercent = computed(() => `${Math.round(zoom.value * 100)}%`)
   border-bottom: 1px solid var(--ui-border);
   flex-shrink: 0;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
-.iv-toolbar-left, .iv-toolbar-right {
+.iv-toolbar-left,
+.iv-toolbar-right {
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
+.mount-select {
+  min-width: 12rem;
+  max-width: 16rem;
+}
+
 .iv-filename {
   font-size: 0.8rem;
   color: var(--ui-text-muted);
-  max-width: 200px;
+  max-width: 160px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .iv-zoom {
-  font-size: 0.8rem;
-  font-variant-numeric: tabular-nums;
-  min-width: 44px;
-  text-align: center;
+  font-size: 0.75rem;
   color: var(--ui-text-muted);
+  min-width: 42px;
+  text-align: center;
+}
+
+.state-alert {
+  margin: 0.5rem;
+}
+
+.iv-body {
+  flex: 1 1 0%;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+.browser {
+  width: 15rem;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--ui-border);
+  background: var(--ui-bg-elevated);
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.browser.compact {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: min(85%, 20rem);
+  z-index: 20;
+  box-shadow: 0 12px 24px rgb(0 0 0 / 25%);
+}
+
+.browser-path {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  color: var(--ui-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.browser-empty {
+  font-size: 0.75rem;
+  color: var(--ui-text-muted);
+  padding: 0.5rem 0;
+}
+
+.browser-item {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: 0.375rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.browser-item:hover {
+  background: var(--ui-bg);
+}
+
+.browser-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8rem;
 }
 
 .iv-canvas {
@@ -266,57 +536,72 @@ const zoomPercent = computed(() => `${Math.round(zoom.value * 100)}%`)
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  overflow: auto;
   background: var(--ui-bg-muted);
   position: relative;
   transition: background 0.2s;
-}
-
-.iv-canvas.dragover {
-  background: color-mix(in srgb, var(--ui-color-primary-500) 10%, var(--ui-bg-muted));
-  outline: 2px dashed var(--ui-color-primary-500);
-  outline-offset: -4px;
 }
 
 .iv-image {
   max-width: none;
   max-height: none;
   transform-origin: center center;
-  transition: transform 0.2s ease;
-  pointer-events: none;
   user-select: none;
+  -webkit-user-drag: none;
 }
 
 .iv-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   color: var(--ui-text-muted);
+  text-align: center;
+  padding: 20px;
 }
 
 .iv-empty-icon {
-  font-size: 3rem;
-  opacity: 0.4;
+  font-size: 2rem;
+  opacity: 0.5;
 }
 
 .iv-empty-text {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
+  max-width: 220px;
 }
 
 .iv-statusbar {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 4px 12px;
-  font-size: 0.75rem;
-  color: var(--ui-text-muted);
-  border-top: 1px solid var(--ui-border);
   flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 4px 10px;
+  border-top: 1px solid var(--ui-border);
+  background: var(--ui-bg-elevated);
+  font-size: 0.72rem;
+  color: var(--ui-text-muted);
 }
 
 .compact .iv-statusbar {
   gap: 10px;
   font-size: 0.7rem;
+}
+
+.browser-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 30%);
+  z-index: 10;
+}
+
+.browser-slide-enter-active,
+.browser-slide-leave-active {
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.browser-slide-enter-from,
+.browser-slide-leave-to {
+  transform: translateX(-8px);
+  opacity: 0;
 }
 </style>

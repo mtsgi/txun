@@ -7,6 +7,39 @@
       "commandNotFound": "コマンドが見つかりません: {name}",
       "notificationSent": "通知を送信しました: \"{msg}\"",
       "notificationDefault": "Hello from terminal!",
+      "mount": "作業ディレクトリ",
+      "addMount": "作業ディレクトリ追加",
+      "noMount": "作業ディレクトリが設定されていません。Settings の File System から追加してください。",
+      "mountAdded": "作業ディレクトリを追加しました: {name}",
+      "mountChanged": "作業ディレクトリを切り替えました: {name}",
+      "mountNotFound": "作業ディレクトリが見つかりません: {target}",
+      "emptyDirectory": "ディレクトリは空です",
+      "usage": {
+        "use": "usage: use [mountId | mountName]",
+        "cat": "usage: cat [path]",
+        "mkdir": "usage: mkdir [path]",
+        "touch": "usage: touch [path]",
+        "rm": "usage: rm [path]",
+        "mv": "usage: mv [from] [to]",
+        "cp": "usage: cp [from] [to]"
+      },
+      "result": {
+        "mkdir": "ディレクトリを作成しました: {path}",
+        "touch": "ファイルを作成しました: {path}",
+        "rm": "削除しました: {path}",
+        "mv": "移動しました: {from} -> {to}",
+        "cp": "コピーしました: {from} -> {to}"
+      },
+      "error": {
+        "unsupported": "このブラウザでは File System Access API は非対応です。",
+        "noMount": "作業ディレクトリが未設定です。",
+        "notFound": "パスが見つかりません: {path}",
+        "notDirectory": "ディレクトリではありません: {path}",
+        "notFile": "ファイルではありません: {path}",
+        "permissionDenied": "権限がありません。Settings で再許可してください。",
+        "invalidPath": "不正なパスです。",
+        "general": "ファイル操作中にエラーが発生しました。"
+      },
       "help": {
         "title": "利用可能なコマンド:",
         "help": "このヘルプを表示",
@@ -14,7 +47,17 @@
         "clear": "ターミナルをクリア",
         "date": "現在の日時を表示",
         "whoami": "現在のユーザーを表示",
-        "ls": "仮想ディレクトリを一覧表示",
+        "pwd": "現在ディレクトリを表示",
+        "ls": "ディレクトリ一覧を表示",
+        "cd": "ディレクトリを移動",
+        "cat": "テキストファイルを表示",
+        "mkdir": "ディレクトリを作成",
+        "touch": "空ファイルを作成",
+        "rm": "ファイル/ディレクトリを削除",
+        "mv": "ファイル/ディレクトリを移動",
+        "cp": "ファイル/ディレクトリをコピー",
+        "mounts": "作業ディレクトリ一覧を表示",
+        "use": "作業ディレクトリを切替",
         "notify": "デスクトップ通知を送信"
       }
     }
