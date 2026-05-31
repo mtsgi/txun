@@ -1,0 +1,17 @@
+{
+  "apps": {
+    "musicPlayer": {
+      "name": "ミュージック",
+      "addFiles": "ファイルを追加",
+      "noTracks": "ファイルをここにドロップ、または「ファイルを追加」をクリック",
+      "playlist": "プレイリスト",
+      "shuffle": "シャッフル",
+      "repeatNone": "繰り返しなし",
+      "repeatOne": "1曲繰り返し",
+      "repeatAll": "全曲繰り返し",
+      "volume": "音量",
+      "removeTrack": "削除",
+      "unknownTrack": "不明なトラック"
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "apps": {
+    "musicPlayer": {
+      "name": "Music",
+      "addFiles": "Add Files",
+      "noTracks": "Drop files here or click \"Add Files\"",
+      "playlist": "Playlist",
+      "shuffle": "Shuffle",
+      "repeatNone": "No Repeat",
+      "repeatOne": "Repeat One",
+      "repeatAll": "Repeat All",
+      "volume": "Volume",
+      "removeTrack": "Remove",
+      "unknownTrack": "Unknown Track"
+    }
+  }
+}
