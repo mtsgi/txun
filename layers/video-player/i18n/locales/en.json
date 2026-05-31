@@ -1,0 +1,25 @@
+{
+  "apps": {
+    "videoPlayer": {
+      "name": "Video",
+      "addFiles": "Add Files",
+      "noVideos": "Drop files here or click \"Add Files\"",
+      "playlist": "Playlist",
+      "shuffle": "Shuffle",
+      "repeatNone": "No Repeat",
+      "repeatOne": "Repeat One",
+      "repeatAll": "Repeat All",
+      "volume": "Volume",
+      "mute": "Mute",
+      "unmute": "Unmute",
+      "removeVideo": "Remove",
+      "unknownVideo": "Unknown Video",
+      "playbackRate": "Playback Speed",
+      "pip": "Picture in Picture",
+      "fullscreen": "Fullscreen",
+      "exitFullscreen": "Exit Fullscreen",
+      "showPlaylist": "Show Playlist",
+      "hidePlaylist": "Hide Playlist"
+    }
+  }
+}

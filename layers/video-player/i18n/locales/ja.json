@@ -1,0 +1,25 @@
+{
+  "apps": {
+    "videoPlayer": {
+      "name": "ビデオ",
+      "addFiles": "ファイルを追加",
+      "noVideos": "ファイルをここにドロップ、または「ファイルを追加」をクリック",
+      "playlist": "プレイリスト",
+      "shuffle": "シャッフル",
+      "repeatNone": "繰り返しなし",
+      "repeatOne": "1本繰り返し",
+      "repeatAll": "全本繰り返し",
+      "volume": "音量",
+      "mute": "ミュート",
+      "unmute": "ミュート解除",
+      "removeVideo": "削除",
+      "unknownVideo": "不明なビデオ",
+      "playbackRate": "再生速度",
+      "pip": "ピクチャー・イン・ピクチャー",
+      "fullscreen": "フルスクリーン",
+      "exitFullscreen": "フルスクリーン終了",
+      "showPlaylist": "プレイリストを表示",
+      "hidePlaylist": "プレイリストを隠す"
+    }
+  }
+}

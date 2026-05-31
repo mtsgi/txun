@@ -16,7 +16,9 @@
     "layers/task-manager",
     "layers/terminal",
     "layers/text-editor",
-    "layers/camera"
+    "layers/camera",
+    "layers/music-player",
+    "layers/video-player"
   ],
   "scripts": {
     "build": "nuxt build",

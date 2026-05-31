@@ -14,7 +14,8 @@ export default defineNuxtConfig({
     'layers/image-viewer',
     'layers/sticky-notes',
     'layers/camera',
-    'layers/music-player'
+    'layers/music-player',
+    'layers/video-player'
   ],
 
   modules: [
