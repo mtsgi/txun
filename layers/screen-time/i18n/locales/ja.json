@@ -1,0 +1,32 @@
+{
+  "apps": {
+    "screenTime": {
+      "name": "スクリーンタイム",
+      "tabToday": "今日",
+      "tabWeek": "週間",
+      "tabLimits": "制限",
+      "tabSettings": "設定",
+      "totalToday": "本日の合計使用時間",
+      "mostUsed": "よく使うアプリ",
+      "today": "今日",
+      "noData": "使用記録がありません",
+      "limitsDesc": "アプリごとに 1 日の使用上限を設定できます。制限に達するとアラートが表示されます。",
+      "addLimit": "制限を追加",
+      "setLimit": "制限時間の設定",
+      "limitFor": "の 1 日の使用上限（分）",
+      "removeLimit": "制限を削除",
+      "save": "保存",
+      "cancel": "キャンセル",
+      "minutes": "分 | {m}分",
+      "hoursMinutes": "{h}時間 {m}分",
+      "lessThanMinute": "1分未満",
+      "limitReached": "使用制限に達しました",
+      "limitReachedDesc": "{app} の本日の使用時間が上限に達しました。",
+      "trackingEnabled": "使用時間の計測",
+      "trackingEnabledDesc": "オフにすると使用時間の記録を停止します。",
+      "resetData": "使用記録をリセット",
+      "resetDataDesc": "すべての使用履歴と制限設定が削除されます。この操作は取り消せません。",
+      "confirm": "リセットする"
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "apps": {
+    "whiteboard": {
+      "name": "Whiteboard",
+      "boards": "Boards",
+      "newBoard": "Board",
+      "deleteBoard": "Delete",
+      "clearBoard": "Clear",
+      "boardName": "Board name",
+      "backgroundPlain": "Plain",
+      "backgroundGrid": "Grid",
+      "backgroundDots": "Dots",
+      "toolPen": "Pen",
+      "toolEraser": "Eraser",
+      "undo": "Undo",
+      "redo": "Redo",
+      "strokeWidth": "Stroke",
+      "strokes": "strokes",
+      "autosave": "Changes are autosaved",
+      "hint": "Drag to draw. Background presets are saved, and undo or redo is tracked per board.",
+      "deleteBoardConfirm": "Delete {name}?",
+      "clearBoardConfirm": "Clear all strokes on {name}?"
+    }
+  }
+}

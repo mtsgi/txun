@@ -36,8 +36,15 @@ TxunOS は以下の npm パッケージ単位で利用できます。
 | `@txun/calculator` | 電卓 |
 | `@txun/calendar` | カレンダー |
 | `@txun/clock` | 時計 |
+| `@txun/camera` | カメラ |
+| `@txun/music-player` | ミュージックプレイヤー |
+| `@txun/video-player` | ビデオプレイヤー |
+| `@txun/whiteboard` | ホワイトボード |
 | `@txun/image-viewer` | 画像ビューア |
 | `@txun/sticky-notes` | スティッキーノート |
+| `@txun/dev-tools` | 開発者向けツール |
+| `@txun/minesweeper` | マインスイーパーゲーム |
+| `@txun/screen-time` | スクリーンタイム管理 |
 
 各アプリレイヤーは `useDesktopStore().registerApp()` を自身のプラグインで実行し、`@txun/core` のストアに動的登録されます。
 
@@ -64,7 +71,7 @@ export default defineNuxtConfig({
 ### フル構成（全ビルトインアプリ）
 
 ```bash
-npm install @txun/core @txun/settings @txun/text-editor @txun/file-manager @txun/browser @txun/terminal @txun/task-manager @txun/calculator @txun/calendar @txun/clock @txun/image-viewer @txun/sticky-notes
+npm install @txun/core @txun/settings @txun/text-editor @txun/file-manager @txun/browser @txun/terminal @txun/task-manager @txun/calculator @txun/calendar @txun/clock @txun/image-viewer @txun/sticky-notes @txun/camera @txun/music-player @txun/video-player @txun/whiteboard @txun/dev-tools @txun/minesweeper @txun/screen-time
 ```
 
 ```ts
@@ -82,7 +89,14 @@ export default defineNuxtConfig({
     '@txun/calendar',
     '@txun/clock',
     '@txun/image-viewer',
-    '@txun/sticky-notes'
+    '@txun/sticky-notes',
+    '@txun/camera',
+    '@txun/music-player',
+    '@txun/video-player',
+    '@txun/whiteboard',
+    '@txun/dev-tools',
+    '@txun/minesweeper',
+    '@txun/screen-time'
   ]
 })
 ```
@@ -173,13 +187,17 @@ txunos/
 │   ├── calculator/
 │   ├── calendar/
 │   ├── clock/
+│   ├── camera/
 │   ├── file-manager/
 │   ├── image-viewer/
+│   ├── music-player/
 │   ├── settings/
 │   ├── sticky-notes/
 │   ├── task-manager/
 │   ├── terminal/
-│   └── text-editor/
+│   ├── text-editor/
+│   ├── video-player/
+│   └── whiteboard/
 └── test/
 ```
 

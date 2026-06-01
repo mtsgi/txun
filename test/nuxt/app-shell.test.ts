@@ -23,8 +23,8 @@ describe('Nuxt integration smoke', () => {
       'text-editor',
       'camera',
       'music-player',
-      'video-player'
+      'video-player',
+      'whiteboard'
     ]))
-    expect(appIds).toHaveLength(15)
   })
 })

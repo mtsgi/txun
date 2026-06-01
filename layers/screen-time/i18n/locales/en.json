@@ -1,0 +1,32 @@
+{
+  "apps": {
+    "screenTime": {
+      "name": "Screen Time",
+      "tabToday": "Today",
+      "tabWeek": "Weekly",
+      "tabLimits": "Limits",
+      "tabSettings": "Settings",
+      "totalToday": "Total usage today",
+      "mostUsed": "Most used",
+      "today": "Today",
+      "noData": "No usage data",
+      "limitsDesc": "Set a daily usage limit per app. You will be alerted when the limit is reached.",
+      "addLimit": "Add limit",
+      "setLimit": "Set time limit",
+      "limitFor": "daily limit for",
+      "removeLimit": "Remove limit",
+      "save": "Save",
+      "cancel": "Cancel",
+      "minutes": "min | {m}m",
+      "hoursMinutes": "{h}h {m}m",
+      "lessThanMinute": "< 1 min",
+      "limitReached": "Time limit reached",
+      "limitReachedDesc": "Daily limit for {app} has been reached.",
+      "trackingEnabled": "Track usage",
+      "trackingEnabledDesc": "Turn off to stop recording usage time.",
+      "resetData": "Reset usage data",
+      "resetDataDesc": "All usage history and limit settings will be deleted. This cannot be undone.",
+      "confirm": "Reset"
+    }
+  }
+}

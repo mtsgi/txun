@@ -1,0 +1,14 @@
+{
+  "apps": {
+    "minesweeper": {
+      "name": "Minesweeper",
+      "newGame": "New Game",
+      "difficulty": "Difficulty",
+      "easy": "Easy",
+      "medium": "Medium",
+      "hard": "Hard",
+      "gameOver": "Game Over...",
+      "gameClear": "Clear!"
+    }
+  }
+}

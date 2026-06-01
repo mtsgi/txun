@@ -1,0 +1,25 @@
+{
+  "apps": {
+    "whiteboard": {
+      "name": "ホワイトボード",
+      "boards": "Boards",
+      "newBoard": "ボード",
+      "deleteBoard": "削除",
+      "clearBoard": "全消去",
+      "boardName": "ボード名",
+      "backgroundPlain": "無地",
+      "backgroundGrid": "グリッド",
+      "backgroundDots": "ドット",
+      "toolPen": "ペン",
+      "toolEraser": "消しゴム",
+      "undo": "元に戻す",
+      "redo": "やり直す",
+      "strokeWidth": "線幅",
+      "strokes": "ストローク",
+      "autosave": "変更は自動保存されます",
+      "hint": "ドラッグして描画します。背景は保存され、Undo / Redo はボード単位で動作します。",
+      "deleteBoardConfirm": "{name} を削除しますか？",
+      "clearBoardConfirm": "{name} の描画をすべて消去しますか？"
+    }
+  }
+}
