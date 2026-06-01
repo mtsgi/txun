@@ -114,6 +114,8 @@ export interface LauncherFolder {
 export interface DesktopState {
   /** 開いているウィンドウ一覧 */
   windows: WindowState[]
+  /** 現在フォーカスされているウィンドウの ID（なければ null） */
+  focusedWindowId: string | null
   /** 仮想デスクトップ一覧 */
   virtualDesktops: VirtualDesktop[]
   /** 現在アクティブな仮想デスクトップの ID */
@@ -159,6 +161,7 @@ export interface DesktopState {
 export const useDesktopStore = defineStore('desktop', {
   state: (): DesktopState => ({
     windows: [],
+    focusedWindowId: null,
     virtualDesktops: [{ id: 'desktop-1', name: 'Desktop 1' }],
     activeVirtualDesktopId: 'desktop-1',
     theme: 'dark',
@@ -233,6 +236,7 @@ export const useDesktopStore = defineStore('desktop', {
         virtualDesktopId: this.activeVirtualDesktopId,
         ...options
       })
+      this.focusedWindowId = id
       return id
     },
 
@@ -243,6 +247,7 @@ export const useDesktopStore = defineStore('desktop', {
     closeWindow(id: string): void {
       const idx = this.windows.findIndex(w => w.id === id)
       if (idx !== -1) this.windows.splice(idx, 1)
+      if (this.focusedWindowId === id) this.focusedWindowId = null
     },
 
     /**
@@ -252,6 +257,7 @@ export const useDesktopStore = defineStore('desktop', {
     minimizeWindow(id: string): void {
       const w = this.windows.find(w => w.id === id)
       if (w) w.isMinimized = true
+      if (this.focusedWindowId === id) this.focusedWindowId = null
     },
 
     /**
@@ -294,12 +300,15 @@ export const useDesktopStore = defineStore('desktop', {
     },
 
     /**
-     * 指定 ID のウィンドウにフォーカスし、z-index を最前面に札当てる。
+     * 指定 ID のウィンドウにフォーカスし、z-index を最前面に割り当てる。
      * @param id - フォーカスするウィンドウの ID
      */
     focusWindow(id: string): void {
       const w = this.windows.find(w => w.id === id)
-      if (w) w.zIndex = this.nextZIndex++
+      if (w) {
+        w.zIndex = this.nextZIndex++
+        this.focusedWindowId = id
+      }
     },
 
     /**

@@ -1,0 +1,14 @@
+{
+  "apps": {
+    "minesweeper": {
+      "name": "マインスイーパ",
+      "newGame": "新しいゲーム",
+      "difficulty": "難易度",
+      "easy": "初級",
+      "medium": "中級",
+      "hard": "上級",
+      "gameOver": "ゲームオーバー...",
+      "gameClear": "クリア！"
+    }
+  }
+}

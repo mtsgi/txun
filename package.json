@@ -19,7 +19,10 @@
     "layers/text-editor",
     "layers/camera",
     "layers/music-player",
-    "layers/video-player"
+    "layers/video-player",
+    "layers/minesweeper",
+    "layers/whiteboard",
+    "layers/screen-time"
   ],
   "scripts": {
     "build": "nuxt build",

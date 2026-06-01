@@ -13,10 +13,13 @@ export default defineNuxtConfig({
     'layers/clock',
     'layers/dev-tools',
     'layers/image-viewer',
+    'layers/minesweeper',
     'layers/sticky-notes',
     'layers/camera',
     'layers/music-player',
-    'layers/video-player'
+    'layers/video-player',
+    'layers/whiteboard',
+    'layers/screen-time'
   ],
 
   modules: [
