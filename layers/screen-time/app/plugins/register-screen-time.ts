@@ -62,7 +62,7 @@ export default defineNuxtPlugin((nuxtApp) => {
       const focusedId = desktopStore.focusedWindowId
       if (!focusedId) return
 
-      const focusedWindow = desktopStore.windows.find(w => w.id === focusedId)
+      const focusedWindow = desktopStore.getWindowById(focusedId)
       if (!focusedWindow || focusedWindow.isMinimized) return
 
       const appId = focusedWindow.appId

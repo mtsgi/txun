@@ -39,7 +39,10 @@ const overLimit = computed(() => props.limitSeconds != null && props.seconds >= 
   <div class="flex items-center gap-3 py-2">
     <!-- アイコン -->
     <div class="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
-      <UIcon :name="appIcon" class="w-5 h-5" />
+      <UIcon
+        :name="appIcon"
+        class="w-5 h-5"
+      />
     </div>
 
     <!-- 名前・バー -->

@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import type { FileSystemEntry } from '#layers/txunos-core/app/stores/filesystem'
+import { useDesktopStore } from '#layers/txunos-core/app/stores/desktop'
 
-defineProps<{ windowId: string }>()
+const props = defineProps<{ windowId: string }>()
 
 const { t } = useI18n()
 const { notify } = useDesktopNotification()
 const fileSystem = useFileSystem()
+const store = useDesktopStore()
+const win = computed(() => store.getWindowById(props.windowId))
 
 const IMAGE_EXTENSIONS = new Set([
   '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.ico', '.avif', '.tif', '.tiff'
@@ -90,13 +93,8 @@ async function loadEntries(): Promise<void> {
   }
 }
 
-async function openEntry(entry: FileSystemEntry): Promise<void> {
-  if (entry.kind === 'directory') {
-    goTo(entry.path)
-    return
-  }
-
-  if (!isImageFile(entry.path)) {
+async function openPath(path: string): Promise<void> {
+  if (!isImageFile(path)) {
     notify(t('apps.imageViewer.notImage'), { type: 'warning' })
     return
   }
@@ -106,7 +104,7 @@ async function openEntry(entry: FileSystemEntry): Promise<void> {
 
   localError.value = null
   try {
-    const blob = await fileSystem.readFileBlob(entry.path, mountId)
+    const blob = await fileSystem.readFileBlob(path, mountId)
     if (currentObjectUrl) {
       URL.revokeObjectURL(currentObjectUrl)
       currentObjectUrl = null
@@ -116,8 +114,10 @@ async function openEntry(entry: FileSystemEntry): Promise<void> {
     imageUrl.value = currentObjectUrl
     zoom.value = 1
     rotation.value = 0
+
+    const name = path.split('/').filter(Boolean).at(-1) || 'image'
     imageInfo.value = {
-      name: entry.name,
+      name,
       size: formatFileSize(blob.size)
     }
 
@@ -125,6 +125,14 @@ async function openEntry(entry: FileSystemEntry): Promise<void> {
   } catch (error) {
     localError.value = toErrorMessage(error)
   }
+}
+
+async function openEntry(entry: FileSystemEntry): Promise<void> {
+  if (entry.kind === 'directory') {
+    goTo(entry.path)
+    return
+  }
+  await openPath(entry.path)
 }
 
 /** ファイルサイズを人間可読形式へ変換する */
@@ -190,7 +198,13 @@ watch(browserPath, async () => {
   await loadEntries()
 })
 
-onMounted(() => {
+watch(() => win.value?.args?.path, async (newPath) => {
+  if (typeof newPath === 'string') {
+    await openPath(newPath)
+  }
+})
+
+onMounted(async () => {
   if (containerRef.value) {
     containerWidth.value = containerRef.value.clientWidth
     const resizeObserver = new ResizeObserver((entries) => {
@@ -201,7 +215,12 @@ onMounted(() => {
     onUnmounted(() => resizeObserver.disconnect())
   }
 
-  void fileSystem.restoreMounts().then(loadEntries)
+  await fileSystem.restoreMounts()
+  await loadEntries()
+
+  if (typeof win.value?.args?.path === 'string') {
+    await openPath(win.value.args.path)
+  }
 })
 
 onBeforeUnmount(() => {

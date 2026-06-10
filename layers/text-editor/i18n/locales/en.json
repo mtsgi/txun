@@ -20,7 +20,9 @@
       "loading": "Loading...",
       "empty": "No files in this folder",
       "unsaved": "Unsaved document",
-      "errorGeneric": "An error occurred during file operations"
+      "errorGeneric": "An error occurred during file operations",
+      "noTabsOpen": "No tabs open",
+      "createFirstTab": "Create New Document"
     }
   }
 }

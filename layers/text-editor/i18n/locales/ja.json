@@ -20,7 +20,9 @@
       "loading": "読み込み中...",
       "empty": "このフォルダにファイルはありません",
       "unsaved": "未保存ドキュメント",
-      "errorGeneric": "ファイル操作中にエラーが発生しました"
+      "errorGeneric": "ファイル操作中にエラーが発生しました",
+      "noTabsOpen": "開いているタブがありません",
+      "createFirstTab": "新規文書を作成"
     }
   }
 }
