@@ -19,7 +19,8 @@ export default defineNuxtConfig({
     'layers/music-player',
     'layers/video-player',
     'layers/whiteboard',
-    'layers/screen-time'
+    'layers/screen-time',
+    'layers/git-viewer'
   ],
 
   modules: [

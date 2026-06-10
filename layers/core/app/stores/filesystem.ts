@@ -675,7 +675,7 @@ export const useFileSystemStore = defineStore('filesystem', {
         return true
       } catch (error) {
         const mapped = mapError(error, normalizedPath)
-        if (mapped.code !== 'NOT_FOUND') return false
+        if (mapped.code !== 'NOT_FOUND' && mapped.code !== 'INVALID_PATH') return false
       }
 
       try {

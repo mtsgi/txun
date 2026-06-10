@@ -550,6 +550,13 @@ const contextMenuItems = computed(() => (entry: FileSystemEntry) => {
       onSelect: () => showAppChooserModal(entry)
     })
   }
+  if (isDir && menu[0]) {
+    menu[0].push({
+      label: t('apps.gitViewer.openInGitViewer'),
+      icon: 'i-lucide-git-branch',
+      onSelect: () => openApp('git-viewer', { args: { path: entry.path } })
+    })
+  }
   return menu
 })
 
