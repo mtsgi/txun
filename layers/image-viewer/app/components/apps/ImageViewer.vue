@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { FileSystemEntry } from '#layers/txunos-core/app/stores/filesystem'
 import { useDesktopStore } from '#layers/txunos-core/app/stores/desktop'
 
 const props = defineProps<{ windowId: string }>()
@@ -24,11 +23,6 @@ const rotation = ref(0)
 const imageInfo = ref<{ name: string, size: string } | null>(null)
 
 const localError = ref<string | null>(null)
-const browserPath = ref('/')
-const entries = ref<FileSystemEntry[]>([])
-const isLoadingEntries = ref(false)
-const addingMount = ref(false)
-const showBrowser = ref(true)
 
 const containerRef = ref<HTMLElement | null>(null)
 const containerWidth = ref(700)
@@ -36,22 +30,6 @@ const containerWidth = ref(700)
 let currentObjectUrl: string | null = null
 
 const isCompact = computed(() => containerWidth.value < 860)
-
-const mountOptions = computed(() =>
-  fileSystem.mounts.value.map(mount => ({
-    label: mount.name,
-    value: mount.id
-  }))
-)
-
-const hasMount = computed(() => !!fileSystem.activeMountId.value)
-
-const selectedMountId = computed({
-  get: (): string => fileSystem.activeMountId.value ?? '',
-  set: (mountId: string) => {
-    void fileSystem.setActiveMount(mountId || null)
-  }
-})
 
 function toErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message
@@ -63,43 +41,13 @@ function isImageFile(path: string): boolean {
   return Array.from(IMAGE_EXTENSIONS).some(ext => lower.endsWith(ext))
 }
 
-function goTo(path: string): void {
-  browserPath.value = path
-}
-
-function goUp(): void {
-  if (browserPath.value === '/') return
-  const parts = browserPath.value.split('/').filter(Boolean)
-  parts.pop()
-  browserPath.value = parts.length > 0 ? `/${parts.join('/')}` : '/'
-}
-
-async function loadEntries(): Promise<void> {
-  const mountId = fileSystem.activeMountId.value
-  if (!mountId) {
-    entries.value = []
-    return
-  }
-
-  isLoadingEntries.value = true
-  localError.value = null
-  try {
-    entries.value = await fileSystem.listDirectory(browserPath.value, mountId)
-  } catch (error) {
-    localError.value = toErrorMessage(error)
-    entries.value = []
-  } finally {
-    isLoadingEntries.value = false
-  }
-}
-
-async function openPath(path: string): Promise<void> {
+async function openPath(path: string, selectedMountId?: string): Promise<void> {
   if (!isImageFile(path)) {
     notify(t('apps.imageViewer.notImage'), { type: 'warning' })
     return
   }
 
-  const mountId = fileSystem.activeMountId.value
+  const mountId = selectedMountId || fileSystem.activeMountId.value
   if (!mountId) return
 
   localError.value = null
@@ -120,19 +68,22 @@ async function openPath(path: string): Promise<void> {
       name,
       size: formatFileSize(blob.size)
     }
-
-    if (isCompact.value) showBrowser.value = false
   } catch (error) {
     localError.value = toErrorMessage(error)
   }
 }
 
-async function openEntry(entry: FileSystemEntry): Promise<void> {
-  if (entry.kind === 'directory') {
-    goTo(entry.path)
-    return
+async function triggerOpenImage(): Promise<void> {
+  const fileDialog = useFileDialog()
+  const res = await fileDialog.open({
+    title: t('apps.imageViewer.emptyHint'),
+    mode: 'open-file',
+    filters: ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.ico', '.avif', '.tif', '.tiff'],
+    multiple: false
+  })
+  if (res && !Array.isArray(res)) {
+    await openPath(res.path, res.mountId)
   }
-  await openPath(entry.path)
 }
 
 /** ファイルサイズを人間可読形式へ変換する */
@@ -140,20 +91,6 @@ function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
-}
-
-async function handleAddMount(): Promise<void> {
-  addingMount.value = true
-  try {
-    const mount = await fileSystem.addMount()
-    if (mount) {
-      notify(t('apps.imageViewer.mountAdded', { name: mount.name }), { type: 'success' })
-    }
-  } catch (error) {
-    localError.value = toErrorMessage(error)
-  } finally {
-    addingMount.value = false
-  }
 }
 
 /** ズームインする */
@@ -185,19 +122,6 @@ const imageTransform = computed(
 /** ズームパーセント表示 */
 const zoomPercent = computed(() => `${Math.round(zoom.value * 100)}%`)
 
-watch(isCompact, (compact) => {
-  if (compact) showBrowser.value = false
-})
-
-watch(() => fileSystem.activeMountId.value, async () => {
-  browserPath.value = '/'
-  await loadEntries()
-})
-
-watch(browserPath, async () => {
-  await loadEntries()
-})
-
 watch(() => win.value?.args?.path, async (newPath) => {
   if (typeof newPath === 'string') {
     await openPath(newPath)
@@ -216,7 +140,6 @@ onMounted(async () => {
   }
 
   await fileSystem.restoreMounts()
-  await loadEntries()
 
   if (typeof win.value?.args?.path === 'string') {
     await openPath(win.value.args.path)
@@ -240,47 +163,12 @@ onBeforeUnmount(() => {
     <div class="iv-toolbar">
       <div class="iv-toolbar-left">
         <UButton
-          icon="i-lucide-panel-left"
-          :label="isCompact ? undefined : t('apps.imageViewer.browser')"
+          icon="i-lucide-folder-open"
+          :label="isCompact ? undefined : t('apps.fileManager.open')"
           variant="ghost"
           color="neutral"
           size="sm"
-          @click="showBrowser = !showBrowser"
-        />
-        <USelect
-          v-model="selectedMountId"
-          :items="mountOptions"
-          value-key="value"
-          class="mount-select"
-          :placeholder="t('apps.imageViewer.mount')"
-        />
-        <UButton
-          icon="i-lucide-folder-plus"
-          :label="isCompact ? undefined : t('apps.imageViewer.addMount')"
-          variant="ghost"
-          color="primary"
-          size="sm"
-          :loading="addingMount"
-          @click="handleAddMount"
-        />
-        <UButton
-          icon="i-lucide-arrow-up"
-          :label="isCompact ? undefined : t('apps.imageViewer.up')"
-          variant="ghost"
-          color="neutral"
-          size="sm"
-          :disabled="!hasMount || browserPath === '/'"
-          @click="goUp"
-        />
-        <UButton
-          icon="i-lucide-refresh-cw"
-          :label="isCompact ? undefined : t('apps.imageViewer.refresh')"
-          variant="ghost"
-          color="neutral"
-          size="sm"
-          :loading="isLoadingEntries"
-          :disabled="!hasMount"
-          @click="loadEntries"
+          @click="triggerOpenImage"
         />
         <span
           v-if="imageInfo && !isCompact"
@@ -326,24 +214,6 @@ onBeforeUnmount(() => {
     </div>
 
     <UAlert
-      v-if="!fileSystem.isSupported.value"
-      icon="i-lucide-info"
-      color="neutral"
-      variant="soft"
-      :description="t('apps.imageViewer.unsupported')"
-      class="state-alert"
-    />
-
-    <UAlert
-      v-else-if="!hasMount"
-      icon="i-lucide-folder-search"
-      color="neutral"
-      variant="soft"
-      :description="t('apps.imageViewer.noMounts')"
-      class="state-alert"
-    />
-
-    <UAlert
       v-if="localError"
       icon="i-lucide-triangle-alert"
       color="error"
@@ -352,49 +222,7 @@ onBeforeUnmount(() => {
       class="state-alert"
     />
 
-    <div
-      v-if="showBrowser && isCompact"
-      class="browser-backdrop"
-      @click="showBrowser = false"
-    />
-
     <div class="iv-body">
-      <Transition name="browser-slide">
-        <aside
-          v-if="showBrowser && hasMount && fileSystem.isSupported.value"
-          class="browser"
-          :class="{ compact: isCompact }"
-        >
-          <p class="browser-path">
-            {{ browserPath }}
-          </p>
-
-          <div
-            v-if="isLoadingEntries"
-            class="browser-empty"
-          >
-            {{ t('apps.imageViewer.loading') }}
-          </div>
-
-          <div
-            v-else-if="entries.length === 0"
-            class="browser-empty"
-          >
-            {{ t('apps.imageViewer.empty') }}
-          </div>
-
-          <button
-            v-for="entry in entries"
-            :key="entry.path"
-            class="browser-item"
-            @click="openEntry(entry)"
-          >
-            <UIcon :name="entry.kind === 'directory' ? 'i-lucide-folder' : 'i-lucide-file-image'" />
-            <span>{{ entry.name }}</span>
-          </button>
-        </aside>
-      </Transition>
-
       <div class="iv-canvas">
         <template v-if="imageUrl">
           <img
@@ -459,11 +287,6 @@ onBeforeUnmount(() => {
   gap: 4px;
 }
 
-.mount-select {
-  min-width: 12rem;
-  max-width: 16rem;
-}
-
 .iv-filename {
   font-size: 0.8rem;
   color: var(--ui-text-muted);
@@ -489,65 +312,6 @@ onBeforeUnmount(() => {
   min-height: 0;
   display: flex;
   overflow: hidden;
-}
-
-.browser {
-  width: 15rem;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  border-right: 1px solid var(--ui-border);
-  background: var(--ui-bg-elevated);
-  overflow-y: auto;
-  padding: 0.5rem;
-}
-
-.browser.compact {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: min(85%, 20rem);
-  z-index: 20;
-  box-shadow: 0 12px 24px rgb(0 0 0 / 25%);
-}
-
-.browser-path {
-  margin: 0 0 0.5rem;
-  font-size: 0.75rem;
-  color: var(--ui-text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.browser-empty {
-  font-size: 0.75rem;
-  color: var(--ui-text-muted);
-  padding: 0.5rem 0;
-}
-
-.browser-item {
-  width: 100%;
-  border: none;
-  background: transparent;
-  color: inherit;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.45rem 0.5rem;
-  border-radius: 0.375rem;
-  text-align: left;
-  cursor: pointer;
-}
-
-.browser-item:hover {
-  background: var(--ui-bg);
-}
-
-.browser-item span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 0.8rem;
 }
 
 .iv-canvas {
@@ -604,23 +368,5 @@ onBeforeUnmount(() => {
 .compact .iv-statusbar {
   gap: 10px;
   font-size: 0.7rem;
-}
-
-.browser-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgb(0 0 0 / 30%);
-  z-index: 10;
-}
-
-.browser-slide-enter-active,
-.browser-slide-leave-active {
-  transition: transform 0.2s ease, opacity 0.2s ease;
-}
-
-.browser-slide-enter-from,
-.browser-slide-leave-to {
-  transform: translateX(-8px);
-  opacity: 0;
 }
 </style>

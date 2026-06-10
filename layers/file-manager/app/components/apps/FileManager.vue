@@ -1589,7 +1589,9 @@ onMounted(async () => {
   border: 1px solid var(--ui-border);
   border-radius: 0.375rem;
   background: var(--ui-bg);
-  overflow: hidden;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 
   .file-table {
     width: 100%;
@@ -1607,6 +1609,9 @@ onMounted(async () => {
       font-weight: 600;
       color: var(--ui-text-muted);
       user-select: none;
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
 
     tr {

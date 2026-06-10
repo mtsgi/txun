@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { FileSystemEntry } from '#layers/txunos-core/app/stores/filesystem'
 import { useDesktopStore } from '#layers/txunos-core/app/stores/desktop'
 
 const props = defineProps<{ windowId: string }>()
@@ -16,6 +15,7 @@ interface Tab {
   path: string | null
   content: string
   isDirty: boolean
+  mountId: string | null
 }
 
 const tabs = ref<Tab[]>([])
@@ -24,32 +24,11 @@ const activeTabId = ref<string | null>(null)
 const activeTab = computed(() => tabs.value.find(tab => tab.id === activeTabId.value) || null)
 
 const isSaving = ref(false)
-const isLoadingEntries = ref(false)
 const localError = ref<string | null>(null)
-const browserPath = ref('/')
-const entries = ref<FileSystemEntry[]>([])
-const addingMount = ref(false)
-const showBrowser = ref(true)
 const containerRef = ref<HTMLElement | null>(null)
 const containerWidth = ref(960)
 
 const isCompact = computed(() => containerWidth.value < 860)
-
-const mountOptions = computed(() =>
-  fileSystem.mounts.value.map(mount => ({
-    label: mount.name,
-    value: mount.id
-  }))
-)
-
-const hasMount = computed(() => !!fileSystem.activeMountId.value)
-
-const selectedMountId = computed({
-  get: (): string => fileSystem.activeMountId.value ?? '',
-  set: (mountId: string) => {
-    void fileSystem.setActiveMount(mountId || null)
-  }
-})
 
 function toErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message
@@ -74,51 +53,21 @@ function createNewDocument(): void {
     filename: 'untitled.md',
     path: null,
     content: '',
-    isDirty: false
+    isDirty: false,
+    mountId: null
   }
   tabs.value.push(newTab)
   activeTabId.value = newTab.id
 }
 
-async function loadEntries(): Promise<void> {
-  const mountId = fileSystem.activeMountId.value
-  if (!mountId) {
-    entries.value = []
-    return
-  }
-
-  isLoadingEntries.value = true
-  localError.value = null
-  try {
-    entries.value = await fileSystem.listDirectory(browserPath.value, mountId)
-  } catch (error) {
-    localError.value = toErrorMessage(error)
-    entries.value = []
-  } finally {
-    isLoadingEntries.value = false
-  }
-}
-
-function goTo(path: string): void {
-  browserPath.value = path
-}
-
-function goUp(): void {
-  if (browserPath.value === '/') return
-  const parts = browserPath.value.split('/').filter(Boolean)
-  parts.pop()
-  browserPath.value = parts.length > 0 ? `/${parts.join('/')}` : '/'
-}
-
-async function openPath(path: string): Promise<void> {
-  const mountId = fileSystem.activeMountId.value
+async function openPath(path: string, selectedMountId?: string): Promise<void> {
+  const mountId = selectedMountId || fileSystem.activeMountId.value
   if (!mountId) return
 
   // Check if file is already open
-  const existingTab = tabs.value.find(t => t.path === path)
+  const existingTab = tabs.value.find(t => t.path === path && t.mountId === mountId)
   if (existingTab) {
     activeTabId.value = existingTab.id
-    if (isCompact.value) showBrowser.value = false
     return
   }
 
@@ -131,6 +80,7 @@ async function openPath(path: string): Promise<void> {
     const current = activeTab.value
     if (current && current.path === null && current.filename === 'untitled.md' && !current.isDirty && current.content === '') {
       current.path = path
+      current.mountId = mountId
       current.filename = name
       current.content = text
       current.isDirty = false
@@ -140,47 +90,94 @@ async function openPath(path: string): Promise<void> {
         filename: name,
         path: path,
         content: text,
-        isDirty: false
+        isDirty: false,
+        mountId: mountId
       }
       tabs.value.push(newTab)
       activeTabId.value = newTab.id
     }
-
-    if (isCompact.value) showBrowser.value = false
   } catch (error) {
     localError.value = toErrorMessage(error)
   }
 }
 
-async function openEntry(entry: FileSystemEntry): Promise<void> {
-  if (entry.kind === 'directory') {
-    goTo(entry.path)
-    return
+async function triggerOpenFile(): Promise<void> {
+  const fileDialog = useFileDialog()
+  const res = await fileDialog.open({
+    title: t('apps.fileManager.open'),
+    mode: 'open-file',
+    filters: ['.md', '.txt', '.json', '.js', '.ts', '.html', '.css', '.scss'],
+    multiple: true
+  })
+  if (res) {
+    if (Array.isArray(res)) {
+      for (const item of res) {
+        await openPath(item.path, item.mountId)
+      }
+    } else {
+      await openPath(res.path, res.mountId)
+    }
   }
-  await openPath(entry.path)
 }
 
 async function saveFile(): Promise<void> {
-  const mountId = fileSystem.activeMountId.value
-  if (!mountId || !activeTab.value) return
-
+  if (!activeTab.value) return
   const tab = activeTab.value
   let targetPath = tab.path
+  let mountId = tab.mountId || fileSystem.activeMountId.value
+
   if (!targetPath) {
-    const requestedName = window.prompt(t('apps.textEditor.newFilePrompt'), tab.filename)?.trim()
-    if (!requestedName) return
-    targetPath = fileSystem.resolvePath(browserPath.value, requestedName)
+    const fileDialog = useFileDialog()
+    const res = await fileDialog.open({
+      title: t('apps.textEditor.save'),
+      mode: 'save-file',
+      filters: ['.md', '.txt', '.json', '.js', '.ts', '.html', '.css', '.scss'],
+      initialPath: '/'
+    })
+    if (!res || Array.isArray(res)) return
+    targetPath = res.path
+    mountId = res.mountId
   }
+
+  if (!mountId) return
 
   isSaving.value = true
   localError.value = null
   try {
     await fileSystem.writeTextFile(targetPath, tab.content, mountId)
     tab.path = targetPath
+    tab.mountId = mountId
     tab.filename = formatEntryName(targetPath)
     tab.isDirty = false
     notify(t('apps.textEditor.saved', { name: tab.filename }), { type: 'success' })
-    await loadEntries()
+  } catch (error) {
+    localError.value = toErrorMessage(error)
+  } finally {
+    isSaving.value = false
+  }
+}
+
+async function saveFileAs(): Promise<void> {
+  if (!activeTab.value) return
+  const tab = activeTab.value
+  const fileDialog = useFileDialog()
+  const res = await fileDialog.open({
+    title: t('apps.textEditor.save'),
+    mode: 'save-file',
+    filters: ['.md', '.txt', '.json', '.js', '.ts', '.html', '.css', '.scss'],
+    initialPath: '/'
+  })
+  if (!res || Array.isArray(res)) return
+
+  isSaving.value = true
+  localError.value = null
+  try {
+    await fileSystem.writeTextFile(res.path, tab.content, res.mountId)
+    tab.path = res.path
+    tab.mountId = res.mountId
+    tab.filename = formatEntryName(res.path)
+    tab.isDirty = false
+    notify(t('apps.textEditor.saved', { name: tab.filename }), { type: 'success' })
   } catch (error) {
     localError.value = toErrorMessage(error)
   } finally {
@@ -219,35 +216,6 @@ function onContentInput(value: string): void {
   }
 }
 
-async function handleAddMount(): Promise<void> {
-  addingMount.value = true
-  try {
-    const mount = await fileSystem.addMount()
-    if (mount) {
-      notify(t('apps.textEditor.mountAdded', { name: mount.name }), { type: 'success' })
-    }
-  } catch (error) {
-    localError.value = toErrorMessage(error)
-  } finally {
-    addingMount.value = false
-  }
-}
-
-watch(isCompact, (compact) => {
-  if (compact) showBrowser.value = false
-})
-
-watch(() => fileSystem.activeMountId.value, async () => {
-  browserPath.value = '/'
-  tabs.value = []
-  createNewDocument()
-  await loadEntries()
-})
-
-watch(browserPath, async () => {
-  await loadEntries()
-})
-
 watch(() => win.value?.args?.path, async (newPath) => {
   if (typeof newPath === 'string') {
     await openPath(newPath)
@@ -266,7 +234,6 @@ onMounted(async () => {
   }
 
   await fileSystem.restoreMounts()
-  await loadEntries()
 
   if (typeof win.value?.args?.path === 'string') {
     await openPath(win.value.args.path)
@@ -285,34 +252,10 @@ onMounted(async () => {
       <UButton
         size="xs"
         variant="ghost"
-        icon="i-lucide-panel-left"
-        :label="isCompact ? undefined : $t('apps.textEditor.browser')"
-        @click="showBrowser = !showBrowser"
-      />
-      <USelect
-        v-model="selectedMountId"
-        :items="mountOptions"
-        value-key="value"
-        class="mount-select"
-        :placeholder="$t('apps.textEditor.mount')"
-      />
-      <UButton
-        size="xs"
-        variant="ghost"
-        color="primary"
-        icon="i-lucide-folder-plus"
-        :label="isCompact ? undefined : $t('apps.textEditor.addMount')"
-        :loading="addingMount"
-        @click="handleAddMount"
-      />
-      <UButton
-        size="xs"
-        variant="ghost"
         color="neutral"
-        icon="i-lucide-arrow-up"
-        :label="isCompact ? undefined : $t('apps.textEditor.up')"
-        :disabled="!hasMount || browserPath === '/'"
-        @click="goUp"
+        icon="i-lucide-folder-open"
+        :label="isCompact ? undefined : $t('apps.fileManager.open')"
+        @click="triggerOpenFile"
       />
       <UButton
         size="xs"
@@ -328,28 +271,19 @@ onMounted(async () => {
         icon="i-lucide-save"
         :label="$t('apps.textEditor.save')"
         :loading="isSaving"
-        :disabled="!hasMount || !activeTab"
+        :disabled="!activeTab"
         @click="saveFile"
       />
+      <UButton
+        size="xs"
+        variant="ghost"
+        icon="i-lucide-save-all"
+        :label="isCompact ? undefined : $t('apps.fileManager.copy')"
+        :loading="isSaving"
+        :disabled="!activeTab"
+        @click="saveFileAs"
+      />
     </div>
-
-    <UAlert
-      v-if="!fileSystem.isSupported.value"
-      icon="i-lucide-info"
-      color="neutral"
-      variant="soft"
-      :description="$t('apps.textEditor.unsupported')"
-      class="state-alert"
-    />
-
-    <UAlert
-      v-else-if="!hasMount"
-      icon="i-lucide-folder-search"
-      color="neutral"
-      variant="soft"
-      :description="$t('apps.textEditor.noMounts')"
-      class="state-alert"
-    />
 
     <UAlert
       v-if="localError"
@@ -360,62 +294,7 @@ onMounted(async () => {
       class="state-alert"
     />
 
-    <div
-      v-if="showBrowser && isCompact"
-      class="browser-backdrop"
-      @click="showBrowser = false"
-    />
-
     <div class="body">
-      <Transition name="browser-slide">
-        <aside
-          v-if="showBrowser && hasMount && fileSystem.isSupported.value"
-          class="browser"
-          :class="{ compact: isCompact }"
-        >
-          <div class="browser-head">
-            <p class="browser-path">
-              {{ browserPath }}
-            </p>
-            <UButton
-              size="xs"
-              variant="ghost"
-              color="neutral"
-              icon="i-lucide-refresh-cw"
-              :label="$t('apps.textEditor.refresh')"
-              :loading="isLoadingEntries"
-              @click="loadEntries"
-            />
-          </div>
-
-          <div class="browser-body">
-            <div
-              v-if="isLoadingEntries"
-              class="browser-empty"
-            >
-              {{ $t('apps.textEditor.loading') }}
-            </div>
-
-            <div
-              v-else-if="entries.length === 0"
-              class="browser-empty"
-            >
-              {{ $t('apps.textEditor.empty') }}
-            </div>
-
-            <button
-              v-for="entry in entries"
-              :key="entry.path"
-              class="browser-item"
-              @click="openEntry(entry)"
-            >
-              <UIcon :name="entry.kind === 'directory' ? 'i-lucide-folder' : 'i-lucide-file-text'" />
-              <span>{{ entry.name }}</span>
-            </button>
-          </div>
-        </aside>
-      </Transition>
-
       <div class="editor-wrap">
         <!-- Tab Bar -->
         <div
@@ -510,11 +389,6 @@ onMounted(async () => {
     border-bottom: 1px solid var(--ui-border);
     background: var(--ui-bg-elevated);
     flex-shrink: 0;
-
-    .mount-select {
-      min-width: 12rem;
-      max-width: 16rem;
-    }
   }
 
   .state-alert {
@@ -526,76 +400,6 @@ onMounted(async () => {
     min-height: 0;
     display: flex;
     overflow: hidden;
-  }
-
-  .browser {
-    width: 15rem;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    border-right: 1px solid var(--ui-border);
-    background: var(--ui-bg-elevated);
-
-    &.compact {
-      position: absolute;
-      inset: 0 auto 0 0;
-      width: min(85%, 20rem);
-      z-index: 20;
-      box-shadow: 0 12px 24px rgb(0 0 0 / 25%);
-    }
-
-    .browser-body {
-      flex: 1 1 0%;
-      overflow-y: auto;
-      min-height: 0;
-    }
-
-    .browser-head {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      justify-content: space-between;
-      padding: 0.625rem;
-      border-bottom: 1px solid var(--ui-border);
-    }
-
-    .browser-path {
-      margin: 0;
-      font-size: 0.75rem;
-      color: var(--ui-text-muted);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .browser-empty {
-      padding: 0.75rem;
-      font-size: 0.75rem;
-      color: var(--ui-text-muted);
-    }
-
-    .browser-item {
-      border: none;
-      background: transparent;
-      color: inherit;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      text-align: left;
-      padding: 0.5rem 0.625rem;
-      cursor: pointer;
-
-      &:hover {
-        background: var(--ui-bg);
-      }
-
-      span {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        font-size: 0.8125rem;
-      }
-    }
   }
 
   .editor-wrap {
@@ -779,23 +583,5 @@ onMounted(async () => {
       }
     }
   }
-
-  .browser-backdrop {
-    position: absolute;
-    inset: 0;
-    background: rgb(0 0 0 / 30%);
-    z-index: 10;
-  }
-}
-
-.browser-slide-enter-active,
-.browser-slide-leave-active {
-  transition: transform 0.2s ease, opacity 0.2s ease;
-}
-
-.browser-slide-enter-from,
-.browser-slide-leave-to {
-  transform: translateX(-8px);
-  opacity: 0;
 }
 </style>

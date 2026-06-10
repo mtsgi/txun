@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { FileSystemEntry } from '#layers/txunos-core/app/stores/filesystem'
-
 defineProps<{ windowId: string }>()
 
 const { t } = useI18n()
@@ -11,76 +9,37 @@ const VIDEO_EXTENSIONS = new Set([
   '.mp4', '.webm', '.mov', '.m4v', '.ogg', '.ogv', '.mkv', '.avi'
 ])
 
-/** ビデオアイテム情報 */
 interface VideoItem {
-  /** 表示名（ファイル名から拡張子を除いた値） */
   name: string
-  /** マウント内ルート基準パス */
   path: string
-  /** 再生に使う Object URL */
   url: string
 }
 
-/** リピートモード */
 type RepeatMode = 'none' | 'one' | 'all'
 
-/** プレイリスト */
 const videos = ref<VideoItem[]>([])
-/** 現在再生中のインデックス */
 const currentIndex = ref<number>(-1)
-/** 再生中かどうか */
 const isPlaying = ref(false)
-/** シャッフルモードかどうか */
 const isShuffle = ref(false)
-/** リピートモード */
 const repeatMode = ref<RepeatMode>('none')
-/** 再生位置（秒） */
 const currentTime = ref(0)
-/** 総再生時間（秒） */
 const duration = ref(0)
-/** 音量（0〜1） */
 const volume = ref(0.8)
-/** ミュート状態 */
 const isMuted = ref(false)
-/** 再生速度 */
 const playbackRate = ref(1)
-/** ローカルエラーメッセージ */
 const localError = ref<string | null>(null)
-
-const browserPath = ref('/')
-const entries = ref<FileSystemEntry[]>([])
 const isLoadingEntries = ref(false)
-const addingMount = ref(false)
-const showBrowser = ref(true)
-const showPlaylist = ref(true)
 
+const showPlaylist = ref(true)
 const containerRef = ref<HTMLElement | null>(null)
 const containerWidth = ref(900)
 const videoRef = ref<HTMLVideoElement | null>(null)
 
 const isCompact = computed(() => containerWidth.value < 980)
-const overlayVisible = computed(() => isCompact.value && (showBrowser.value || showPlaylist.value))
+const overlayVisible = computed(() => isCompact.value && showPlaylist.value)
 
-const mountOptions = computed(() =>
-  fileSystem.mounts.value.map(mount => ({
-    label: mount.name,
-    value: mount.id
-  }))
-)
-
-const hasMount = computed(() => !!fileSystem.activeMountId.value)
-
-const selectedMountId = computed({
-  get: (): string => fileSystem.activeMountId.value ?? '',
-  set: (mountId: string) => {
-    void fileSystem.setActiveMount(mountId || null)
-  }
-})
-
-/** 再生速度の選択肢 */
 const playbackRates = [0.5, 0.75, 1, 1.25, 1.5, 2] as const
 
-/** 再生速度メニュー項目 */
 const playbackRateItems = computed(() =>
   playbackRates.map(rate => ({
     label: rate === 1 ? `${rate}x (標準)` : `${rate}x`,
@@ -98,69 +57,18 @@ function isVideoPath(path: string): boolean {
   return Array.from(VIDEO_EXTENSIONS).some(ext => lower.endsWith(ext))
 }
 
-function goTo(path: string): void {
-  browserPath.value = path
-}
-
-function goUp(): void {
-  if (browserPath.value === '/') return
-  const parts = browserPath.value.split('/').filter(Boolean)
-  parts.pop()
-  browserPath.value = parts.length > 0 ? `/${parts.join('/')}` : '/'
-}
-
-async function loadEntries(): Promise<void> {
-  const mountId = fileSystem.activeMountId.value
-  if (!mountId) {
-    entries.value = []
-    return
-  }
-
-  isLoadingEntries.value = true
-  localError.value = null
-  try {
-    entries.value = await fileSystem.listDirectory(browserPath.value, mountId)
-  } catch (error) {
-    localError.value = toErrorMessage(error)
-    entries.value = []
-  } finally {
-    isLoadingEntries.value = false
-  }
-}
-
-async function handleAddMount(): Promise<void> {
-  addingMount.value = true
-  try {
-    const mount = await fileSystem.addMount()
-    if (mount) {
-      notify(t('apps.videoPlayer.mountAdded', { name: mount.name }), { type: 'success' })
-    }
-  } catch (error) {
-    localError.value = toErrorMessage(error)
-  } finally {
-    addingMount.value = false
-  }
-}
-
-/** ファイル名からビデオ名を生成する（拡張子除去） */
 function videoNameFromPath(path: string): string {
   const filename = path.split('/').filter(Boolean).at(-1) ?? ''
   return filename.replace(/\.[^.]+$/, '') || t('apps.videoPlayer.unknownVideo')
 }
 
-/** ファイルエントリーをプレイリストへ追加する */
-async function addVideoFromEntry(entry: FileSystemEntry, autoPlay = false): Promise<void> {
-  if (entry.kind !== 'file') return
-
-  if (!isVideoPath(entry.path)) {
+async function addVideoFromPath(path: string, mountId: string, autoPlay = false): Promise<void> {
+  if (!isVideoPath(path)) {
     notify(t('apps.videoPlayer.notVideo'), { type: 'warning' })
     return
   }
 
-  const mountId = fileSystem.activeMountId.value
-  if (!mountId) return
-
-  const existingIndex = videos.value.findIndex(item => item.path === entry.path)
+  const existingIndex = videos.value.findIndex(item => item.path === path)
   if (existingIndex >= 0) {
     if (autoPlay) {
       loadVideo(existingIndex)
@@ -170,12 +78,12 @@ async function addVideoFromEntry(entry: FileSystemEntry, autoPlay = false): Prom
   }
 
   try {
-    const blob = await fileSystem.readFileBlob(entry.path, mountId)
+    const blob = await fileSystem.readFileBlob(path, mountId)
     const url = URL.createObjectURL(blob)
     const nextIndex = videos.value.length
     videos.value.push({
-      name: videoNameFromPath(entry.path),
-      path: entry.path,
+      name: videoNameFromPath(path),
+      path: path,
       url
     })
 
@@ -192,17 +100,47 @@ async function addVideoFromEntry(entry: FileSystemEntry, autoPlay = false): Prom
   }
 }
 
-/** 現在ディレクトリのビデオファイルを全てプレイリストへ追加する */
-async function addAllFromDirectory(): Promise<void> {
-  const candidates = entries.value.filter(entry => entry.kind === 'file' && isVideoPath(entry.path))
-  if (candidates.length === 0) return
-
-  for (const entry of candidates) {
-    await addVideoFromEntry(entry)
+async function triggerAddVideos(): Promise<void> {
+  const fileDialog = useFileDialog()
+  const res = await fileDialog.open({
+    title: t('apps.videoPlayer.playlist'),
+    mode: 'open-file',
+    filters: ['.mp4', '.webm', '.mov', '.m4v', '.ogg', '.ogv', '.mkv', '.avi'],
+    multiple: true
+  })
+  if (res) {
+    if (Array.isArray(res)) {
+      for (const item of res) {
+        await addVideoFromPath(item.path, item.mountId)
+      }
+    } else {
+      await addVideoFromPath(res.path, res.mountId)
+    }
   }
 }
 
-/** 指定インデックスのビデオをプレイリストから削除する */
+async function triggerAddDirectory(): Promise<void> {
+  const fileDialog = useFileDialog()
+  const res = await fileDialog.open({
+    title: t('apps.videoPlayer.addAll'),
+    mode: 'open-directory'
+  })
+  if (res && !Array.isArray(res)) {
+    isLoadingEntries.value = true
+    try {
+      const list = await fileSystem.listDirectory(res.path, res.mountId)
+      const candidates = list.filter(entry => entry.kind === 'file' && isVideoPath(entry.path))
+      for (const entry of candidates) {
+        await addVideoFromPath(entry.path, res.mountId)
+      }
+    } catch (err) {
+      localError.value = toErrorMessage(err)
+    } finally {
+      isLoadingEntries.value = false
+    }
+  }
+}
+
 function removeVideo(index: number): void {
   const item = videos.value[index]
   if (!item) return
@@ -227,7 +165,6 @@ function removeVideo(index: number): void {
   }
 }
 
-/** 指定インデックスのビデオを `<video>` にロードする */
 function loadVideo(index: number): void {
   const item = videos.value[index]
   if (!item || !videoRef.value) return
@@ -241,7 +178,6 @@ function loadVideo(index: number): void {
   duration.value = 0
 }
 
-/** 再生 / 一時停止を切り替える */
 async function togglePlay(forcePlay = false): Promise<void> {
   if (!videoRef.value) return
   if (currentIndex.value === -1 && videos.value.length > 0) {
@@ -259,7 +195,6 @@ async function togglePlay(forcePlay = false): Promise<void> {
   }
 }
 
-/** 次のビデオを再生する */
 async function nextVideo(): Promise<void> {
   if (videos.value.length === 0) return
   let next: number
@@ -273,7 +208,6 @@ async function nextVideo(): Promise<void> {
   if (isPlaying.value) await togglePlay(true)
 }
 
-/** 前のビデオを再生する（再生位置が 3 秒以上なら先頭へ戻す） */
 async function prevVideo(): Promise<void> {
   if (videos.value.length === 0) return
   if (currentTime.value > 3) {
@@ -287,42 +221,35 @@ async function prevVideo(): Promise<void> {
   if (isPlaying.value) await togglePlay(true)
 }
 
-/** 再生速度を変更する */
 function setPlaybackRate(rate: number): void {
   playbackRate.value = rate
   if (videoRef.value) videoRef.value.playbackRate = rate
 }
 
-/** ミュートを切り替える */
 function toggleMute(): void {
   isMuted.value = !isMuted.value
   if (videoRef.value) videoRef.value.muted = isMuted.value
 }
 
-/** リピートモードを次のモードに切り替える */
 function cycleRepeat(): void {
   const modes: RepeatMode[] = ['none', 'one', 'all']
   const idx = modes.indexOf(repeatMode.value)
   repeatMode.value = modes[(idx + 1) % modes.length] ?? 'none'
 }
 
-/** リピートアイコン名を返す */
 const repeatIcon = computed(() => {
   if (repeatMode.value === 'one') return 'i-lucide-repeat-1'
   return 'i-lucide-repeat'
 })
 
-/** リピートがアクティブかどうか */
 const repeatActive = computed(() => repeatMode.value !== 'none')
 
-/** シークバー操作時に再生位置を更新する */
 function handleSeek(event: Event): void {
   const input = event.target as HTMLInputElement
   if (!videoRef.value) return
   videoRef.value.currentTime = Number(input.value)
 }
 
-/** 音量スライダー操作時に音量を更新する */
 function handleVolumeChange(event: Event): void {
   const input = event.target as HTMLInputElement
   volume.value = Number(input.value)
@@ -335,7 +262,6 @@ function handleVolumeChange(event: Event): void {
   }
 }
 
-/** 秒数を mm:ss 形式へ変換する */
 function formatTime(sec: number): string {
   if (!isFinite(sec) || sec < 0) return '0:00'
   const minutes = Math.floor(sec / 60)
@@ -343,7 +269,6 @@ function formatTime(sec: number): string {
   return `${minutes}:${String(seconds).padStart(2, '0')}`
 }
 
-/** PiP をトグルする */
 async function togglePiP(): Promise<void> {
   if (!videoRef.value) return
   if (!document.pictureInPictureEnabled || !('requestPictureInPicture' in videoRef.value)) return
@@ -354,11 +279,10 @@ async function togglePiP(): Promise<void> {
       await videoRef.value.requestPictureInPicture()
     }
   } catch {
-    // 未対応環境やセキュリティ制約で失敗した場合は無視
+    // Ignore PiP errors
   }
 }
 
-/** フルスクリーンをトグルする */
 async function toggleFullscreen(): Promise<void> {
   if (!videoRef.value || !document.fullscreenEnabled) return
   try {
@@ -404,27 +328,7 @@ function onEnded(): void {
   }
 }
 
-async function openEntry(entry: FileSystemEntry): Promise<void> {
-  if (entry.kind === 'directory') {
-    goTo(entry.path)
-    return
-  }
-
-  await addVideoFromEntry(entry, true)
-  if (isCompact.value) showBrowser.value = false
-}
-
-function toggleBrowserPanel(): void {
-  if (isCompact.value && !showBrowser.value) {
-    showPlaylist.value = false
-  }
-  showBrowser.value = !showBrowser.value
-}
-
 function togglePlaylistPanel(): void {
-  if (isCompact.value && !showPlaylist.value) {
-    showBrowser.value = false
-  }
   showPlaylist.value = !showPlaylist.value
 }
 
@@ -443,7 +347,7 @@ onMounted(() => {
     videoRef.value.volume = volume.value
   }
 
-  void fileSystem.restoreMounts().then(loadEntries)
+  void fileSystem.restoreMounts()
 })
 
 onBeforeUnmount(() => {
@@ -454,21 +358,10 @@ onBeforeUnmount(() => {
 
 watch(isCompact, (compact) => {
   if (compact) {
-    showBrowser.value = false
     showPlaylist.value = false
   }
 })
 
-watch(() => fileSystem.activeMountId.value, async () => {
-  browserPath.value = '/'
-  await loadEntries()
-})
-
-watch(browserPath, async () => {
-  await loadEntries()
-})
-
-/** 現在再生中のビデオ名を返す */
 const currentVideoName = computed((): string => {
   const item = videos.value[currentIndex.value]
   return item?.name ?? ''
@@ -483,14 +376,6 @@ const currentVideoName = computed((): string => {
     <div class="toolbar">
       <div class="toolbar-left">
         <UButton
-          icon="i-lucide-folder-tree"
-          :label="isCompact ? undefined : t('apps.videoPlayer.browser')"
-          size="sm"
-          variant="ghost"
-          color="neutral"
-          @click="toggleBrowserPanel"
-        />
-        <UButton
           icon="i-lucide-list-video"
           :label="isCompact ? undefined : (showPlaylist ? t('apps.videoPlayer.hidePlaylist') : t('apps.videoPlayer.showPlaylist'))"
           size="sm"
@@ -498,70 +383,24 @@ const currentVideoName = computed((): string => {
           color="neutral"
           @click="togglePlaylistPanel"
         />
-        <USelect
-          v-model="selectedMountId"
-          :items="mountOptions"
-          value-key="value"
-          class="mount-select"
-          :placeholder="t('apps.videoPlayer.mount')"
-        />
         <UButton
-          icon="i-lucide-folder-plus"
-          :label="isCompact ? undefined : t('apps.videoPlayer.addMount')"
-          size="sm"
-          variant="ghost"
-          color="primary"
-          :loading="addingMount"
-          @click="handleAddMount"
-        />
-        <UButton
-          icon="i-lucide-arrow-up"
-          :label="isCompact ? undefined : t('apps.videoPlayer.up')"
+          icon="i-lucide-video"
+          :label="isCompact ? undefined : t('apps.videoPlayer.playlist')"
           size="sm"
           variant="ghost"
           color="neutral"
-          :disabled="!hasMount || browserPath === '/'"
-          @click="goUp"
+          @click="triggerAddVideos"
         />
         <UButton
-          icon="i-lucide-refresh-cw"
-          :label="isCompact ? undefined : t('apps.videoPlayer.refresh')"
-          size="sm"
-          variant="ghost"
-          color="neutral"
-          :loading="isLoadingEntries"
-          :disabled="!hasMount"
-          @click="loadEntries"
-        />
-        <UButton
-          icon="i-lucide-list-plus"
+          icon="i-lucide-folder-open"
           :label="isCompact ? undefined : t('apps.videoPlayer.addAll')"
           size="sm"
           variant="ghost"
           color="neutral"
-          :disabled="!hasMount"
-          @click="addAllFromDirectory"
+          @click="triggerAddDirectory"
         />
       </div>
     </div>
-
-    <UAlert
-      v-if="!fileSystem.isSupported.value"
-      icon="i-lucide-info"
-      color="neutral"
-      variant="soft"
-      :description="t('apps.videoPlayer.unsupported')"
-      class="state-alert"
-    />
-
-    <UAlert
-      v-else-if="!hasMount"
-      icon="i-lucide-folder-search"
-      color="neutral"
-      variant="soft"
-      :description="t('apps.videoPlayer.noMounts')"
-      class="state-alert"
-    />
 
     <UAlert
       v-if="localError"
@@ -575,7 +414,7 @@ const currentVideoName = computed((): string => {
     <div
       v-if="overlayVisible"
       class="overlay-backdrop"
-      @click="showBrowser = false; showPlaylist = false"
+      @click="showPlaylist = false"
     />
 
     <div class="content">
@@ -763,50 +602,6 @@ const currentVideoName = computed((): string => {
           </ul>
         </aside>
       </Transition>
-
-      <Transition name="panel-slide-right">
-        <aside
-          v-if="showBrowser && hasMount && fileSystem.isSupported.value"
-          class="browser-panel"
-          :class="{ compact: isCompact }"
-        >
-          <div class="panel-header">
-            <span>{{ browserPath }}</span>
-            <UButton
-              v-if="isCompact"
-              icon="i-lucide-x"
-              size="xs"
-              variant="ghost"
-              color="neutral"
-              @click="showBrowser = false"
-            />
-          </div>
-
-          <div
-            v-if="isLoadingEntries"
-            class="panel-empty"
-          >
-            {{ t('apps.videoPlayer.loading') }}
-          </div>
-
-          <div
-            v-else-if="entries.length === 0"
-            class="panel-empty"
-          >
-            {{ t('apps.videoPlayer.empty') }}
-          </div>
-
-          <button
-            v-for="entry in entries"
-            :key="entry.path"
-            class="browser-item"
-            @click="openEntry(entry)"
-          >
-            <UIcon :name="entry.kind === 'directory' ? 'i-lucide-folder' : 'i-lucide-file-video'" />
-            <span>{{ entry.name }}</span>
-          </button>
-        </aside>
-      </Transition>
     </div>
   </div>
 </template>
@@ -834,11 +629,6 @@ const currentVideoName = computed((): string => {
   align-items: center;
   gap: 0.375rem;
   flex-wrap: wrap;
-}
-
-.mount-select {
-  min-width: 12rem;
-  max-width: 16rem;
 }
 
 .state-alert {
@@ -941,8 +731,7 @@ const currentVideoName = computed((): string => {
   white-space: nowrap;
 }
 
-.playlist-panel,
-.browser-panel {
+.playlist-panel {
   width: 16rem;
   flex-shrink: 0;
   display: flex;
@@ -953,8 +742,7 @@ const currentVideoName = computed((): string => {
   padding: 0.5rem;
 }
 
-.playlist-panel.compact,
-.browser-panel.compact {
+.playlist-panel.compact {
   position: absolute;
   top: 0;
   bottom: 0;
@@ -967,10 +755,6 @@ const currentVideoName = computed((): string => {
   left: 0;
   border-left: none;
   border-right: 1px solid var(--ui-border);
-}
-
-.browser-panel.compact {
-  right: 0;
 }
 
 .panel-header {
@@ -1031,47 +815,14 @@ const currentVideoName = computed((): string => {
   font-size: 0.8rem;
 }
 
-.browser-item {
-  width: 100%;
-  border: none;
-  background: transparent;
-  color: inherit;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.45rem 0.5rem;
-  border-radius: 0.35rem;
-  text-align: left;
-  cursor: pointer;
-}
-
-.browser-item:hover {
-  background: var(--ui-bg);
-}
-
-.browser-item span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 0.8rem;
-}
-
 .panel-slide-enter-active,
-.panel-slide-leave-active,
-.panel-slide-right-enter-active,
-.panel-slide-right-leave-active {
+.panel-slide-leave-active {
   transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
 .panel-slide-enter-from,
 .panel-slide-leave-to {
   transform: translateX(-10px);
-  opacity: 0;
-}
-
-.panel-slide-right-enter-from,
-.panel-slide-right-leave-to {
-  transform: translateX(10px);
   opacity: 0;
 }
 </style>

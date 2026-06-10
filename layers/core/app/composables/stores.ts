@@ -18,3 +18,6 @@ export type {
   FileSystemState,
   DesktopFileSystemError
 } from '../stores/filesystem'
+
+export { useFileDialogStore } from '../stores/file-dialog'
+export type { FileDialogOptions, FileDialogResult } from '../stores/file-dialog'

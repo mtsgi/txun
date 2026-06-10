@@ -295,6 +295,9 @@ onUnmounted(() => {
     <!-- Spotlight -->
     <DesktopSpotlight />
 
+    <!-- File Dialog -->
+    <DesktopFileDialog />
+
     <!-- App Launcher -->
     <Transition :name="launcherTransitionName">
       <DesktopAppLauncher
