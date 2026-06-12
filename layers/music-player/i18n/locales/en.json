@@ -3,7 +3,7 @@
     "musicPlayer": {
       "name": "Music",
       "addFiles": "Add Files",
-      "noTracks": "Drop files here or click \"Add Files\"",
+      "noTracks": "No audio files in playlist",
       "playlist": "Playlist",
       "shuffle": "Shuffle",
       "repeatNone": "No Repeat",
@@ -11,7 +11,20 @@
       "repeatAll": "Repeat All",
       "volume": "Volume",
       "removeTrack": "Remove",
-      "unknownTrack": "Unknown Track"
+      "unknownTrack": "Unknown Track",
+      "browser": "Browser",
+      "mount": "Working Directory",
+      "addMount": "Add",
+      "mountAdded": "Working directory added: {name}",
+      "up": "Up",
+      "refresh": "Refresh",
+      "addAll": "Add This Folder",
+      "loading": "Loading...",
+      "empty": "No audio files in this folder",
+      "notAudio": "Please select an audio file",
+      "unsupported": "This browser does not support the File System Access API.",
+      "noMounts": "No working directory configured. Add one from Settings > File System.",
+      "errorGeneric": "Failed to load audio file"
     }
   }
 }

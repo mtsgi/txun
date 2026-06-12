@@ -3,7 +3,7 @@
     "musicPlayer": {
       "name": "ミュージック",
       "addFiles": "ファイルを追加",
-      "noTracks": "ファイルをここにドロップ、または「ファイルを追加」をクリック",
+      "noTracks": "再生する音声ファイルがありません",
       "playlist": "プレイリスト",
       "shuffle": "シャッフル",
       "repeatNone": "繰り返しなし",
@@ -11,7 +11,20 @@
       "repeatAll": "全曲繰り返し",
       "volume": "音量",
       "removeTrack": "削除",
-      "unknownTrack": "不明なトラック"
+      "unknownTrack": "不明なトラック",
+      "browser": "ブラウザ",
+      "mount": "作業ディレクトリ",
+      "addMount": "追加",
+      "mountAdded": "作業ディレクトリを追加しました: {name}",
+      "up": "上へ",
+      "refresh": "更新",
+      "addAll": "このフォルダを追加",
+      "loading": "読み込み中...",
+      "empty": "このフォルダに音声ファイルがありません",
+      "notAudio": "音声ファイルを選択してください",
+      "unsupported": "このブラウザは File System Access API に対応していません。",
+      "noMounts": "作業ディレクトリが未設定です。Settings の File System から追加してください。",
+      "errorGeneric": "音声ファイルの読み込み中にエラーが発生しました"
     }
   }
 }

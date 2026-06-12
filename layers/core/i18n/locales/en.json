@@ -39,6 +39,12 @@
       },
       "settings": {
         "open": "Open Settings"
+      },
+      "filesystem": {
+        "mountAdded": "Working directory added",
+        "mountRemoved": "Working directory removed",
+        "mountRequired": "Working directory is required",
+        "unsupported": "File System Access API is not available in this browser"
       }
     }
   }

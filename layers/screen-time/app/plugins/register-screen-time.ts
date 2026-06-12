@@ -1,3 +1,5 @@
+import { todayDateKey } from '../stores/screenTime'
+
 export default defineNuxtPlugin((nuxtApp) => {
   const desktopStore = useDesktopStore()
   const screenTimeStore = useScreenTimeStore()
@@ -22,19 +24,35 @@ export default defineNuxtPlugin((nuxtApp) => {
     const { saveState, loadState } = useDesktopStorage()
 
     // IndexedDB から前回の記録を復元する
-    loadState<{ days: unknown, limits: unknown, trackingEnabled: unknown }>('screen-time').then((saved) => {
-      if (saved) {
-        if (saved.days && typeof saved.days === 'object') {
-          screenTimeStore.days = saved.days as typeof screenTimeStore.days
+    loadState<{ days: unknown, limits: unknown, trackingEnabled: unknown }>('screen-time')
+      .then((saved) => {
+        if (saved) {
+          if (saved.days && typeof saved.days === 'object') {
+            const days = saved.days as Record<string, any>
+            for (const key of Object.keys(days)) {
+              const record = days[key]
+              if (record && typeof record === 'object') {
+                if (record.totalSeconds == null) record.totalSeconds = 0
+                if (!record.apps) record.apps = {}
+                if (!record.notifications) record.notifications = {}
+                if (!record.hourly || !Array.isArray(record.hourly) || record.hourly.length !== 24) {
+                  record.hourly = Array.from({ length: 24 }, () => 0)
+                }
+              }
+            }
+            screenTimeStore.days = days as typeof screenTimeStore.days
+          }
+          if (Array.isArray(saved.limits)) {
+            screenTimeStore.limits = saved.limits as typeof screenTimeStore.limits
+          }
+          if (typeof saved.trackingEnabled === 'boolean') {
+            screenTimeStore.trackingEnabled = saved.trackingEnabled
+          }
         }
-        if (Array.isArray(saved.limits)) {
-          screenTimeStore.limits = saved.limits as typeof screenTimeStore.limits
-        }
-        if (typeof saved.trackingEnabled === 'boolean') {
-          screenTimeStore.trackingEnabled = saved.trackingEnabled
-        }
-      }
-    })
+      })
+      .catch((err) => {
+        console.error('Failed to load screen-time state:', err)
+      })
 
     // 通知イベントを監視して受信回数を記録する
     watch(lastNotificationEvent, (event) => {
@@ -43,11 +61,11 @@ export default defineNuxtPlugin((nuxtApp) => {
 
     // 制限超過アラート済みアプリ ID のセット（今日のみ有効）
     const alerted = new Set<string>()
-    let alertedDate = new Date().toISOString().slice(0, 10)
+    let alertedDate = todayDateKey()
 
     // 1 秒ごとにデスクトップ使用時間とアクティブアプリ時間を加算する
     setInterval(() => {
-      const today = new Date().toISOString().slice(0, 10)
+      const today = todayDateKey()
 
       // 日付が変わったらアラート済みセットをリセットする
       if (today !== alertedDate) {
@@ -62,7 +80,7 @@ export default defineNuxtPlugin((nuxtApp) => {
       const focusedId = desktopStore.focusedWindowId
       if (!focusedId) return
 
-      const focusedWindow = desktopStore.windows.find(w => w.id === focusedId)
+      const focusedWindow = desktopStore.getWindowById(focusedId)
       if (!focusedWindow || focusedWindow.isMinimized) return
 
       const appId = focusedWindow.appId
@@ -76,9 +94,10 @@ export default defineNuxtPlugin((nuxtApp) => {
           alerted.add(appId)
           const appMeta = desktopStore.apps.find(a => a.id === appId)
           const appName = appMeta?.name ?? appId
+          const i18n = nuxtApp.$i18n as any
           toast.add({
-            title: '使用制限に達しました',
-            description: `${appName} の本日の使用時間が上限に達しました。`,
+            title: i18n.t('apps.screenTime.limitReached'),
+            description: i18n.t('apps.screenTime.limitReachedDesc', { app: appName }),
             color: 'warning',
             icon: 'i-lucide-timer-off'
           })

@@ -33,6 +33,8 @@ export interface WindowState {
   virtualDesktopId: string
   /** 最大化前のウィンドウ境界（復元用） */
   preMaximize?: { x: number, y: number, width: number, height: number }
+  /** ウィンドウに渡される任意の起動引数 */
+  args?: Record<string, unknown>
 }
 
 /** 仮想デスクトップのメタデータを表すインターフェース */
@@ -202,7 +204,11 @@ export const useDesktopStore = defineStore('desktop', {
         .reduce<WindowState | undefined>((max, w) => {
           if (!max || w.zIndex > max.zIndex) return w
           return max
-        }, undefined)
+        }, undefined),
+
+    /** 指定 ID のウィンドウを取得する */
+    getWindowById: state => (id: string): WindowState | undefined =>
+      state.windows.find(w => w.id === id)
   },
 
   actions: {

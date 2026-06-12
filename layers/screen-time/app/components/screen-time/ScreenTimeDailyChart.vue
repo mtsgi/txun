@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { DailyRecord } from '../../stores/screenTime'
 
+const { t } = useI18n()
+
 /** 日別棒グラフコンポーネント（直近 7 日） */
 const props = defineProps<{
   /** 直近 7 日分のデータ（古い順） */
@@ -18,12 +20,16 @@ const maxVal = computed(() => Math.max(...props.days.map(d => d.record.totalSeco
 /** YYYY-MM-DD → 曜日の短縮形 */
 function dayLabel(date: string): string {
   const d = new Date(date + 'T00:00:00')
-  return ['日', '月', '火', '水', '木', '金', '土'][d.getDay()] ?? ''
+  const keys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
+  const key = keys[d.getDay()]
+  return key ? t('apps.screenTime.days.' + key) : ''
 }
 
 /** 今日かどうか */
 function isToday(date: string): boolean {
-  return date === new Date().toISOString().slice(0, 10)
+  const now = new Date()
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  return date === today
 }
 </script>
 

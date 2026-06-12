@@ -1,0 +1,26 @@
+{
+  "apps": {
+    "gitViewer": {
+      "name": "Git Viewer",
+      "history": "Commit History",
+      "workingCopy": "Working Copy",
+      "noChanges": "No changes in working copy",
+      "commitMessage": "Commit Message",
+      "author": "Author",
+      "date": "Date",
+      "hash": "Commit Hash",
+      "parent": "Parent Commit",
+      "filesChanged": "Files Changed",
+      "notGitRepository": "Not a Git repository. Please choose a folder containing a .git directory.",
+      "selectRepository": "Select a Git repository",
+      "unified": "Unified",
+      "split": "Split",
+      "openInGitViewer": "Open in Git Viewer",
+      "noMounts": "No working directory configured. Please mount a folder from the File System.",
+      "loading": "Loading Git repository...",
+      "branch": "Branch",
+      "remoteUrl": "Remote URL",
+      "diff": "Diff"
+    }
+  }
+}

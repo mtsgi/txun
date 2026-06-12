@@ -2,151 +2,133 @@
 defineProps<{ windowId: string }>()
 
 const { t } = useI18n()
+const { notify } = useDesktopNotification()
+const fileSystem = useFileSystem()
 
-/** トラック情報 */
+const AUDIO_EXTENSIONS = new Set([
+  '.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac', '.opus', '.webm'
+])
+
 interface Track {
-  /** 表示名（ファイル名から拡張子を除いた値） */
   name: string
-  /** Object URL */
+  path: string
   url: string
-  /** 元の File オブジェクト */
-  file: File
 }
 
-/** リピートモード */
 type RepeatMode = 'none' | 'one' | 'all'
 
-// ─── 状態 ──────────────────────────────────────────────────
-
-/** プレイリスト */
 const tracks = ref<Track[]>([])
-/** 現在再生中のインデックス */
 const currentIndex = ref<number>(-1)
-/** 再生中かどうか */
 const isPlaying = ref(false)
-/** シャッフルモードかどうか */
 const isShuffle = ref(false)
-/** リピートモード */
 const repeatMode = ref<RepeatMode>('none')
-/** 再生位置（秒） */
 const currentTime = ref(0)
-/** トラックの総再生時間（秒） */
 const duration = ref(0)
-/** 音量（0〜1） */
 const volume = ref(0.8)
-/** ドラッグ中フラグ */
-const isDragging = ref(false)
 
-// ─── DOM 参照 ─────────────────────────────────────────────
+const localError = ref<string | null>(null)
+const isLoadingEntries = ref(false)
 
-/** `<audio>` 要素への参照 */
+const containerRef = ref<HTMLElement | null>(null)
+const containerWidth = ref(900)
 const audioRef = ref<HTMLAudioElement | null>(null)
-/** Canvas 要素への参照 */
-const canvasRef = ref<HTMLCanvasElement | null>(null)
-/** ファイル入力への参照 */
-const fileInputRef = ref<HTMLInputElement | null>(null)
 
-// ─── Web Audio API ────────────────────────────────────────
+const isCompact = computed(() => containerWidth.value < 900)
 
-/** AudioContext（最初の再生操作で初期化） */
-let audioCtx: AudioContext | null = null
-/** AnalyserNode */
-let analyser: AnalyserNode | null = null
-/** MediaElementSource（`<audio>` との接続、1回だけ作成） */
-let sourceNode: MediaElementAudioSourceNode | null = null
-/** requestAnimationFrame ID */
-let rafId: number | null = null
-
-/** AudioContext と AnalyserNode を初期化する（冪等） */
-function ensureAudioContext(): void {
-  if (audioCtx) return
-  audioCtx = new AudioContext()
-  analyser = audioCtx.createAnalyser()
-  analyser.fftSize = 256
-  analyser.connect(audioCtx.destination)
-
-  if (audioRef.value && !sourceNode) {
-    sourceNode = audioCtx.createMediaElementSource(audioRef.value)
-    sourceNode.connect(analyser)
-  }
+function toErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message
+  return t('apps.musicPlayer.errorGeneric')
 }
 
-/** Canvas にバーチャート（周波数スペクトラム）を描画する */
-function drawVisualizer(): void {
-  if (!analyser || !canvasRef.value) return
+function isAudioPath(path: string): boolean {
+  const lower = path.toLowerCase()
+  return Array.from(AUDIO_EXTENSIONS).some(ext => lower.endsWith(ext))
+}
 
-  const canvas = canvasRef.value
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return
+function trackNameFromPath(path: string): string {
+  const filename = path.split('/').filter(Boolean).at(-1) ?? ''
+  return filename.replace(/\.[^.]+$/, '') || t('apps.musicPlayer.unknownTrack')
+}
 
-  const bufferLength = analyser.frequencyBinCount
-  const dataArray = new Uint8Array(bufferLength)
-  analyser.getByteFrequencyData(dataArray)
+async function addTrackFromPath(path: string, mountId: string, autoPlay = false): Promise<void> {
+  if (!isAudioPath(path)) {
+    notify(t('apps.musicPlayer.notAudio'), { type: 'warning' })
+    return
+  }
 
-  const W = canvas.width
-  const H = canvas.height
-  ctx.clearRect(0, 0, W, H)
-
-  const barCount = 48
-  const step = Math.floor(bufferLength / barCount)
-  const barW = W / barCount - 1
-
-  for (let i = 0; i < barCount; i++) {
-    let sum = 0
-    for (let j = 0; j < step; j++) {
-      sum += dataArray[i * step + j] ?? 0
+  const existingIndex = tracks.value.findIndex(track => track.path === path)
+  if (existingIndex >= 0) {
+    if (autoPlay) {
+      loadTrack(existingIndex)
+      await togglePlay(true)
     }
-    const avg = sum / step
-    const barH = (avg / 255) * H
-
-    const hue = 260 + (i / barCount) * 60
-    ctx.fillStyle = `hsl(${hue}, 70%, 60%)`
-    ctx.fillRect(i * (barW + 1), H - barH, barW, barH)
+    return
   }
 
-  rafId = requestAnimationFrame(drawVisualizer)
-}
+  try {
+    const blob = await fileSystem.readFileBlob(path, mountId)
+    const url = URL.createObjectURL(blob)
+    const nextIndex = tracks.value.length
+    tracks.value.push({
+      name: trackNameFromPath(path),
+      path: path,
+      url
+    })
 
-/** ビジュアライザーのアニメーションを開始する */
-function startVisualizer(): void {
-  if (rafId !== null) return
-  drawVisualizer()
-}
+    if (currentIndex.value === -1) {
+      loadTrack(nextIndex)
+    }
 
-/** ビジュアライザーのアニメーションを停止する */
-function stopVisualizer(): void {
-  if (rafId !== null) {
-    cancelAnimationFrame(rafId)
-    rafId = null
-  }
-  // Canvas をクリア
-  if (canvasRef.value) {
-    const ctx = canvasRef.value.getContext('2d')
-    ctx?.clearRect(0, 0, canvasRef.value.width, canvasRef.value.height)
+    if (autoPlay) {
+      loadTrack(nextIndex)
+      await togglePlay(true)
+    }
+  } catch (error) {
+    localError.value = toErrorMessage(error)
   }
 }
 
-// ─── ファイル管理 ──────────────────────────────────────────
-
-/** File オブジェクトからトラック名を生成する（拡張子除去） */
-function trackNameFromFile(file: File): string {
-  return file.name.replace(/\.[^.]+$/, '') || t('apps.musicPlayer.unknownTrack')
+async function triggerAddTracks(): Promise<void> {
+  const fileDialog = useFileDialog()
+  const res = await fileDialog.open({
+    title: t('apps.musicPlayer.playlist'),
+    mode: 'open-file',
+    filters: ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac', '.opus', '.webm'],
+    multiple: true
+  })
+  if (res) {
+    if (Array.isArray(res)) {
+      for (const item of res) {
+        await addTrackFromPath(item.path, item.mountId)
+      }
+    } else {
+      await addTrackFromPath(res.path, res.mountId)
+    }
+  }
 }
 
-/** File[] からトラックを追加する */
-function addFiles(files: FileList | File[]): void {
-  const audioFiles = Array.from(files).filter(f => f.type.startsWith('audio/'))
-  for (const file of audioFiles) {
-    const url = URL.createObjectURL(file)
-    tracks.value.push({ name: trackNameFromFile(file), url, file })
-  }
-  // 追加直後にプレイリストが空だった場合は先頭を選択
-  if (currentIndex.value === -1 && tracks.value.length > 0) {
-    loadTrack(0)
+async function triggerAddDirectory(): Promise<void> {
+  const fileDialog = useFileDialog()
+  const res = await fileDialog.open({
+    title: t('apps.musicPlayer.addAll'),
+    mode: 'open-directory'
+  })
+  if (res && !Array.isArray(res)) {
+    isLoadingEntries.value = true
+    try {
+      const list = await fileSystem.listDirectory(res.path, res.mountId)
+      const candidates = list.filter(entry => entry.kind === 'file' && isAudioPath(entry.path))
+      for (const entry of candidates) {
+        await addTrackFromPath(entry.path, res.mountId)
+      }
+    } catch (err) {
+      localError.value = toErrorMessage(err)
+    } finally {
+      isLoadingEntries.value = false
+    }
   }
 }
 
-/** 指定インデックスのトラックをプレイリストから削除する */
 function removeTrack(index: number): void {
   const track = tracks.value[index]
   if (!track) return
@@ -156,7 +138,6 @@ function removeTrack(index: number): void {
   if (index < currentIndex.value) {
     currentIndex.value--
   } else if (index === currentIndex.value) {
-    stopVisualizer()
     isPlaying.value = false
     if (tracks.value.length > 0) {
       const next = Math.min(index, tracks.value.length - 1)
@@ -169,9 +150,6 @@ function removeTrack(index: number): void {
   }
 }
 
-// ─── 再生制御 ──────────────────────────────────────────────
-
-/** 指定インデックスのトラックを `<audio>` にロードする */
 function loadTrack(index: number): void {
   const track = tracks.value[index]
   if (!track || !audioRef.value) return
@@ -182,26 +160,20 @@ function loadTrack(index: number): void {
   duration.value = 0
 }
 
-/** 再生 / 一時停止を切り替える */
-async function togglePlay(): Promise<void> {
+async function togglePlay(forcePlay = false): Promise<void> {
   if (!audioRef.value) return
   if (currentIndex.value === -1 && tracks.value.length > 0) {
     loadTrack(0)
   }
-  ensureAudioContext()
-  if (audioCtx?.state === 'suspended') {
-    await audioCtx.resume()
-  }
 
-  if (isPlaying.value) {
+  if (!forcePlay && isPlaying.value) {
     audioRef.value.pause()
   } else {
     await audioRef.value.play()
   }
 }
 
-/** 次のトラックを再生する */
-function nextTrack(): void {
+async function nextTrack(): Promise<void> {
   if (tracks.value.length === 0) return
   let next: number
   if (isShuffle.value) {
@@ -211,151 +183,106 @@ function nextTrack(): void {
     if (next >= tracks.value.length) next = 0
   }
   loadTrack(next)
-  if (isPlaying.value) audioRef.value?.play()
+  if (isPlaying.value) await togglePlay(true)
 }
 
-/** 前のトラックを再生する（再生位置が 3 秒以上の場合は先頭へ戻る） */
-function prevTrack(): void {
+async function prevTrack(): Promise<void> {
   if (tracks.value.length === 0) return
   if (currentTime.value > 3) {
     if (audioRef.value) audioRef.value.currentTime = 0
     return
   }
+
   let prev = currentIndex.value - 1
   if (prev < 0) prev = tracks.value.length - 1
   loadTrack(prev)
-  if (isPlaying.value) audioRef.value?.play()
+  if (isPlaying.value) await togglePlay(true)
 }
 
-/** リピートモードを次のモードに切り替える */
 function cycleRepeat(): void {
   const modes: RepeatMode[] = ['none', 'one', 'all']
   const idx = modes.indexOf(repeatMode.value)
   repeatMode.value = modes[(idx + 1) % modes.length] ?? 'none'
 }
 
-/** 現在のリピートアイコンクラスを返す */
 const repeatIcon = computed(() => {
   if (repeatMode.value === 'one') return 'i-lucide-repeat-1'
   return 'i-lucide-repeat'
 })
 
-/** 現在のリピートアイコン色を返す */
 const repeatActive = computed(() => repeatMode.value !== 'none')
 
-// ─── シーク / 音量 ────────────────────────────────────────
-
-/** シークバー操作時に再生位置を更新する */
-function handleSeek(e: Event): void {
-  const input = e.target as HTMLInputElement
+function handleSeek(event: Event): void {
+  const input = event.target as HTMLInputElement
   if (!audioRef.value) return
   audioRef.value.currentTime = Number(input.value)
 }
 
-/** 音量スライダー操作時に音量を更新する */
-function handleVolumeChange(e: Event): void {
-  const input = e.target as HTMLInputElement
+function handleVolumeChange(event: Event): void {
+  const input = event.target as HTMLInputElement
   volume.value = Number(input.value)
   if (audioRef.value) audioRef.value.volume = volume.value
 }
 
-// ─── 時間フォーマット ──────────────────────────────────────
-
-/** 秒数を mm:ss 形式の文字列に変換する */
 function formatTime(sec: number): string {
   if (!isFinite(sec) || sec < 0) return '0:00'
-  const m = Math.floor(sec / 60)
-  const s = Math.floor(sec % 60)
-  return `${m}:${String(s).padStart(2, '0')}`
+  const minutes = Math.floor(sec / 60)
+  const seconds = Math.floor(sec % 60)
+  return `${minutes}:${String(seconds).padStart(2, '0')}`
 }
 
-// ─── audio イベントハンドラ ────────────────────────────────
-
-/** `<audio>` の timeupdate イベントで再生位置を同期する */
 function onTimeUpdate(): void {
   if (audioRef.value) currentTime.value = audioRef.value.currentTime
 }
 
-/** `<audio>` の loadedmetadata イベントで総時間を取得する */
 function onLoadedMetadata(): void {
   if (audioRef.value) duration.value = audioRef.value.duration
 }
 
-/** `<audio>` の play イベント */
 function onPlay(): void {
   isPlaying.value = true
-  startVisualizer()
 }
 
-/** `<audio>` の pause / ended イベント */
 function onPause(): void {
   isPlaying.value = false
 }
 
-/** `<audio>` の ended イベント（トラック終了時の次曲処理） */
 function onEnded(): void {
   isPlaying.value = false
-  stopVisualizer()
   if (repeatMode.value === 'one') {
-    audioRef.value?.play()
+    void togglePlay(true)
     return
   }
+
   if (repeatMode.value === 'all' || currentIndex.value < tracks.value.length - 1) {
-    nextTrack()
+    void nextTrack()
   }
 }
-
-// ─── ドラッグ&ドロップ ─────────────────────────────────────
-
-function onDragOver(e: DragEvent): void {
-  e.preventDefault()
-  isDragging.value = true
-}
-
-function onDragLeave(): void {
-  isDragging.value = false
-}
-
-function onDrop(e: DragEvent): void {
-  e.preventDefault()
-  isDragging.value = false
-  const files = e.dataTransfer?.files
-  if (files && files.length > 0) addFiles(files)
-}
-
-// ─── ファイルピッカー ──────────────────────────────────────
-
-function openFilePicker(): void {
-  fileInputRef.value?.click()
-}
-
-function onFileInputChange(e: Event): void {
-  const input = e.target as HTMLInputElement
-  if (input.files && input.files.length > 0) {
-    addFiles(input.files)
-    input.value = ''
-  }
-}
-
-// ─── ライフサイクル ──────────────────────────────────────────
 
 onMounted(() => {
+  if (containerRef.value) {
+    containerWidth.value = containerRef.value.clientWidth
+    const resizeObserver = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (entry) containerWidth.value = entry.contentRect.width
+    })
+    resizeObserver.observe(containerRef.value)
+    onUnmounted(() => resizeObserver.disconnect())
+  }
+
   if (audioRef.value) {
     audioRef.value.volume = volume.value
   }
+
+  void fileSystem.restoreMounts()
 })
 
 onBeforeUnmount(() => {
-  stopVisualizer()
-  audioCtx?.close()
   for (const track of tracks.value) {
     URL.revokeObjectURL(track.url)
   }
 })
 
-// ─── 現在のトラック名 ──────────────────────────────────────
-
-/** 現在再生中のトラック名を返す */
 const currentTrackName = computed((): string => {
   const track = tracks.value[currentIndex.value]
   return track?.name ?? ''
@@ -364,204 +291,142 @@ const currentTrackName = computed((): string => {
 
 <template>
   <div
-    class="music-player flex flex-col h-full bg-(--ui-bg) select-none overflow-hidden"
-    @dragover="onDragOver"
-    @dragleave="onDragLeave"
-    @drop="onDrop"
+    ref="containerRef"
+    class="music-player"
   >
-    <!-- ビジュアライザー -->
-    <div class="visualizer-area relative bg-(--ui-bg-muted) border-b border-(--ui-border)">
-      <canvas
-        ref="canvasRef"
-        class="w-full h-full"
-        width="480"
-        height="80"
-      />
-      <!-- ドラッグオーバーレイ -->
-      <Transition name="fade">
-        <div
-          v-if="isDragging"
-          class="absolute inset-0 flex items-center justify-center bg-(--ui-primary)/20 border-2 border-dashed border-(--ui-primary) pointer-events-none"
-        >
-          <span class="text-(--ui-primary) font-medium text-sm">{{ t('apps.musicPlayer.noTracks') }}</span>
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <UButton
+          icon="i-lucide-music"
+          :label="isCompact ? undefined : t('apps.musicPlayer.playlist')"
+          size="sm"
+          variant="ghost"
+          color="neutral"
+          @click="triggerAddTracks"
+        />
+        <UButton
+          icon="i-lucide-folder-open"
+          :label="isCompact ? undefined : t('apps.musicPlayer.addAll')"
+          size="sm"
+          variant="ghost"
+          color="neutral"
+          @click="triggerAddDirectory"
+        />
+      </div>
+    </div>
+
+    <UAlert
+      v-if="localError"
+      icon="i-lucide-triangle-alert"
+      color="error"
+      variant="soft"
+      :description="localError"
+      class="state-alert"
+    />
+
+    <div class="content">
+      <div class="player-panel">
+        <div class="now-playing">
+          <p class="now-title">
+            {{ currentTrackName || t('apps.musicPlayer.noTracks') }}
+          </p>
         </div>
-      </Transition>
-    </div>
 
-    <!-- トラック情報 + コントロール -->
-    <div class="px-4 pt-3 pb-2 flex flex-col gap-2 border-b border-(--ui-border)">
-      <!-- トラック名 -->
-      <div
-        class="text-center truncate text-sm font-semibold text-(--ui-text)"
-        :title="currentTrackName"
-      >
-        <span v-if="currentTrackName">{{ currentTrackName }}</span>
-        <span
-          v-else
-          class="text-(--ui-text-muted) font-normal text-xs"
-        >{{ t('apps.musicPlayer.noTracks') }}</span>
-      </div>
+        <div class="seek-row">
+          <span>{{ formatTime(currentTime) }}</span>
+          <input
+            type="range"
+            :min="0"
+            :max="duration || 0"
+            :value="currentTime"
+            step="0.1"
+            @input="handleSeek"
+          >
+          <span>{{ formatTime(duration) }}</span>
+        </div>
 
-      <!-- シークバー -->
-      <div class="flex items-center gap-2 text-xs text-(--ui-text-muted)">
-        <span class="w-8 text-right">{{ formatTime(currentTime) }}</span>
-        <input
-          type="range"
-          class="flex-1 accent-violet-500 h-1"
-          :min="0"
-          :max="duration || 0"
-          :value="currentTime"
-          step="0.1"
-          @input="handleSeek"
-        >
-        <span class="w-8">{{ formatTime(duration) }}</span>
-      </div>
-
-      <!-- メインコントロール -->
-      <div class="flex items-center justify-center gap-2">
-        <!-- シャッフル -->
-        <UButton
-          :icon="'i-lucide-shuffle'"
-          variant="ghost"
-          size="sm"
-          :color="isShuffle ? 'primary' : 'neutral'"
-          :title="t('apps.musicPlayer.shuffle')"
-          @click="isShuffle = !isShuffle"
-        />
-        <!-- 前へ -->
-        <UButton
-          icon="i-lucide-skip-back"
-          variant="ghost"
-          size="sm"
-          color="neutral"
-          :disabled="tracks.length === 0"
-          @click="prevTrack"
-        />
-        <!-- 再生/一時停止 -->
-        <UButton
-          :icon="isPlaying ? 'i-lucide-pause' : 'i-lucide-play'"
-          variant="solid"
-          size="md"
-          color="primary"
-          :disabled="tracks.length === 0"
-          @click="togglePlay"
-        />
-        <!-- 次へ -->
-        <UButton
-          icon="i-lucide-skip-forward"
-          variant="ghost"
-          size="sm"
-          color="neutral"
-          :disabled="tracks.length === 0"
-          @click="nextTrack"
-        />
-        <!-- リピート -->
-        <UButton
-          :icon="repeatIcon"
-          variant="ghost"
-          size="sm"
-          :color="repeatActive ? 'primary' : 'neutral'"
-          :title="t(`apps.musicPlayer.repeat${repeatMode.charAt(0).toUpperCase() + repeatMode.slice(1)}`)"
-          @click="cycleRepeat"
-        />
-      </div>
-
-      <!-- 音量 -->
-      <div class="flex items-center gap-2 text-xs text-(--ui-text-muted)">
-        <UIcon
-          name="i-lucide-volume-2"
-          class="shrink-0"
-        />
-        <input
-          type="range"
-          class="flex-1 accent-violet-500 h-1"
-          :min="0"
-          :max="1"
-          step="0.01"
-          :value="volume"
-          @input="handleVolumeChange"
-        >
-      </div>
-    </div>
-
-    <!-- プレイリスト -->
-    <div class="flex-1 overflow-y-auto">
-      <!-- ヘッダー -->
-      <div class="flex items-center justify-between px-4 py-2 border-b border-(--ui-border)">
-        <span class="text-xs font-semibold text-(--ui-text-muted) uppercase tracking-wider">
-          {{ t('apps.musicPlayer.playlist') }}
-          <span class="ml-1 text-(--ui-text-muted)">({{ tracks.length }})</span>
-        </span>
-        <UButton
-          icon="i-lucide-plus"
-          size="xs"
-          variant="ghost"
-          color="neutral"
-          :label="t('apps.musicPlayer.addFiles')"
-          @click="openFilePicker"
-        />
-      </div>
-
-      <!-- トラック一覧 -->
-      <div
-        v-if="tracks.length === 0"
-        class="flex flex-col items-center justify-center h-32 gap-2 text-(--ui-text-muted)"
-      >
-        <UIcon
-          name="i-lucide-music-2"
-          class="text-3xl opacity-30"
-        />
-        <p class="text-xs text-center px-6">
-          {{ t('apps.musicPlayer.noTracks') }}
-        </p>
-      </div>
-
-      <ul v-else>
-        <li
-          v-for="(track, index) in tracks"
-          :key="track.url"
-          class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-(--ui-bg-elevated) transition-colors group"
-          :class="{ 'bg-(--ui-bg-elevated)': index === currentIndex }"
-          @click="loadTrack(index); if (!isPlaying) togglePlay()"
-        >
-          <!-- 再生中インジケーター -->
-          <div class="w-4 shrink-0 flex items-center justify-center">
-            <UIcon
-              v-if="index === currentIndex && isPlaying"
-              name="i-lucide-volume-2"
-              class="text-violet-500 text-xs"
-            />
-            <span
-              v-else
-              class="text-xs text-(--ui-text-muted) group-hover:hidden"
-            >{{ index + 1 }}</span>
-            <UIcon
-              v-if="index !== currentIndex || !isPlaying"
-              name="i-lucide-play"
-              class="text-xs text-(--ui-text-muted) hidden group-hover:block"
-            />
-          </div>
-          <!-- トラック名 -->
-          <span
-            class="flex-1 text-sm truncate"
-            :class="index === currentIndex ? 'text-violet-500 font-medium' : 'text-(--ui-text)'"
-            :title="track.name"
-          >{{ track.name }}</span>
-          <!-- 削除ボタン -->
+        <div class="controls">
           <UButton
-            icon="i-lucide-x"
+            icon="i-lucide-skip-back"
             variant="ghost"
-            size="xs"
+            size="sm"
             color="neutral"
-            class="opacity-0 group-hover:opacity-100 shrink-0"
-            :title="t('apps.musicPlayer.removeTrack')"
-            @click.stop="removeTrack(index)"
+            :disabled="tracks.length === 0"
+            @click="prevTrack"
           />
-        </li>
-      </ul>
+          <UButton
+            :icon="isPlaying ? 'i-lucide-pause' : 'i-lucide-play'"
+            variant="solid"
+            size="md"
+            color="primary"
+            :disabled="tracks.length === 0"
+            @click="togglePlay()"
+          />
+          <UButton
+            icon="i-lucide-skip-forward"
+            variant="ghost"
+            size="sm"
+            color="neutral"
+            :disabled="tracks.length === 0"
+            @click="nextTrack"
+          />
+          <UButton
+            icon="i-lucide-shuffle"
+            variant="ghost"
+            size="sm"
+            :color="isShuffle ? 'primary' : 'neutral'"
+            @click="isShuffle = !isShuffle"
+          />
+          <UButton
+            :icon="repeatIcon"
+            variant="ghost"
+            size="sm"
+            :color="repeatActive ? 'primary' : 'neutral'"
+            @click="cycleRepeat"
+          />
+        </div>
+
+        <div class="volume-row">
+          <UIcon name="i-lucide-volume-2" />
+          <input
+            type="range"
+            :min="0"
+            :max="1"
+            step="0.01"
+            :value="volume"
+            @input="handleVolumeChange"
+          >
+        </div>
+
+        <div class="playlist-header">
+          <span>{{ t('apps.musicPlayer.playlist') }} ({{ tracks.length }})</span>
+        </div>
+
+        <ul
+          v-if="tracks.length > 0"
+          class="playlist"
+        >
+          <li
+            v-for="(track, index) in tracks"
+            :key="track.path"
+            class="playlist-item"
+            :class="{ active: index === currentIndex }"
+            @click="loadTrack(index); if (!isPlaying) togglePlay(true)"
+          >
+            <span class="track-name">{{ track.name }}</span>
+            <UButton
+              icon="i-lucide-x"
+              variant="ghost"
+              size="xs"
+              color="neutral"
+              :title="t('apps.musicPlayer.removeTrack')"
+              @click.stop="removeTrack(index)"
+            />
+          </li>
+        </ul>
+      </div>
     </div>
 
-    <!-- 非表示の audio 要素 -->
     <audio
       ref="audioRef"
       preload="metadata"
@@ -571,36 +436,140 @@ const currentTrackName = computed((): string => {
       @pause="onPause"
       @ended="onEnded"
     />
-
-    <!-- 非表示のファイル入力 -->
-    <input
-      ref="fileInputRef"
-      type="file"
-      accept="audio/*"
-      multiple
-      class="hidden"
-      @change="onFileInputChange"
-    >
   </div>
 </template>
 
 <style scoped>
 .music-player {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--ui-bg);
   min-height: 0;
+  overflow: hidden;
 }
 
-.visualizer-area {
-  height: 80px;
+.toolbar {
+  border-bottom: 1px solid var(--ui-border);
+  background: var(--ui-bg-elevated);
+  padding: 0.375rem 0.5rem;
   flex-shrink: 0;
 }
 
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.15s ease;
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-wrap: wrap;
 }
 
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
+.state-alert {
+  margin: 0.5rem;
+}
+
+.content {
+  flex: 1 1 0%;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+.player-panel {
+  flex: 1 1 0%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem;
+  gap: 0.75rem;
+}
+
+.now-playing {
+  padding: 0.5rem 0.75rem;
+  background: var(--ui-bg-elevated);
+  border: 1px solid var(--ui-border);
+  border-radius: 0.5rem;
+}
+
+.now-title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seek-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--ui-text-muted);
+}
+
+.seek-row input,
+.volume-row input {
+  width: 100%;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+}
+
+.volume-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.playlist-header {
+  padding-top: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--ui-text-muted);
+  font-weight: 600;
+}
+
+.playlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--ui-border);
+  border-radius: 0.5rem;
+  overflow: auto;
+}
+
+.playlist-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  cursor: pointer;
+}
+
+.playlist-item + .playlist-item {
+  border-top: 1px solid var(--ui-border);
+}
+
+.playlist-item:hover {
+  background: var(--ui-bg-elevated);
+}
+
+.playlist-item.active {
+  background: color-mix(in srgb, var(--ui-primary) 10%, transparent);
+}
+
+.track-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.82rem;
 }
 </style>

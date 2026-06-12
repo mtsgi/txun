@@ -11,6 +11,10 @@ const STORE_NAME = 'desktop'
  */
 function openDB(): Promise<IDBDatabase> {
   return new Promise<IDBDatabase>((resolve, reject) => {
+    if (typeof window === 'undefined' || typeof indexedDB === 'undefined') {
+      reject(new Error('IndexedDB is not available'))
+      return
+    }
     const req = indexedDB.open(DB_NAME, DB_VERSION)
     req.onupgradeneeded = () => {
       const db = req.result
@@ -34,6 +38,9 @@ export function useDesktopStorage() {
    * @param value - 保存する値
    */
   async function saveState(key: string, value: unknown): Promise<void> {
+    if (typeof window === 'undefined' || typeof indexedDB === 'undefined') {
+      return
+    }
     // Vue の Proxy オブジェクトは IndexedDB の structured clone で複製できないため
     // JSON シリアライズでプレーンオブジェクトに変換してから保存する
     const plain = JSON.parse(JSON.stringify(value)) as unknown
@@ -52,6 +59,9 @@ export function useDesktopStorage() {
    * @returns 保存された値、なければ null
    */
   async function loadState<T>(key: string): Promise<T | null> {
+    if (typeof window === 'undefined' || typeof indexedDB === 'undefined') {
+      return null
+    }
     const db = await openDB()
     return new Promise<T | null>((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, 'readonly')
@@ -69,6 +79,9 @@ export function useDesktopStorage() {
    * @param key - 削除するキー
    */
   async function deleteState(key: string): Promise<void> {
+    if (typeof window === 'undefined' || typeof indexedDB === 'undefined') {
+      return
+    }
     const db = await openDB()
     return new Promise<void>((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, 'readwrite')

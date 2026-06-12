@@ -29,6 +29,7 @@ const tabs = computed(() => [
   { label: t('apps.settings.font'), icon: 'i-lucide-type', slot: 'font' },
   { label: t('apps.settings.language'), icon: 'i-lucide-globe', slot: 'language' },
   { label: t('apps.settings.taskbar'), icon: 'i-lucide-panel-bottom', slot: 'taskbar' },
+  { label: t('apps.settings.filesystem'), icon: 'i-lucide-folder-tree', slot: 'filesystem' },
   { label: t('apps.settings.device'), icon: 'i-lucide-cpu', slot: 'device' },
   { label: t('apps.settings.about'), icon: 'i-lucide-info', slot: 'about' }
 ])
@@ -60,6 +61,9 @@ const tabs = computed(() => [
       </template>
       <template #taskbar>
         <SettingsTaskbar />
+      </template>
+      <template #filesystem>
+        <SettingsFileSystem />
       </template>
       <template #device>
         <SettingsDevice />
@@ -120,6 +124,7 @@ const tabs = computed(() => [
             <SettingsFont v-else-if="activeSection === 'font'" />
             <SettingsLanguage v-else-if="activeSection === 'language'" />
             <SettingsTaskbar v-else-if="activeSection === 'taskbar'" />
+            <SettingsFileSystem v-else-if="activeSection === 'filesystem'" />
             <SettingsDevice v-else-if="activeSection === 'device'" />
             <SettingsAbout v-else-if="activeSection === 'about'" />
           </div>
