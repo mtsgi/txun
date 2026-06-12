@@ -17,13 +17,15 @@ const props = defineProps<{
   notificationCount?: number
 }>()
 
+const { t } = useI18n()
+
 /** 秒数を "X時間 Ym" / "Ym" / "1分未満" 形式に変換 */
 function formatTime(sec: number): string {
-  if (sec < 60) return '1分未満'
+  if (sec < 60) return t('apps.screenTime.lessThanMinute')
   const h = Math.floor(sec / 3600)
   const m = Math.floor((sec % 3600) / 60)
-  if (h > 0) return `${h}時間 ${m}分`
-  return `${m}分`
+  if (h > 0) return t('apps.screenTime.hoursMinutes', { h, m })
+  return t('apps.screenTime.minutes', { m })
 }
 
 const barWidth = computed(() => props.maxSeconds > 0 ? (props.seconds / props.maxSeconds * 100) : 0)

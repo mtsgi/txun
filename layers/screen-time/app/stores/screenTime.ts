@@ -39,7 +39,11 @@ export function emptyDailyRecord(): DailyRecord {
 
 /** 今日の日付文字列（YYYY-MM-DD）を返すユーティリティ */
 export function todayDateKey(): string {
-  return new Date().toISOString().slice(0, 10)
+  const d = new Date()
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 export const useScreenTimeStore = defineStore('screenTime', {
@@ -53,7 +57,13 @@ export const useScreenTimeStore = defineStore('screenTime', {
     /** 今日の使用記録 */
     todayRecord: (state): DailyRecord => {
       const key = todayDateKey()
-      return state.days[key] ?? emptyDailyRecord()
+      const record = state.days[key] ?? emptyDailyRecord()
+      return {
+        totalSeconds: record.totalSeconds ?? 0,
+        apps: record.apps ?? {},
+        notifications: record.notifications ?? {},
+        hourly: Array.isArray(record.hourly) && record.hourly.length === 24 ? record.hourly : Array.from({ length: 24 }, () => 0)
+      }
     },
 
     /** 直近 7 日分の記録（古い順） */
@@ -61,8 +71,18 @@ export const useScreenTimeStore = defineStore('screenTime', {
       return Array.from({ length: 7 }, (_, i) => {
         const d = new Date()
         d.setDate(d.getDate() - (6 - i))
-        const date = d.toISOString().slice(0, 10)
-        return { date, record: state.days[date] ?? emptyDailyRecord() }
+        const year = d.getFullYear()
+        const month = String(d.getMonth() + 1).padStart(2, '0')
+        const day = String(d.getDate()).padStart(2, '0')
+        const date = `${year}-${month}-${day}`
+        const record = state.days[date] ?? emptyDailyRecord()
+        const normalized: DailyRecord = {
+          totalSeconds: record.totalSeconds ?? 0,
+          apps: record.apps ?? {},
+          notifications: record.notifications ?? {},
+          hourly: Array.isArray(record.hourly) && record.hourly.length === 24 ? record.hourly : Array.from({ length: 24 }, () => 0)
+        }
+        return { date, record: normalized }
       })
     }
   },
@@ -75,6 +95,14 @@ export const useScreenTimeStore = defineStore('screenTime', {
     ensureDay(date: string): DailyRecord {
       if (!this.days[date]) {
         this.days[date] = emptyDailyRecord()
+      } else {
+        const record = this.days[date]!
+        if (record.totalSeconds == null) record.totalSeconds = 0
+        if (!record.apps) record.apps = {}
+        if (!record.notifications) record.notifications = {}
+        if (!record.hourly || !Array.isArray(record.hourly) || record.hourly.length !== 24) {
+          record.hourly = Array.from({ length: 24 }, () => 0)
+        }
       }
       return this.days[date]!
     },
