@@ -20,7 +20,8 @@ export default defineNuxtConfig({
     'layers/video-player',
     'layers/whiteboard',
     'layers/screen-time',
-    'layers/git-viewer'
+    'layers/git-viewer',
+    'layers/gallery'
   ],
 
   modules: [

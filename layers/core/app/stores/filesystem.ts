@@ -504,24 +504,49 @@ export const useFileSystemStore = defineStore('filesystem', {
       const normalizedPath = normalizeFsPath(path)
       try {
         const directory = await this.getDirectoryHandle(normalizedPath, mountId)
-        const entries: FileSystemEntry[] = []
+        const directoryEntries: { name: string; path: string; handle: WebFsHandle }[] = []
 
         for await (const [name, handle] of directory.entries()) {
           const entryPath = resolveFsPath(normalizedPath, name)
-          if (handle.kind === 'directory') {
-            entries.push({ name, path: entryPath, kind: 'directory' })
-            continue
-          }
+          directoryEntries.push({ name, path: entryPath, handle })
+        }
 
-          const fileHandle = handle as WebFsFileHandle
-          const file = await fileHandle.getFile()
-          entries.push({
-            name,
-            path: entryPath,
-            kind: 'file',
-            size: file.size,
-            lastModified: file.lastModified
-          })
+        const entries: FileSystemEntry[] = []
+        const batchSize = 64
+        for (let i = 0; i < directoryEntries.length; i += batchSize) {
+          const batch = directoryEntries.slice(i, i + batchSize)
+          const batchResults = await Promise.all(
+            batch.map(async (entry) => {
+              if (entry.handle.kind === 'directory') {
+                return {
+                  name: entry.name,
+                  path: entry.path,
+                  kind: 'directory' as const
+                }
+              }
+
+              try {
+                const fileHandle = entry.handle as WebFsFileHandle
+                const file = await fileHandle.getFile()
+                return {
+                  name: entry.name,
+                  path: entry.path,
+                  kind: 'file' as const,
+                  size: file.size,
+                  lastModified: file.lastModified
+                }
+              } catch (e) {
+                return {
+                  name: entry.name,
+                  path: entry.path,
+                  kind: 'file' as const,
+                  size: 0,
+                  lastModified: 0
+                }
+              }
+            })
+          )
+          entries.push(...batchResults)
         }
 
         entries.sort((a, b) => {

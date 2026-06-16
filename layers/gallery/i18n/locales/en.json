@@ -1,0 +1,32 @@
+{
+  "apps": {
+    "gallery": {
+      "name": "Gallery",
+      "empty": "No images or videos found in the mounted directory.",
+      "selectDirectory": "Select Directory",
+      "scanning": "Scanning files... ({count} detected)",
+      "allMedia": "All Media",
+      "favorites": "Favorites",
+      "tags": "Tags",
+      "slideshow": "Slideshow",
+      "interval": "Interval",
+      "seconds": "{count}s",
+      "shuffle": "Shuffle",
+      "fullscreen": "Fullscreen",
+      "addTag": "Add Tag",
+      "removeTag": "Remove Tag",
+      "favorite": "Add to Favorites",
+      "unfavorite": "Remove from Favorites",
+      "selectedCount": "{count} selected",
+      "newTagPlaceholder": "Enter tag name...",
+      "itemsCount": "{count} items",
+      "close": "Close",
+      "prev": "Prev",
+      "next": "Next",
+      "play": "Play",
+      "pause": "Pause",
+      "noDirectory": "No directory is mounted. Please mount a directory from Settings or add one using the button at the top-right.",
+      "openInGallery": "Open in Gallery"
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "apps": {
+    "gallery": {
+      "name": "ギャラリー",
+      "empty": "マウントされたディレクトリに画像や動画が見つかりません。",
+      "selectDirectory": "ディレクトリを選択してください",
+      "scanning": "ファイルをスキャン中... ({count}個検出)",
+      "allMedia": "すべてのメディア",
+      "favorites": "お気に入り",
+      "tags": "タグ",
+      "slideshow": "スライドショー",
+      "interval": "表示間隔",
+      "seconds": "{count}秒",
+      "shuffle": "シャッフル",
+      "fullscreen": "フルスクリーン",
+      "addTag": "タグを追加",
+      "removeTag": "タグを削除",
+      "favorite": "お気に入りに追加",
+      "unfavorite": "お気に入りから削除",
+      "selectedCount": "{count}個選択中",
+      "newTagPlaceholder": "タグ名を入力...",
+      "itemsCount": "{count}個のアイテム",
+      "close": "閉じる",
+      "prev": "前へ",
+      "next": "次へ",
+      "play": "再生",
+      "pause": "一時停止",
+      "noDirectory": "ディレクトリがマウントされていません。設定からマウントするか、右上のボタンでディレクトリを追加してください。",
+      "openInGallery": "ギャラリーで開く"
+    }
+  }
+}
