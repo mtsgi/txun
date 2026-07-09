@@ -21,14 +21,19 @@
         "touch": "usage: touch [path]",
         "rm": "usage: rm [path]",
         "mv": "usage: mv [from] [to]",
-        "cp": "usage: cp [from] [to]"
+        "cp": "usage: cp [from] [to]",
+        "open": "usage: open [appId] [filePath]",
+        "kill": "usage: kill [windowId | appId]"
       },
       "result": {
         "mkdir": "ディレクトリを作成しました: {path}",
         "touch": "ファイルを作成しました: {path}",
         "rm": "削除しました: {path}",
         "mv": "移動しました: {from} -> {to}",
-        "cp": "コピーしました: {from} -> {to}"
+        "cp": "コピーしました: {from} -> {to}",
+        "open": "アプリを起動しました: {name}",
+        "kill": "ウィンドウを終了しました: {target}",
+        "killAll": "アプリ {target} のすべてのウィンドウを終了しました"
       },
       "error": {
         "unsupported": "このブラウザでは File System Access API は非対応です。",
@@ -38,7 +43,11 @@
         "notFile": "ファイルではありません: {path}",
         "permissionDenied": "権限がありません。Settings で再許可してください。",
         "invalidPath": "不正なパスです。",
-        "general": "ファイル操作中にエラーが発生しました。"
+        "general": "ファイル操作中にエラーが発生しました。",
+        "appNotFound": "アプリが見つかりません: {id}",
+        "openFailed": "アプリの起動に失敗しました。",
+        "targetNotFound": "終了対象が見つかりません: {target}",
+        "noActiveWindows": "起動中のウィンドウはありません。"
       },
       "help": {
         "title": "利用可能なコマンド:",
@@ -58,8 +67,24 @@
         "cp": "ファイル/ディレクトリをコピー",
         "mounts": "作業ディレクトリ一覧を表示",
         "use": "作業ディレクトリを切替",
-        "notify": "デスクトップ通知を送信"
-      }
+        "notify": "デスクトップ通知を送信",
+        "exit": "ターミナルウィンドウを閉じる",
+        "open": "指定したアプリを新規ウィンドウで起動",
+        "kill": "指定したウィンドウIDまたはアプリの全ウィンドウを閉じる",
+        "apps": "現在起動中のウィンドウ一覧を表示"
+      },
+      "contextMenu": {
+        "copyCommand": "コマンドをコピー",
+        "copyOutput": "出力をコピー",
+        "rerun": "コマンドを再実行",
+        "openInEditor": "テキストエディタで開く",
+        "delete": "履歴から削除"
+      },
+      "placeholder": "コマンドを入力... ('help'で一覧表示)",
+      "duration": "{ms}ms",
+      "showMore": "出力を表示 ({lines}行)",
+      "showLess": "出力をたたむ",
+      "savedTo": "出力を {path} に保存し、テキストエディタで開きました。"
     }
   }
 }

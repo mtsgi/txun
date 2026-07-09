@@ -21,14 +21,19 @@
         "touch": "usage: touch [path]",
         "rm": "usage: rm [path]",
         "mv": "usage: mv [from] [to]",
-        "cp": "usage: cp [from] [to]"
+        "cp": "usage: cp [from] [to]",
+        "open": "usage: open [appId] [filePath]",
+        "kill": "usage: kill [windowId | appId]"
       },
       "result": {
         "mkdir": "Directory created: {path}",
         "touch": "File created: {path}",
         "rm": "Removed: {path}",
         "mv": "Moved: {from} -> {to}",
-        "cp": "Copied: {from} -> {to}"
+        "cp": "Copied: {from} -> {to}",
+        "open": "Opened {name}",
+        "kill": "Closed window {target}",
+        "killAll": "Closed all windows of app {target}"
       },
       "error": {
         "unsupported": "File System Access API is not supported in this browser.",
@@ -38,7 +43,11 @@
         "notFile": "Not a file: {path}",
         "permissionDenied": "Permission denied. Re-grant access from Settings.",
         "invalidPath": "Invalid path.",
-        "general": "An error occurred during file operations."
+        "general": "An error occurred during file operations.",
+        "appNotFound": "App not found: {id}",
+        "openFailed": "Failed to open app.",
+        "targetNotFound": "Target not found: {target}",
+        "noActiveWindows": "No active windows."
       },
       "help": {
         "title": "Available commands:",
@@ -58,8 +67,24 @@
         "cp": "copy file or directory",
         "mounts": "list mounted working directories",
         "use": "switch active working directory",
-        "notify": "send desktop notification"
-      }
+        "notify": "send desktop notification",
+        "exit": "close terminal window",
+        "open": "open a new window of the specified app",
+        "kill": "close the specified window or all windows of an app",
+        "apps": "list currently running windows"
+      },
+      "contextMenu": {
+        "copyCommand": "Copy Command",
+        "copyOutput": "Copy Output",
+        "rerun": "Re-run Command",
+        "openInEditor": "Open in Text Editor",
+        "delete": "Delete from History"
+      },
+      "placeholder": "Enter command... (Press 'help' for list)",
+      "duration": "{ms}ms",
+      "showMore": "Show output ({lines} lines)",
+      "showLess": "Collapse output",
+      "savedTo": "Saved output to {path} and opened in Text Editor."
     }
   }
 }
