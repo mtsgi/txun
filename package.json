@@ -22,7 +22,8 @@
     "layers/video-player",
     "layers/minesweeper",
     "layers/whiteboard",
-    "layers/screen-time"
+    "layers/screen-time",
+    "layers/gallery"
   ],
   "scripts": {
     "build": "nuxt build",

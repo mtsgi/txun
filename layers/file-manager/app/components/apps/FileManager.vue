@@ -556,6 +556,11 @@ const contextMenuItems = computed(() => (entry: FileSystemEntry) => {
       icon: 'i-lucide-git-branch',
       onSelect: () => openApp('git-viewer', { args: { path: entry.path } })
     })
+    menu[0].push({
+      label: t('apps.gallery.openInGallery'),
+      icon: 'i-lucide-images',
+      onSelect: () => openApp('gallery', { args: { path: entry.path, mountId: fileSystem.activeMountId.value } })
+    })
   }
   return menu
 })
