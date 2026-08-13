@@ -11,7 +11,7 @@ describe('Git Viewer - Diff Helper', () => {
   it('computes correct line diff for identical text', () => {
     const text = 'line1\nline2\nline3'
     const diff = computeDiff(text, text)
-    
+
     expect(diff).toHaveLength(3)
     expect(diff.every(l => l.type === 'unchanged')).toBe(true)
     expect(diff[0]?.content).toBe('line1')
@@ -85,9 +85,9 @@ describe('Git Viewer - Git Parser', () => {
   })
 
   it('parses git log format correctly', async () => {
-    const mockLog = 
-      '0000000000000000000000000000000000000000 a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2 Commit Author <author@example.com> 1718040000 +0900\tfirst commit\n' +
-      'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2 f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5 Commit Author <author@example.com> 1718043600 +0900\tsecond commit\n'
+    const mockLog
+      = '0000000000000000000000000000000000000000 a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2 Commit Author <author@example.com> 1718040000 +0900\tfirst commit\n'
+        + 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2 f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5 Commit Author <author@example.com> 1718043600 +0900\tsecond commit\n'
 
     const mockFs = createMockFs({
       '/.git/logs/HEAD': mockLog
@@ -117,12 +117,12 @@ describe('Git Viewer - Git Parser', () => {
   })
 
   it('extracts remote URL from git config', async () => {
-    const mockConfig = 
-      '[core]\n' +
-      '\trepositoryformatversion = 0\n' +
-      '[remote "origin"]\n' +
-      '\turl = https://github.com/mtsgi/txunos.git\n' +
-      '\tfetch = +refs/heads/*:refs/remotes/origin/*\n'
+    const mockConfig
+      = '[core]\n'
+        + '\trepositoryformatversion = 0\n'
+        + '[remote "origin"]\n'
+        + '\turl = https://github.com/mtsgi/txunos.git\n'
+        + '\tfetch = +refs/heads/*:refs/remotes/origin/*\n'
 
     const mockFs = createMockFs({
       '/.git/config': mockConfig

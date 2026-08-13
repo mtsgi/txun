@@ -3,6 +3,7 @@ import { markRaw } from 'vue'
 import {
   basenameFsPath,
   dirnameFsPath,
+  isValidFsEntryName,
   normalizeFsPath,
   resolveFsPath,
   splitFsPath,
@@ -186,7 +187,7 @@ function mapError(error: unknown, path?: string): DesktopFileSystemError {
 }
 
 function assertValidEntryName(name: string): void {
-  if (!name || name === '.' || name === '..' || name.includes('/') || name.includes('\\')) {
+  if (!isValidFsEntryName(name)) {
     throw new DesktopFileSystemError('INVALID_PATH', 'Invalid entry name', name)
   }
 }

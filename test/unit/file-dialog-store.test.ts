@@ -149,6 +149,27 @@ describe('useFileDialogStore', () => {
       expect(store.isOpen).toBe(true)
     })
 
+    it('does not resolve when fileNameInput contains path separators or traversal segments in save-file mode', async () => {
+      const store = useFileDialogStore()
+      const invalidNames = ['..', '.', '../foo.txt', 'dir/file.txt', 'dir\\file.txt', '/root.txt']
+
+      for (const invalidName of invalidNames) {
+        let resolved = false
+        const promise = store.open({ mode: 'save-file', initialPath: '/documents' })
+        promise.then(() => {
+          resolved = true
+        })
+
+        store.fileNameInput = invalidName
+        store.confirm('local-fs')
+
+        await new Promise(resolve => setTimeout(resolve, 0))
+        expect(resolved).toBe(false)
+        expect(store.isOpen).toBe(true)
+        store.cancel()
+      }
+    })
+
     it('does not resolve in open-file mode if selectedPaths is empty', async () => {
       const store = useFileDialogStore()
       let resolved = false

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useFileDialogStore } from '../../stores/file-dialog'
 import type { FileSystemEntry } from '../../stores/filesystem'
+import { isValidFsEntryName } from '../../utils/filesystem-path'
 
 const store = useFileDialogStore()
 const fileSystem = useFileSystem()
@@ -494,7 +495,7 @@ function formatFileSize(bytes: number): string {
               size="sm"
               variant="solid"
               color="primary"
-              :disabled="!activeMountId || (mode === 'save-file' && !fileNameInput.trim()) || (mode === 'open-file' && selectedPaths.length === 0)"
+              :disabled="!activeMountId || (mode === 'save-file' && !isValidFsEntryName(fileNameInput)) || (mode === 'open-file' && selectedPaths.length === 0)"
               @click="handleConfirm"
             >
               {{ mode === 'save-file' ? t('apps.fileManager.ok') : t('apps.fileManager.open') }}

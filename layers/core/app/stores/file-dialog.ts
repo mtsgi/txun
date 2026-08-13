@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { isValidFsEntryName } from '../utils/filesystem-path'
 
 export interface FileDialogOptions {
   title?: string
@@ -46,8 +47,8 @@ export const useFileDialogStore = defineStore('file-dialog', {
       if (!this.resolve) return
 
       if (this.mode === 'save-file') {
-        if (!this.fileNameInput.trim()) return
         const cleanName = this.fileNameInput.trim()
+        if (!isValidFsEntryName(cleanName)) return
         const resolvedPath = this.cwd === '/' ? `/${cleanName}` : `${this.cwd}/${cleanName}`
         this.resolve({
           path: resolvedPath,

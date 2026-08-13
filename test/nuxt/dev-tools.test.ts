@@ -1,16 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { mount } from '@vue/test-utils'
-import { useNuxtApp } from '#imports'
+import { mountSuspended } from '@nuxt/test-utils/runtime'
 import DevToolsApp from '../../layers/dev-tools/app/components/apps/DevToolsApp.vue'
 
 describe('DevToolsApp', () => {
   it('mounts correctly and initializes with the json tab', async () => {
-    const wrapper = await useNuxtApp().runWithContext(() => {
-      return mount(DevToolsApp, {
-        props: {
-          windowId: 'test-devtools'
-        }
-      })
+    const wrapper = await mountSuspended(DevToolsApp, {
+      props: {
+        windowId: 'test-devtools'
+      }
     })
 
     expect(wrapper.exists()).toBe(true)

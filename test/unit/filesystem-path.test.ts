@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   basenameFsPath,
   dirnameFsPath,
+  isValidFsEntryName,
   normalizeFsPath,
   resolveFsPath,
   splitFsPath,
@@ -39,5 +40,17 @@ describe('filesystem-path utilities', () => {
   it('converts to relative path', () => {
     expect(toRelativeFsPath('/a/b/c')).toBe('a/b/c')
     expect(toRelativeFsPath('/')).toBe('')
+  })
+
+  it('validates fs entry names correctly', () => {
+    expect(isValidFsEntryName('file.txt')).toBe(true)
+    expect(isValidFsEntryName('my-doc_1.md')).toBe(true)
+    expect(isValidFsEntryName('')).toBe(false)
+    expect(isValidFsEntryName('   ')).toBe(false)
+    expect(isValidFsEntryName('.')).toBe(false)
+    expect(isValidFsEntryName('..')).toBe(false)
+    expect(isValidFsEntryName('foo/bar')).toBe(false)
+    expect(isValidFsEntryName('../foo.txt')).toBe(false)
+    expect(isValidFsEntryName('foo\\bar')).toBe(false)
   })
 })

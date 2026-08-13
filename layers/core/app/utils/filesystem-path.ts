@@ -87,3 +87,18 @@ export function toRelativeFsPath(path: string): string {
   const normalized = normalizeFsPath(path)
   return normalized === '/' ? '' : normalized.slice(1)
 }
+
+/**
+ * エントリー名（ファイル名・ディレクトリ名単体）が有効かどうかを判定する。
+ * パス区切り文字（/ や \）やパストラバーサル擬似セグメント（. や ..）を含む場合は無効。
+ * @param name - 検証対象のエントリー名
+ * @returns 有効な場合 true
+ */
+export function isValidFsEntryName(name: string): boolean {
+  if (!name) return false
+  const trimmed = name.trim()
+  if (!trimmed || trimmed === '.' || trimmed === '..' || trimmed.includes('/') || trimmed.includes('\\')) {
+    return false
+  }
+  return true
+}

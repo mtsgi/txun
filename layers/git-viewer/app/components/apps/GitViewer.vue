@@ -63,7 +63,7 @@ const containerWidth = ref(960)
 const isCompact = computed(() => containerWidth.value < 768)
 
 // List of mounts that contain .git to suggest to users
-const availableRepos = ref<{ name: string; path: string; mountId: string }[]>([])
+const availableRepos = ref<{ name: string, path: string, mountId: string }[]>([])
 
 /**
  * 読み込み可能な Git リポジトリをマウント一覧からスキャンして候補を作る
@@ -120,8 +120,8 @@ async function loadRepository(path: string, mountId: string) {
     if (commits.value.length > 0) {
       await selectCommit(commits.value[0]!)
     }
-  } catch (error: any) {
-    localError.value = error.message || t('apps.gitViewer.errorGeneric')
+  } catch (error: unknown) {
+    localError.value = error instanceof Error ? error.message : t('apps.gitViewer.errorGeneric')
   } finally {
     isLoading.value = false
   }
@@ -135,7 +135,7 @@ async function selectCommit(commit: GitCommitLog) {
   selectedFile.value = null
   diffLines.value = []
   splitDiffRows.value = []
-  
+
   try {
     selectedCommitFiles.value = await getCommitChanges(
       fileSystem,
@@ -168,7 +168,7 @@ async function selectFileDiff(filePath: string, status: 'modified' | 'added' | '
 
     if (source === 'working') {
       const headSha = await getHeadCommitSha(fileSystem, currentRepoPath.value, currentMountId.value)
-      
+
       if (status !== 'added' && headSha) {
         // HEADコミット時の内容を復元
         oldText = await getFileContentFromCommit(
@@ -179,7 +179,7 @@ async function selectFileDiff(filePath: string, status: 'modified' | 'added' | '
           currentMountId.value
         )
       }
-      
+
       if (status !== 'deleted') {
         // ローカルの現在の内容
         newText = await fileSystem.readTextFile(`${prefix}/${filePath}`, currentMountId.value)
@@ -203,7 +203,7 @@ async function selectFileDiff(filePath: string, status: 'modified' | 'added' | '
             oldText = ''
           }
         }
-        
+
         if (status !== 'deleted') {
           newText = await getFileContentFromCommit(
             fileSystem,
@@ -219,8 +219,8 @@ async function selectFileDiff(filePath: string, status: 'modified' | 'added' | '
     // 差分計算
     diffLines.value = computeDiff(oldText, newText)
     splitDiffRows.value = buildSplitDiff(diffLines.value)
-  } catch (error: any) {
-    diffError.value = error.message || t('apps.gitViewer.errorGeneric')
+  } catch (error: unknown) {
+    diffError.value = error instanceof Error ? error.message : t('apps.gitViewer.errorGeneric')
   } finally {
     diffLoading.value = false
   }
@@ -252,7 +252,7 @@ watch(() => win.value?.args?.path, async (newPath) => {
         break
       }
     }
-    
+
     // パスがマウントそのものの場合はルートとする
     if (newPath.startsWith('/')) {
       relativeRepoPath = newPath
@@ -829,7 +829,7 @@ function formatCommitDate(timestamp: number): string {
     display: grid;
     grid-template-columns: 280px 1fr;
     height: 100%;
-    
+
     &.compact {
       grid-template-columns: 1fr;
       grid-template-rows: 1fr 1fr;
@@ -934,7 +934,7 @@ function formatCommitDate(timestamp: number): string {
 
       &.active {
         background: rgba(var(--ui-primary-rgb), 0.15);
-        
+
         &::after {
           content: '';
           position: absolute;
@@ -1116,7 +1116,7 @@ function formatCommitDate(timestamp: number): string {
         &.added {
           background: rgba(16, 185, 129, 0.12);
           color: #34d399;
-          
+
           .line-marker, .line-num {
             background: rgba(16, 185, 129, 0.2);
             color: #34d399;

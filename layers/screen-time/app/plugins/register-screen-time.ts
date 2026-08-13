@@ -1,4 +1,4 @@
-import { todayDateKey } from '../stores/screenTime'
+import { todayDateKey, type DailyRecord } from '../stores/screenTime'
 
 export default defineNuxtPlugin((nuxtApp) => {
   const desktopStore = useDesktopStore()
@@ -28,7 +28,7 @@ export default defineNuxtPlugin((nuxtApp) => {
       .then((saved) => {
         if (saved) {
           if (saved.days && typeof saved.days === 'object') {
-            const days = saved.days as Record<string, any>
+            const days = saved.days as Record<string, Partial<DailyRecord>>
             for (const key of Object.keys(days)) {
               const record = days[key]
               if (record && typeof record === 'object') {
@@ -94,7 +94,7 @@ export default defineNuxtPlugin((nuxtApp) => {
           alerted.add(appId)
           const appMeta = desktopStore.apps.find(a => a.id === appId)
           const appName = appMeta?.name ?? appId
-          const i18n = nuxtApp.$i18n as any
+          const i18n = nuxtApp.$i18n as { t: (key: string, values?: Record<string, unknown>) => string }
           toast.add({
             title: i18n.t('apps.screenTime.limitReached'),
             description: i18n.t('apps.screenTime.limitReachedDesc', { app: appName }),

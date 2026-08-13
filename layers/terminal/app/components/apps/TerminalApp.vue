@@ -252,7 +252,7 @@ const commands = computed<Record<string, CommandHandler>>(() => ({
     if (activeWindows.length === 0) {
       return t('apps.terminal.error.noActiveWindows')
     }
-    return activeWindows.map(w => {
+    return activeWindows.map((w) => {
       const isFocused = desktopStore.focusedWindowId === w.id
       const focusText = isFocused ? ' [Focused]' : ''
       const minText = w.isMinimized ? ' [Minimized]' : ''
@@ -433,7 +433,7 @@ watch(inputLine, async (newVal) => {
         syntax: nameStr
       }
     })
-  } catch (err) {
+  } catch {
     if (lastSuggestionsInput === currentInput) {
       pathSuggestions.value = []
     }
@@ -465,7 +465,7 @@ const suggestions = computed(() => {
     const availableApps = desktopStore.apps.map(a => a.id)
     return availableApps
       .filter(appId => appId.startsWith(argQuery))
-      .map(appId => {
+      .map((appId) => {
         const appMeta = desktopStore.apps.find(a => a.id === appId)
         const appName = appMeta ? t(appMeta.nameKey) || appMeta.name : appId
         return {
@@ -749,7 +749,10 @@ onMounted(async () => {
         >
           <UContextMenu :items="getMenuItems(entry)">
             <div class="bubble user-bubble">
-              <div class="bubble-header" v-if="entry.cwd">
+              <div
+                v-if="entry.cwd"
+                class="bubble-header"
+              >
                 <span class="cwd-label">{{ entry.cwd }}</span>
               </div>
               <div class="bubble-content">

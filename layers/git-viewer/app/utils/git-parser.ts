@@ -1,5 +1,12 @@
 import type { FileSystemEntry } from '#layers/txunos-core/app/stores/filesystem'
 
+export interface GitFileSystem {
+  exists(path: string, mountId?: string): Promise<boolean>
+  readTextFile(path: string, mountId?: string): Promise<string>
+  readFileBlob(path: string, mountId?: string): Promise<Blob>
+  listDirectory(path?: string, mountId?: string): Promise<FileSystemEntry[]>
+}
+
 export interface GitCommitLog {
   hash: string
   parentHash: string
@@ -19,7 +26,7 @@ export interface GitFileChange {
  * 指定のパスがGitリポジトリ（.gitディレクトリが存在する）であるか確認する
  */
 export async function isGitRepository(
-  fileSystem: any,
+  fileSystem: GitFileSystem,
   repoPath: string,
   mountId?: string
 ): Promise<boolean> {
@@ -35,7 +42,7 @@ export async function isGitRepository(
  * .git/logs/HEAD をパースしてコミット履歴を取得する
  */
 export async function parseGitLog(
-  fileSystem: any,
+  fileSystem: GitFileSystem,
   repoPath: string,
   mountId?: string
 ): Promise<GitCommitLog[]> {
@@ -57,13 +64,13 @@ export async function parseGitLog(
       const match = line.match(regex)
       if (match) {
         logs.push({
-          parentHash: match[1],
-          hash: match[2],
-          authorName: match[3],
-          authorEmail: match[4],
-          timestamp: parseInt(match[5], 10) * 1000, //秒をミリ秒へ
-          timezone: match[6],
-          message: match[7]
+          parentHash: match[1] ?? '',
+          hash: match[2] ?? '',
+          authorName: match[3] ?? '',
+          authorEmail: match[4] ?? '',
+          timestamp: parseInt(match[5] ?? '0', 10) * 1000, // 秒をミリ秒へ
+          timezone: match[6] ?? '',
+          message: match[7] ?? ''
         })
       }
     }
@@ -80,7 +87,7 @@ export async function parseGitLog(
  * .git/config からリモートURLを取得する
  */
 export async function parseGitConfig(
-  fileSystem: any,
+  fileSystem: GitFileSystem,
   repoPath: string,
   mountId?: string
 ): Promise<string | null> {
@@ -118,7 +125,7 @@ export async function parseGitConfig(
  * 現在のブランチ名を取得する
  */
 export async function getCurrentBranch(
-  fileSystem: any,
+  fileSystem: GitFileSystem,
   repoPath: string,
   mountId?: string
 ): Promise<string> {
@@ -147,7 +154,7 @@ export async function getCurrentBranch(
  * HEAD コミットハッシュを取得する
  */
 export async function getHeadCommitSha(
-  fileSystem: any,
+  fileSystem: GitFileSystem,
   repoPath: string,
   mountId?: string
 ): Promise<string | null> {
@@ -185,7 +192,7 @@ export interface GitObject {
  * .git/objects/ からオブジェクトを読み込み、解凍してパースする
  */
 export async function readGitObject(
-  fileSystem: any,
+  fileSystem: GitFileSystem,
   repoPath: string,
   sha: string,
   mountId?: string
@@ -201,7 +208,7 @@ export async function readGitObject(
 
   try {
     const blob = await fileSystem.readFileBlob(objPath, mountId)
-    
+
     // DecompressionStream('deflate') を使用して zlib 圧縮データを解凍する
     const ds = new DecompressionStream('deflate')
     const decompressedStream = blob.stream().pipeThrough(ds)
@@ -239,7 +246,7 @@ export async function readGitObject(
  * コミットオブジェクトから Tree SHA を抽出する
  */
 export async function getTreeShaFromCommit(
-  fileSystem: any,
+  fileSystem: GitFileSystem,
   repoPath: string,
   commitSha: string,
   mountId?: string
@@ -317,7 +324,7 @@ export function parseGitTree(content: Uint8Array): GitTreeEntry[] {
  * ツリーオブジェクトを再帰的にたどって全ファイルのパスとSHAマップを構築する
  */
 export async function getFilesFromTree(
-  fileSystem: any,
+  fileSystem: GitFileSystem,
   repoPath: string,
   treeSha: string,
   mountId?: string,
@@ -348,7 +355,7 @@ export async function getFilesFromTree(
  * コミットツリーから特定のファイルの内容を取得する
  */
 export async function getFileContentFromCommit(
-  fileSystem: any,
+  fileSystem: GitFileSystem,
   repoPath: string,
   commitSha: string,
   filePath: string, // リポジトリ相対パス (例: "src/main.js")
@@ -399,13 +406,13 @@ export async function getFileContentFromCommit(
  * ローカル作業コピー内の全ファイルを再帰的に走査する（.git, node_modules等を無視）
  */
 async function listLocalFiles(
-  fileSystem: any,
+  fileSystem: GitFileSystem,
   currentPath: string,
   rootPath: string,
   mountId?: string
 ): Promise<{ path: string, size: number }[]> {
   const list: { path: string, size: number }[] = []
-  
+
   const ignoreDirs = ['.git', 'node_modules', '.nuxt', '.output', 'dist', 'coverage']
   const normalizedRoot = rootPath === '/' ? '' : rootPath
 
@@ -440,7 +447,7 @@ async function listLocalFiles(
  * 作業コピーの変更（Git Status に相当）を検出する
  */
 export async function getWorkingCopyChanges(
-  fileSystem: any,
+  fileSystem: GitFileSystem,
   repoPath: string,
   mountId?: string
 ): Promise<GitFileChange[]> {
@@ -507,7 +514,7 @@ export async function getWorkingCopyChanges(
  * 特定のコミットにおける変更されたファイル一覧を親コミットとの比較から取得する
  */
 export async function getCommitChanges(
-  fileSystem: any,
+  fileSystem: GitFileSystem,
   repoPath: string,
   commitSha: string,
   mountId?: string
@@ -574,4 +581,3 @@ export async function getCommitChanges(
     return []
   }
 }
-
