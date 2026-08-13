@@ -8,7 +8,8 @@
     "nuxt.config.ts"
   ],
   "exports": {
-    "./stores/desktop": "./app/stores/desktop.ts"
+    "./stores/desktop": "./app/stores/desktop.ts",
+    "./stores/filesystem": "./app/stores/filesystem.ts"
   },
   "peerDependencies": {
     "@nuxt/ui": "^4.6.1",

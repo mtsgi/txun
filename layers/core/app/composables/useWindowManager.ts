@@ -13,12 +13,13 @@ export function useWindowManager() {
   /**
    * アプリ ID を指定してアプリを開く。
    * @param appId - 開くアプリの ID
+   * @param options - ウィンドウ状態の初期値上書き（任意）
    * @returns 生成したウィンドウの ID、アプリが見つからなければ undefined
    */
-  function openApp(appId: string): string | undefined {
+  function openApp(appId: string, options?: Partial<WindowState>): string | undefined {
     const app = store.apps.find(a => a.id === appId)
     if (!app) return undefined
-    return store.openWindow(app)
+    return store.openWindow(app, options)
   }
 
   /**
@@ -44,13 +45,14 @@ export function useWindowManager() {
     visibleWindows: computed(() => store.visibleWindows),
     apps: computed(() => store.apps),
     openApp,
-    openWindow: (app: AppMeta) => store.openWindow(app),
+    openWindow: (app: AppMeta, options?: Partial<WindowState>) => store.openWindow(app, options),
     closeWindow: (id: string) => store.closeWindow(id),
     minimizeWindow: (id: string) => store.minimizeWindow(id),
     restoreWindow: (id: string) => store.restoreWindow(id),
     toggleMaximize: (id: string) => store.toggleMaximize(id),
     focusWindow: (id: string) => store.focusWindow(id),
     updateWindowBounds: store.updateWindowBounds.bind(store),
+    getWindowById: (id: string) => store.getWindowById(id),
     setTheme,
     setLocale
   }

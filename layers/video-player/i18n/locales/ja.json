@@ -3,7 +3,7 @@
     "videoPlayer": {
       "name": "ビデオ",
       "addFiles": "ファイルを追加",
-      "noVideos": "ファイルをここにドロップ、または「ファイルを追加」をクリック",
+      "noVideos": "再生するビデオがありません",
       "playlist": "プレイリスト",
       "shuffle": "シャッフル",
       "repeatNone": "繰り返しなし",
@@ -19,7 +19,20 @@
       "fullscreen": "フルスクリーン",
       "exitFullscreen": "フルスクリーン終了",
       "showPlaylist": "プレイリストを表示",
-      "hidePlaylist": "プレイリストを隠す"
+      "hidePlaylist": "プレイリストを隠す",
+      "browser": "ブラウザ",
+      "mount": "作業ディレクトリ",
+      "addMount": "追加",
+      "mountAdded": "作業ディレクトリを追加しました: {name}",
+      "up": "上へ",
+      "refresh": "更新",
+      "addAll": "このフォルダを追加",
+      "loading": "読み込み中...",
+      "empty": "このフォルダにビデオファイルがありません",
+      "notVideo": "ビデオファイルを選択してください",
+      "unsupported": "このブラウザは File System Access API に対応していません。",
+      "noMounts": "作業ディレクトリが未設定です。Settings の File System から追加してください。",
+      "errorGeneric": "ビデオファイルの読み込み中にエラーが発生しました"
     }
   }
 }

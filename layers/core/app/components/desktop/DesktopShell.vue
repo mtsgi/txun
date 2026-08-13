@@ -91,6 +91,7 @@ const { isOpen: launcherOpen, initLauncher } = useLauncher()
 const { openSpotlight } = useSpotlight()
 const { setTheme, setLocale } = useWindowManager()
 const { saveState, loadState } = useDesktopStorage()
+const fileSystemStore = useFileSystemStore()
 
 const isMobile = computed(() => screenWidth.value < MOBILE_BREAKPOINT)
 
@@ -160,6 +161,7 @@ onMounted(async () => {
   window.addEventListener('resize', updateSize)
   window.addEventListener('keydown', onKeydown)
   initLauncher()
+  await fileSystemStore.restoreMounts()
 
   const saved = await loadState<UserSettings>(SETTINGS_KEY)
   if (saved) {
@@ -292,6 +294,9 @@ onUnmounted(() => {
 
     <!-- Spotlight -->
     <DesktopSpotlight />
+
+    <!-- File Dialog -->
+    <DesktopFileDialog />
 
     <!-- App Launcher -->
     <Transition :name="launcherTransitionName">

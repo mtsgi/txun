@@ -1,0 +1,26 @@
+{
+  "apps": {
+    "gitViewer": {
+      "name": "Git ビューワー",
+      "history": "コミット履歴",
+      "workingCopy": "作業コピー",
+      "noChanges": "変更されたファイルはありません",
+      "commitMessage": "コミットメッセージ",
+      "author": "作成者",
+      "date": "日時",
+      "hash": "コミットハッシュ",
+      "parent": "親コミット",
+      "filesChanged": "変更されたファイル",
+      "notGitRepository": "Git リポジトリではありません。.git ディレクトリが含まれるフォルダを選択してください。",
+      "selectRepository": "Git リポジトリを選択してください",
+      "unified": "統合表示",
+      "split": "分割表示",
+      "openInGitViewer": "Git Viewer で開く",
+      "noMounts": "作業ディレクトリがありません。ファイルシステムからマウントしてください。",
+      "loading": "Git リポジトリを読み込み中...",
+      "branch": "ブランチ",
+      "remoteUrl": "リモート URL",
+      "diff": "差分"
+    }
+  }
+}

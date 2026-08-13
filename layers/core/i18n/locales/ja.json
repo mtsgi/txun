@@ -39,6 +39,12 @@
       },
       "settings": {
         "open": "設定を開く"
+      },
+      "filesystem": {
+        "mountAdded": "作業ディレクトリを追加しました",
+        "mountRemoved": "作業ディレクトリを削除しました",
+        "mountRequired": "作業ディレクトリが必要です",
+        "unsupported": "このブラウザでは File System Access API は利用できません"
       }
     }
   }

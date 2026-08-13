@@ -3,7 +3,7 @@
     "videoPlayer": {
       "name": "Video",
       "addFiles": "Add Files",
-      "noVideos": "Drop files here or click \"Add Files\"",
+      "noVideos": "No videos in playlist",
       "playlist": "Playlist",
       "shuffle": "Shuffle",
       "repeatNone": "No Repeat",
@@ -19,7 +19,20 @@
       "fullscreen": "Fullscreen",
       "exitFullscreen": "Exit Fullscreen",
       "showPlaylist": "Show Playlist",
-      "hidePlaylist": "Hide Playlist"
+      "hidePlaylist": "Hide Playlist",
+      "browser": "Browser",
+      "mount": "Working Directory",
+      "addMount": "Add",
+      "mountAdded": "Working directory added: {name}",
+      "up": "Up",
+      "refresh": "Refresh",
+      "addAll": "Add This Folder",
+      "loading": "Loading...",
+      "empty": "No video files in this folder",
+      "notVideo": "Please select a video file",
+      "unsupported": "This browser does not support the File System Access API.",
+      "noMounts": "No working directory configured. Add one from Settings > File System.",
+      "errorGeneric": "Failed to load video file"
     }
   }
 }

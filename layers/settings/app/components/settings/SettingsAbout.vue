@@ -35,6 +35,12 @@ const ossPackages = [
 
 /** 展開中の OSS パッケージ名 */
 const openOss = ref<string | null>(null)
+
+const { canInstall, isInstalled, promptInstall } = usePwaInstall()
+
+async function handleInstall(): Promise<void> {
+  await promptInstall()
+}
 </script>
 
 <template>
@@ -43,10 +49,11 @@ const openOss = ref<string | null>(null)
       {{ $t('apps.settings.about') }}
     </h3>
     <div class="about-logo">
-      <UIcon
-        name="i-lucide-monitor"
-        class="about-icon"
-      />
+      <img
+        src="/logo.png"
+        alt="TxunOS"
+        class="about-logo-img"
+      >
       <span class="about-name">TxunOS</span>
     </div>
     <p class="about-desc">
@@ -59,6 +66,34 @@ const openOss = ref<string | null>(null)
       <p class="about-value">
         0.1.0
       </p>
+    </div>
+    <div
+      v-if="canInstall || isInstalled"
+      class="field"
+    >
+      <p class="field-label">
+        {{ $t('apps.settings.pwaApp') }}
+      </p>
+      <div class="pwa-action">
+        <UButton
+          v-if="canInstall"
+          icon="i-lucide-download"
+          color="primary"
+          size="sm"
+          :label="$t('apps.settings.installApp')"
+          @click="handleInstall"
+        />
+        <div
+          v-else-if="isInstalled"
+          class="pwa-installed-badge"
+        >
+          <UIcon
+            name="i-lucide-check-circle"
+            class="installed-icon"
+          />
+          <span>{{ $t('apps.settings.appInstalled') }}</span>
+        </div>
+      </div>
     </div>
     <div class="field">
       <p class="field-label">
@@ -130,14 +165,35 @@ const openOss = ref<string | null>(null)
   gap: 0.75rem;
   margin-bottom: 1rem;
 
-  .about-icon {
-    font-size: 2.5rem;
-    color: var(--ui-primary);
+  .about-logo-img {
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
+    border-radius: var(--ui-radius);
   }
 
   .about-name {
     font-size: 1.5rem;
     font-weight: 700;
+  }
+}
+
+.pwa-action {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pwa-installed-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  color: var(--ui-primary);
+  font-weight: 500;
+
+  .installed-icon {
+    font-size: 1.125rem;
   }
 }
 

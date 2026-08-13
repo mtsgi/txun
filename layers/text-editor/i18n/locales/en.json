@@ -4,7 +4,25 @@
       "name": "Text Editor",
       "open": "Open",
       "save": "Save",
-      "placeholder": "Start typing…"
+      "placeholder": "Start typing…",
+      "mount": "Working Directory",
+      "addMount": "Add",
+      "mountAdded": "Working directory added: {name}",
+      "browser": "Browser",
+      "refresh": "Refresh",
+      "up": "Up",
+      "new": "New",
+      "newFilePrompt": "Enter a file name",
+      "discardConfirm": "You have unsaved changes. Discard them?",
+      "saved": "Saved: {name}",
+      "unsupported": "This browser does not support the File System Access API.",
+      "noMounts": "No working directory configured. Add one from Settings > File System.",
+      "loading": "Loading...",
+      "empty": "No files in this folder",
+      "unsaved": "Unsaved document",
+      "errorGeneric": "An error occurred during file operations",
+      "noTabsOpen": "No tabs open",
+      "createFirstTab": "Create New Document"
     }
   }
 }

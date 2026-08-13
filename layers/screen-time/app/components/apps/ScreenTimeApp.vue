@@ -352,7 +352,7 @@ watch(() => screenTimeStore.trackingEnabled, () => persistNow())
             :max="1440"
             class="w-24"
           />
-          <span class="text-sm text-muted">{{ $t('apps.screenTime.minutes') }}</span>
+          <span class="text-sm text-muted">{{ $t('apps.screenTime.minuteUnit') }}</span>
         </div>
       </div>
     </template>
