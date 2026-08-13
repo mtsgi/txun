@@ -51,7 +51,7 @@ useHead({
   link: [
     { rel: 'icon', type: 'image/png', href: withAppBase('favicon.png') },
     { rel: 'apple-touch-icon', href: withAppBase('icon.png') },
-    { rel: 'manifest', href: withAppBase('manifest.webmanifest') }
+    { rel: 'manifest', href: withAppBase('manifest.webmanifest'), crossorigin: 'use-credentials' }
   ],
   htmlAttrs: { lang: locale }
 })

@@ -55,7 +55,7 @@ export default defineNuxtConfig({
       link: [
         { rel: 'icon', type: 'image/png', href: withBase('favicon.png') },
         { rel: 'apple-touch-icon', href: withBase('icon.png') },
-        { rel: 'manifest', href: withBase('manifest.webmanifest') }
+        { rel: 'manifest', href: withBase('manifest.webmanifest'), crossorigin: 'use-credentials' }
       ]
     }
   },
