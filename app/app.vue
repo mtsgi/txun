@@ -35,6 +35,10 @@ onMounted(() => {
 watch(() => store.font, applyFont)
 watch(() => store.primaryColor, applyPrimaryColor)
 
+const { app: runtimeApp } = useRuntimeConfig()
+const base = runtimeApp.baseURL || '/'
+const withAppBase = (path: string) => `${base.endsWith('/') ? base : `${base}/`}${path.replace(/^\//, '')}`
+
 useHead({
   meta: [
     { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
@@ -45,9 +49,9 @@ useHead({
     { name: 'apple-mobile-web-app-title', content: 'TxunOS' }
   ],
   link: [
-    { rel: 'icon', type: 'image/png', href: '/favicon.png' },
-    { rel: 'apple-touch-icon', href: '/icon.png' },
-    { rel: 'manifest', href: '/manifest.webmanifest' }
+    { rel: 'icon', type: 'image/png', href: withAppBase('favicon.png') },
+    { rel: 'apple-touch-icon', href: withAppBase('icon.png') },
+    { rel: 'manifest', href: withAppBase('manifest.webmanifest'), crossorigin: 'use-credentials' }
   ],
   htmlAttrs: { lang: locale }
 })

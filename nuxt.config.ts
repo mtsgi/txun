@@ -1,4 +1,6 @@
-// https://nuxt.com/docs/api/configuration/nuxt-config
+const appBaseURL = process.env.NUXT_APP_BASE_URL || '/'
+const withBase = (path: string) => `${appBaseURL.endsWith('/') ? appBaseURL : `${appBaseURL}/`}${path.replace(/^\//, '')}`
+
 export default defineNuxtConfig({
   extends: [
     'layers/core',
@@ -38,7 +40,7 @@ export default defineNuxtConfig({
   },
 
   app: {
-    baseURL: process.env.NUXT_APP_BASE_URL || '/',
+    baseURL: appBaseURL,
     head: {
       title: 'TxunOS',
       meta: [
@@ -51,9 +53,9 @@ export default defineNuxtConfig({
         { name: 'apple-mobile-web-app-title', content: 'TxunOS' }
       ],
       link: [
-        { rel: 'icon', type: 'image/png', href: '/favicon.png' },
-        { rel: 'apple-touch-icon', href: '/icon.png' },
-        { rel: 'manifest', href: '/manifest.webmanifest' }
+        { rel: 'icon', type: 'image/png', href: withBase('favicon.png') },
+        { rel: 'apple-touch-icon', href: withBase('icon.png') },
+        { rel: 'manifest', href: withBase('manifest.webmanifest'), crossorigin: 'use-credentials' }
       ]
     }
   },

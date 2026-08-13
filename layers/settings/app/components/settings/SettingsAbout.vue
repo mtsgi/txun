@@ -38,6 +38,10 @@ const openOss = ref<string | null>(null)
 
 const { canInstall, isInstalled, promptInstall } = usePwaInstall()
 
+const { app: runtimeApp } = useRuntimeConfig()
+const baseUrl = runtimeApp.baseURL || '/'
+const logoUrl = `${baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`}logo.png`
+
 async function handleInstall(): Promise<void> {
   await promptInstall()
 }
@@ -50,7 +54,7 @@ async function handleInstall(): Promise<void> {
     </h3>
     <div class="about-logo">
       <img
-        src="/logo.png"
+        :src="logoUrl"
         alt="TxunOS"
         class="about-logo-img"
       >
