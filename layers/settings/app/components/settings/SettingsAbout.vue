@@ -39,7 +39,8 @@ const openOss = ref<string | null>(null)
 const { canInstall, isInstalled, promptInstall } = usePwaInstall()
 
 const { app: runtimeApp } = useRuntimeConfig()
-const logoUrl = `${runtimeApp.baseURL || '/'}/logo.png`.replace(/\/+/g, '/')
+const baseUrl = runtimeApp.baseURL || '/'
+const logoUrl = `${baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`}logo.png`
 
 async function handleInstall(): Promise<void> {
   await promptInstall()

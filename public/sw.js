@@ -7,6 +7,7 @@ const PRECACHE_ASSETS = [
   new URL('./logo.png', self.location).href,
   new URL('./manifest.webmanifest', self.location).href
 ]
+const BASE_PATH = new URL('./', self.location).pathname
 
 // Install: precache essential shell assets safely and activate immediately
 self.addEventListener('install', (event) => {
@@ -80,7 +81,7 @@ self.addEventListener('fetch', (event) => {
   // 2. Same-origin static assets or CDN fonts: Stale-While-Revalidate
   const isSameOrigin = url.origin === self.location.origin
   const isStaticAsset = isSameOrigin && (
-    url.pathname.includes('/_nuxt/') ||
+    url.pathname.startsWith(`${BASE_PATH}_nuxt/`) ||
     url.pathname.endsWith('.png') ||
     url.pathname.endsWith('.jpg') ||
     url.pathname.endsWith('.svg') ||

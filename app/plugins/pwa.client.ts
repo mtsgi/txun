@@ -12,10 +12,11 @@ export default defineNuxtPlugin((nuxtApp) => {
     setIsPwaSupported(true)
     const { app } = useRuntimeConfig()
     const base = app.baseURL || '/'
-    const swPath = `${base.endsWith('/') ? base : `${base}/`}sw.js`
+    const scope = base.endsWith('/') ? base : `${base}/`
+    const swPath = `${scope}sw.js`
 
     const registerSW = () => {
-      navigator.serviceWorker.register(swPath, { scope: base })
+      navigator.serviceWorker.register(swPath, { scope })
         .then((reg) => {
           reg.addEventListener('updatefound', () => {
             const installingWorker = reg.installing
@@ -36,8 +37,16 @@ export default defineNuxtPlugin((nuxtApp) => {
     if (document.readyState === 'complete') {
       registerSW()
     } else {
-      window.addEventListener('load', registerSW)
-      setTimeout(registerSW, 1000)
+      const handleLoad = () => {
+        window.clearTimeout(loadTimer)
+        registerSW()
+      }
+      const loadTimer = window.setTimeout(() => {
+        window.removeEventListener('load', handleLoad)
+        registerSW()
+      }, 1000)
+
+      window.addEventListener('load', handleLoad, { once: true })
     }
   }
 
