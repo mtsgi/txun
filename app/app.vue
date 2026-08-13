@@ -36,8 +36,19 @@ watch(() => store.font, applyFont)
 watch(() => store.primaryColor, applyPrimaryColor)
 
 useHead({
-  meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' }],
-  link: [{ rel: 'icon', href: '/favicon.ico' }],
+  meta: [
+    { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
+    { name: 'theme-color', content: '#18181b' },
+    { name: 'mobile-web-app-capable', content: 'yes' },
+    { name: 'apple-mobile-web-app-capable', content: 'yes' },
+    { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
+    { name: 'apple-mobile-web-app-title', content: 'TxunOS' }
+  ],
+  link: [
+    { rel: 'icon', type: 'image/png', href: '/favicon.png' },
+    { rel: 'apple-touch-icon', href: '/icon.png' },
+    { rel: 'manifest', href: '/manifest.webmanifest' }
+  ],
   htmlAttrs: { lang: locale }
 })
 

@@ -237,6 +237,18 @@ onMounted(async () => {
 
   if (typeof win.value?.args?.path === 'string') {
     await openPath(win.value.args.path)
+  } else if (typeof win.value?.args?.content === 'string') {
+    const filename = typeof win.value?.args?.filename === 'string' ? win.value.args.filename : 'untitled.txt'
+    const newTab: Tab = {
+      id: generateId(),
+      filename,
+      path: null,
+      content: win.value.args.content,
+      isDirty: false,
+      mountId: null
+    }
+    tabs.value.push(newTab)
+    activeTabId.value = newTab.id
   } else {
     createNewDocument()
   }

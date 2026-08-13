@@ -143,6 +143,14 @@ onMounted(async () => {
 
   if (typeof win.value?.args?.path === 'string') {
     await openPath(win.value.args.path)
+  } else if (typeof win.value?.args?.blobUrl === 'string') {
+    imageUrl.value = win.value.args.blobUrl
+    zoom.value = 1
+    rotation.value = 0
+    imageInfo.value = {
+      name: typeof win.value.args.name === 'string' ? win.value.args.name : 'image.png',
+      size: typeof win.value.args.size === 'string' ? win.value.args.size : ''
+    }
   }
 })
 
