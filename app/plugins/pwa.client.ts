@@ -10,8 +10,12 @@ export default defineNuxtPlugin((nuxtApp) => {
   // Service Worker Registration
   if ('serviceWorker' in navigator) {
     setIsPwaSupported(true)
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+    const { app } = useRuntimeConfig()
+    const base = app.baseURL || '/'
+    const swPath = `${base.endsWith('/') ? base : `${base}/`}sw.js`
+
+    const registerSW = () => {
+      navigator.serviceWorker.register(swPath, { scope: base })
         .then((reg) => {
           reg.addEventListener('updatefound', () => {
             const installingWorker = reg.installing
@@ -27,7 +31,14 @@ export default defineNuxtPlugin((nuxtApp) => {
         .catch((err) => {
           console.warn('[PWA] Service Worker registration failed:', err)
         })
-    })
+    }
+
+    if (document.readyState === 'complete') {
+      registerSW()
+    } else {
+      window.addEventListener('load', registerSW)
+      setTimeout(registerSW, 1000)
+    }
   }
 
   // Handle beforeinstallprompt

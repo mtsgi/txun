@@ -2,9 +2,9 @@
   "name": "TxunOS",
   "short_name": "TxunOS",
   "description": "A web desktop environment built with Nuxt UI",
-  "id": "/?source=pwa",
-  "start_url": "/",
-  "scope": "/",
+  "id": "./?source=pwa",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "display_override": [
     "window-controls-overlay",
@@ -20,25 +20,22 @@
   ],
   "icons": [
     {
-      "src": "/favicon.png",
+      "src": "favicon.png",
       "sizes": "256x256",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icon.png",
+      "src": "icon.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ],
-  "screenshots": [
+      "purpose": "any"
+    },
     {
-      "src": "/banner.png",
-      "sizes": "2000x999",
+      "src": "icon.png",
+      "sizes": "512x512",
       "type": "image/png",
-      "form_factor": "wide",
-      "label": "TxunOS Desktop Experience"
+      "purpose": "maskable"
     }
   ],
   "shortcuts": [
@@ -46,10 +43,10 @@
       "name": "Terminal",
       "short_name": "Terminal",
       "description": "Open TxunOS Terminal",
-      "url": "/?app=terminal",
+      "url": "./?app=terminal",
       "icons": [
         {
-          "src": "/icon.png",
+          "src": "icon.png",
           "sizes": "512x512"
         }
       ]
@@ -58,10 +55,10 @@
       "name": "Text Editor",
       "short_name": "Text Editor",
       "description": "Open TxunOS Text Editor",
-      "url": "/?app=text-editor",
+      "url": "./?app=text-editor",
       "icons": [
         {
-          "src": "/icon.png",
+          "src": "icon.png",
           "sizes": "512x512"
         }
       ]
@@ -70,10 +67,10 @@
       "name": "Files",
       "short_name": "Files",
       "description": "Open TxunOS File Manager",
-      "url": "/?app=file-manager",
+      "url": "./?app=file-manager",
       "icons": [
         {
-          "src": "/icon.png",
+          "src": "icon.png",
           "sizes": "512x512"
         }
       ]
@@ -82,10 +79,10 @@
       "name": "Settings",
       "short_name": "Settings",
       "description": "Open TxunOS Settings",
-      "url": "/?app=settings",
+      "url": "./?app=settings",
       "icons": [
         {
-          "src": "/icon.png",
+          "src": "icon.png",
           "sizes": "512x512"
         }
       ]
@@ -93,11 +90,11 @@
   ],
   "file_handlers": [
     {
-      "action": "/?action=open-file",
+      "action": "./?action=open-file",
       "name": "Text and Code Files",
       "icons": [
         {
-          "src": "/icon.png",
+          "src": "icon.png",
           "sizes": "512x512"
         }
       ],
@@ -116,11 +113,11 @@
       }
     },
     {
-      "action": "/?action=open-image",
+      "action": "./?action=open-image",
       "name": "Image Files",
       "icons": [
         {
-          "src": "/icon.png",
+          "src": "icon.png",
           "sizes": "512x512"
         }
       ],
@@ -145,8 +142,9 @@
     }
   ],
   "share_target": {
-    "action": "/?action=share-target",
+    "action": "./?action=share-target",
     "method": "GET",
+    "enctype": "application/x-www-form-urlencoded",
     "params": {
       "title": "title",
       "text": "text",

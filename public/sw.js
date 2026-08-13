@@ -1,19 +1,24 @@
 const CACHE_NAME = 'txunos-v1'
 
 const PRECACHE_ASSETS = [
-  '/',
-  '/favicon.png',
-  '/icon.png',
-  '/logo.png',
-  '/banner.png',
-  '/manifest.webmanifest'
+  new URL('./', self.location).href,
+  new URL('./favicon.png', self.location).href,
+  new URL('./icon.png', self.location).href,
+  new URL('./logo.png', self.location).href,
+  new URL('./manifest.webmanifest', self.location).href
 ]
 
-// Install: precache essential shell assets and activate immediately
+// Install: precache essential shell assets safely and activate immediately
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(PRECACHE_ASSETS)
+    caches.open(CACHE_NAME).then(async (cache) => {
+      await Promise.allSettled(
+        PRECACHE_ASSETS.map((assetUrl) =>
+          cache.add(assetUrl).catch((err) => {
+            console.warn('[SW] Precache skipped for:', assetUrl, err)
+          })
+        )
+      )
     }).then(() => {
       return self.skipWaiting()
     })
@@ -66,7 +71,7 @@ self.addEventListener('fetch', (event) => {
           if (cachedResponse) {
             return cachedResponse
           }
-          return caches.match('/')
+          return caches.match(new URL('./', self.location).href)
         })
     )
     return
@@ -75,7 +80,7 @@ self.addEventListener('fetch', (event) => {
   // 2. Same-origin static assets or CDN fonts: Stale-While-Revalidate
   const isSameOrigin = url.origin === self.location.origin
   const isStaticAsset = isSameOrigin && (
-    url.pathname.startsWith('/_nuxt/') ||
+    url.pathname.includes('/_nuxt/') ||
     url.pathname.endsWith('.png') ||
     url.pathname.endsWith('.jpg') ||
     url.pathname.endsWith('.svg') ||
