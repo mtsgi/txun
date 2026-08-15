@@ -198,6 +198,7 @@ export const useDesktopStore = defineStore('desktop', {
       nextDesktop: 'Ctrl+Alt+ArrowRight',
       toggleSpotlight: 'Ctrl+k',
       toggleLauncher: 'Alt+Space',
+      toggleClipboardHistory: 'Meta+v',
       closeWindow: 'Alt+w',
       minimizeWindow: 'Alt+m',
       maximizeWindow: 'Alt+Enter'

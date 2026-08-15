@@ -69,12 +69,42 @@
         "toggleSpotlightDesc": "アプリやウィンドウの素早い検索と起動",
         "toggleLauncher": "アプリランチャーの開閉",
         "toggleLauncherDesc": "スタートメニュー（アプリ一覧）を開閉",
+        "toggleClipboardHistory": "クリップボード履歴の開閉",
+        "toggleClipboardHistoryDesc": "クリップボードの履歴一覧ポップアップを表示して貼り付け",
         "closeWindow": "アクティブウィンドウを閉じる",
         "closeWindowDesc": "現在フォーカス中のウィンドウを閉じる",
         "minimizeWindow": "アクティブウィンドウを最小化",
         "minimizeWindowDesc": "現在フォーカス中のウィンドウを最小化",
         "maximizeWindow": "ウィンドウの最大化/復元",
         "maximizeWindowDesc": "現在フォーカス中のウィンドウを最大化または元に戻す"
+      },
+      "clipboard": {
+        "title": "クリップボード履歴",
+        "searchPlaceholder": "履歴を検索...",
+        "empty": "クリップボードの履歴はありません",
+        "filterAll": "すべて",
+        "filterText": "テキスト",
+        "filterImage": "画像",
+        "filterFiles": "ファイル",
+        "clearAll": "履歴をクリア",
+        "clearConfirm": "ピン留めされていない履歴をすべて消去しますか？",
+        "pin": "ピン留め",
+        "unpin": "ピン留め解除",
+        "delete": "削除",
+        "paste": "貼り付け",
+        "copied": "クリップボードにコピーしました",
+        "synced": "ネイティブクリップボードから取り込みました",
+        "openApp": "詳細アプリを開く",
+        "pinnedBadge": "ピン留め済み",
+        "historyCount": "{count} 件"
+      },
+      "contextMenu": {
+        "cut": "切り取り",
+        "copy": "コピー",
+        "paste": "貼り付け",
+        "pasteHistory": "履歴から貼り付け",
+        "selectAll": "すべて選択",
+        "delete": "削除"
       }
     }
   }

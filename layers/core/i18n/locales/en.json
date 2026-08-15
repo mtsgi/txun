@@ -69,12 +69,42 @@
         "toggleSpotlightDesc": "Quickly search and launch apps or windows",
         "toggleLauncher": "Toggle App Launcher",
         "toggleLauncherDesc": "Open or close the Start menu / app grid",
+        "toggleClipboardHistory": "Toggle Clipboard History",
+        "toggleClipboardHistoryDesc": "Show clipboard history popup to paste items",
         "closeWindow": "Close Active Window",
         "closeWindowDesc": "Close the currently focused window",
         "minimizeWindow": "Minimize Active Window",
         "minimizeWindowDesc": "Minimize the currently focused window",
         "maximizeWindow": "Maximize / Restore Window",
         "maximizeWindowDesc": "Toggle maximize state of currently focused window"
+      },
+      "clipboard": {
+        "title": "Clipboard History",
+        "searchPlaceholder": "Search history...",
+        "empty": "No clipboard history",
+        "filterAll": "All",
+        "filterText": "Text",
+        "filterImage": "Images",
+        "filterFiles": "Files",
+        "clearAll": "Clear History",
+        "clearConfirm": "Clear all unpinned clipboard items?",
+        "pin": "Pin",
+        "unpin": "Unpin",
+        "delete": "Delete",
+        "paste": "Paste",
+        "copied": "Copied to clipboard",
+        "synced": "Imported from native clipboard",
+        "openApp": "Open Manager App",
+        "pinnedBadge": "Pinned",
+        "historyCount": "{count} items"
+      },
+      "contextMenu": {
+        "cut": "Cut",
+        "copy": "Copy",
+        "paste": "Paste",
+        "pasteHistory": "Paste from History",
+        "selectAll": "Select All",
+        "delete": "Delete"
       }
     }
   }

@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { useDesktopStore } from '../../stores/desktop'
+import { useClipboardStore } from '../../stores/clipboard'
 import type { WindowState, AppIconColor } from '../../stores/desktop'
 import type { CSSProperties } from 'vue'
 
 const store = useDesktopStore()
+const clipboardStore = useClipboardStore()
 const { toggleLauncher, isOpen: launcherOpen } = useLauncher()
 const { toggleSpotlight } = useSpotlight()
 
@@ -202,6 +204,18 @@ const dateLabel = computed(() =>
         </UButton>
       </UTooltip>
     </div>
+
+    <!-- Clipboard History trigger -->
+    <UTooltip :text="$t('core.desktop.clipboard.title')">
+      <UButton
+        icon="i-lucide-clipboard-list"
+        :variant="clipboardStore.isQuickHistoryOpen ? 'soft' : 'ghost'"
+        :color="clipboardStore.isQuickHistoryOpen ? 'primary' : 'neutral'"
+        :size="btnSize"
+        :aria-label="$t('core.desktop.clipboard.title')"
+        @click="clipboardStore.toggleQuickHistory"
+      />
+    </UTooltip>
 
     <!-- Clock -->
     <div

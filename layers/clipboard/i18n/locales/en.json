@@ -1,0 +1,35 @@
+{
+  "apps": {
+    "clipboard": {
+      "name": "Clipboard",
+      "description": "Manage, view, and search clipboard history",
+      "searchPlaceholder": "Search clipboard history...",
+      "filterAll": "All",
+      "filterText": "Text",
+      "filterImage": "Images",
+      "filterFiles": "Files",
+      "filterPinned": "Pinned",
+      "clearAll": "Clear History",
+      "clearConfirm": "Clear all unpinned clipboard items?",
+      "empty": "No clipboard history",
+      "noSelection": "Select an item from the list",
+      "copy": "Copy Again",
+      "paste": "Paste",
+      "pin": "Pin",
+      "unpin": "Unpin",
+      "delete": "Delete",
+      "openInTextEditor": "Open in Text Editor",
+      "openInImageViewer": "Open in Image Viewer",
+      "openInFileManager": "Open in File Manager",
+      "metadata": "Details",
+      "type": "Type",
+      "createdAt": "Created At",
+      "size": "Data Size",
+      "dimensions": "Dimensions",
+      "copiedToast": "Copied to clipboard",
+      "deletedToast": "Item deleted",
+      "stats": "Total {total} items ({pinned} pinned)",
+      "backToList": "Back to list"
+    }
+  }
+}

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { FileSystemEntry } from '#layers/txunos-core/app/stores/filesystem'
 import { useDesktopStore } from '#layers/txunos-core/app/stores/desktop'
+import { useClipboardStore } from '#layers/txunos-core/app/stores/clipboard'
 
 defineProps<{ windowId: string }>()
 
@@ -8,6 +9,7 @@ const { t } = useI18n()
 const { notify } = useDesktopNotification()
 const fileSystem = useFileSystem()
 const desktopStore = useDesktopStore()
+const clipboardStore = useClipboardStore()
 const { openApp } = useWindowManager()
 
 // Interfaces
@@ -317,6 +319,10 @@ function handleCopy(entry: FileSystemEntry) {
     paths: [entry.path],
     mountId: fileSystem.activeMountId.value
   }
+  clipboardStore.copyFiles([entry.path], {
+    mountId: fileSystem.activeMountId.value,
+    isCut: false
+  })
   notify(t('apps.fileManager.copy'), { type: 'success' })
 }
 
@@ -327,6 +333,10 @@ function handleCut(entry: FileSystemEntry) {
     paths: [entry.path],
     mountId: fileSystem.activeMountId.value
   }
+  clipboardStore.copyFiles([entry.path], {
+    mountId: fileSystem.activeMountId.value,
+    isCut: true
+  })
   notify(t('apps.fileManager.cut'), { type: 'success' })
 }
 

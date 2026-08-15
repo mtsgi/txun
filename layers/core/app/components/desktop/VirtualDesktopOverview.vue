@@ -9,7 +9,6 @@ const props = defineProps<{
 }>()
 
 const store = useDesktopStore()
-const { t } = useI18n()
 const {
   isOverviewOpen,
   desktops,
@@ -167,8 +166,10 @@ function onCardTouchEnd(e: TouchEvent, winId: string) {
     isClosingCard.value[winId] = true
     setTimeout(() => {
       closeWindow(winId)
-      delete touchOffsetY.value[winId]
-      delete isClosingCard.value[winId]
+      const { [winId]: _y, ...restOffsetY } = touchOffsetY.value
+      touchOffsetY.value = restOffsetY
+      const { [winId]: _c, ...restClosing } = isClosingCard.value
+      isClosingCard.value = restClosing
     }, 220)
   } else {
     // キャンセル時は元の位置に戻す
@@ -269,7 +270,10 @@ const overviewShortcutKeys = computed(() => getShortcutKeys('toggleOverview'))
               v-if="!isMobile"
               class="shortcut-tip flex items-center gap-1"
             >
-              <template v-for="(keyName, idx) in overviewShortcutKeys" :key="idx">
+              <template
+                v-for="(keyName, idx) in overviewShortcutKeys"
+                :key="idx"
+              >
                 <UKbd>{{ keyName }}</UKbd>
                 <span v-if="idx < overviewShortcutKeys.length - 1">+</span>
               </template>

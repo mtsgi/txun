@@ -1,12 +1,13 @@
-export type ShortcutActionId =
-  | 'toggleOverview'
-  | 'prevDesktop'
-  | 'nextDesktop'
-  | 'toggleSpotlight'
-  | 'toggleLauncher'
-  | 'closeWindow'
-  | 'minimizeWindow'
-  | 'maximizeWindow'
+export type ShortcutActionId
+  = | 'toggleOverview'
+    | 'prevDesktop'
+    | 'nextDesktop'
+    | 'toggleSpotlight'
+    | 'toggleLauncher'
+    | 'toggleClipboardHistory'
+    | 'closeWindow'
+    | 'minimizeWindow'
+    | 'maximizeWindow'
 
 export interface ShortcutDefinition {
   id: ShortcutActionId
@@ -53,6 +54,13 @@ export const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     category: 'system'
   },
   {
+    id: 'toggleClipboardHistory',
+    labelKey: 'core.desktop.shortcuts.toggleClipboardHistory',
+    descKey: 'core.desktop.shortcuts.toggleClipboardHistoryDesc',
+    defaultKey: 'Meta+v',
+    category: 'system'
+  },
+  {
     id: 'closeWindow',
     labelKey: 'core.desktop.shortcuts.closeWindow',
     descKey: 'core.desktop.shortcuts.closeWindowDesc',
@@ -81,6 +89,7 @@ export const DEFAULT_SHORTCUTS: Record<ShortcutActionId, string> = {
   nextDesktop: 'Ctrl+Alt+ArrowRight',
   toggleSpotlight: 'Ctrl+k',
   toggleLauncher: 'Alt+Space',
+  toggleClipboardHistory: 'Meta+v',
   closeWindow: 'Alt+w',
   minimizeWindow: 'Alt+m',
   maximizeWindow: 'Alt+Enter'

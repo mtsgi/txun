@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { AppFont, AppRadius, AppUIScale, AppFontSize, TaskbarPosition, TaskbarSize, TaskbarTaskAlign, TaskbarTaskDisplay } from '../../stores/desktop'
 import type { TaskbarInsets } from '../../utils/window-manager'
+import { useClipboardStore } from '../../stores/clipboard'
 
 /** 永続化する設定データの型 */
 type UserSettings = {
@@ -89,6 +90,8 @@ const screenHeight = ref(0)
 const vDesktopVisible = ref(false)
 
 const store = useDesktopStore()
+const clipboardStore = useClipboardStore()
+const editableContextMenuRef = ref<{ openMenu: (e: MouseEvent, target: HTMLElement) => void, closeMenu: () => void } | null>(null)
 const { isOpen: launcherOpen, initLauncher } = useLauncher()
 const { openSpotlight } = useSpotlight()
 const { setTheme, setLocale } = useWindowManager()
@@ -251,6 +254,17 @@ const shellShortcuts = computed(() => {
     }
   }
 
+  // クリップボード履歴トグル
+  const clipKey = toDefineShortcutKey(store.shortcuts?.toggleClipboardHistory || 'Meta+v')
+  if (clipKey) {
+    config[clipKey] = {
+      handler: () => clipboardStore.toggleQuickHistory(),
+      usingInput: true
+    }
+  }
+  config['ctrl_shift_v'] = { handler: () => clipboardStore.toggleQuickHistory(), usingInput: true }
+  config['meta_v'] = { handler: () => clipboardStore.toggleQuickHistory(), usingInput: true }
+
   // Alt + 1..9 で対応するデスクトップへジャンプ
   for (let i = 1; i <= 9; i++) {
     config[`alt_${i}`] = {
@@ -273,11 +287,108 @@ function updateSize() {
   screenHeight.value = shellRef.value.clientHeight
 }
 
+function onGlobalContextMenu(e: MouseEvent) {
+  const target = e.target as HTMLElement | null
+  if (!target) return
+
+  // 明示的な除外属性があればスキップ
+  if (target.closest('[data-no-txun-contextmenu]')) return
+
+  // 入力要素（input, textarea, contenteditable, [data-txun-editable]）の判定
+  const editableTarget = target.closest('input, textarea, [contenteditable="true"], [data-txun-editable]') as HTMLElement | null
+  if (editableTarget && editableContextMenuRef.value) {
+    clipboardStore.setLastEditableTarget(editableTarget)
+    e.preventDefault()
+    e.stopPropagation()
+    editableContextMenuRef.value.openMenu(e, editableTarget)
+  }
+}
+
+function onGlobalFocusIn(e: FocusEvent) {
+  const target = e.target as HTMLElement | null
+  if (!target) return
+  if (target.closest('.clipboard-history-panel, .editable-context-menu-container')) return
+
+  if (
+    target instanceof HTMLInputElement
+    || target instanceof HTMLTextAreaElement
+    || target.isContentEditable
+    || target.hasAttribute('data-txun-editable')
+  ) {
+    clipboardStore.setLastEditableTarget(target)
+  }
+}
+
+function onGlobalSelectionChange() {
+  if (typeof document === 'undefined') return
+  const active = document.activeElement as HTMLElement | null
+  if (!active) return
+  if (active.closest('.clipboard-history-panel, .editable-context-menu-container')) return
+
+  if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) {
+    clipboardStore.setLastEditableTarget(active, active.selectionStart ?? undefined, active.selectionEnd ?? undefined)
+  }
+}
+
+function onGlobalCopy(_e: ClipboardEvent) {
+  const sel = window.getSelection()?.toString()
+  if (sel && sel.trim()) {
+    clipboardStore.copyText(sel, { syncNative: false })
+  }
+}
+
+function onGlobalCut(_e: ClipboardEvent) {
+  const sel = window.getSelection()?.toString()
+  if (sel && sel.trim()) {
+    clipboardStore.copyText(sel, { syncNative: false })
+  }
+}
+
+function onGlobalPaste(e: ClipboardEvent) {
+  if (e.clipboardData) {
+    const text = e.clipboardData.getData('text/plain')
+    const html = e.clipboardData.getData('text/html')
+    const files = e.clipboardData.files
+
+    if (files && files.length > 0) {
+      for (const file of Array.from(files)) {
+        if (file.type.startsWith('image/')) {
+          const reader = new FileReader()
+          reader.onload = () => {
+            if (typeof reader.result === 'string') {
+              clipboardStore.copyImage(reader.result, {
+                mimeType: file.type,
+                fileName: file.name,
+                syncNative: false
+              })
+            }
+          }
+          reader.readAsDataURL(file)
+        }
+      }
+    } else if (text && text.trim()) {
+      clipboardStore.copyText(text, { html: html || undefined, syncNative: false })
+    }
+  }
+}
+
+function onWindowFocus() {
+  clipboardStore.syncFromNativeClipboard().catch(() => {})
+}
+
 onMounted(async () => {
   updateSize()
   window.addEventListener('resize', updateSize)
+  window.addEventListener('focus', onWindowFocus)
+  window.addEventListener('focusin', onGlobalFocusIn)
+  document.addEventListener('selectionchange', onGlobalSelectionChange)
+  window.addEventListener('contextmenu', onGlobalContextMenu, true)
+  window.addEventListener('copy', onGlobalCopy)
+  window.addEventListener('cut', onGlobalCut)
+  window.addEventListener('paste', onGlobalPaste)
   initLauncher()
   await fileSystemStore.restoreMounts()
+  await clipboardStore.restoreFromStorage()
 
   const saved = await loadState<UserSettings>(SETTINGS_KEY)
   if (saved) {
@@ -372,6 +483,13 @@ watch(() => store.radius, radius => applyRadius(radius))
 
 onUnmounted(() => {
   window.removeEventListener('resize', updateSize)
+  window.removeEventListener('focus', onWindowFocus)
+  window.removeEventListener('focusin', onGlobalFocusIn)
+  document.removeEventListener('selectionchange', onGlobalSelectionChange)
+  window.removeEventListener('contextmenu', onGlobalContextMenu, true)
+  window.removeEventListener('copy', onGlobalCopy)
+  window.removeEventListener('cut', onGlobalCut)
+  window.removeEventListener('paste', onGlobalPaste)
 })
 </script>
 
@@ -419,6 +537,12 @@ onUnmounted(() => {
 
     <!-- File Dialog -->
     <DesktopFileDialog />
+
+    <!-- Clipboard History Popup -->
+    <DesktopClipboardHistory />
+
+    <!-- Editable Context Menu -->
+    <DesktopEditableContextMenu ref="editableContextMenuRef" />
 
     <!-- App Launcher -->
     <Transition :name="launcherTransitionName">

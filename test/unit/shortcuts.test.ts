@@ -146,6 +146,7 @@ describe('useShortcuts composable and DesktopStore shortcuts', () => {
       expect(ids).toContain('nextDesktop')
       expect(ids).toContain('toggleSpotlight')
       expect(ids).toContain('toggleLauncher')
+      expect(ids).toContain('toggleClipboardHistory')
       expect(ids).toContain('closeWindow')
       expect(ids).toContain('minimizeWindow')
       expect(ids).toContain('maximizeWindow')
