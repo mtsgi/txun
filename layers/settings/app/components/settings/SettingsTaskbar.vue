@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { TaskbarPosition, TaskbarSize, TaskbarTaskAlign, TaskbarTaskDisplay } from '#layers/txunos-core/app/stores/desktop'
+import type { TaskbarPosition, TaskbarSize, TaskbarTaskAlign, TaskbarTaskDisplay, TimeFormat } from '#layers/txunos-core/app/stores/desktop'
 
 const store = useDesktopStore()
 </script>
@@ -75,6 +75,40 @@ const store = useDesktopStore()
           :color="store.taskbarTaskDisplay === disp ? 'primary' : 'neutral'"
           size="sm"
           @click="store.setTaskbarTaskDisplay(disp)"
+        />
+      </div>
+    </div>
+    <!-- 時刻表示形式 -->
+    <div class="field">
+      <p class="field-label">
+        {{ $t('apps.settings.timeFormat') }}
+      </p>
+      <div class="option-row">
+        <UButton
+          v-for="fmt in (['24h', '12h'] as TimeFormat[])"
+          :key="fmt"
+          :label="fmt === '24h' ? $t('apps.settings.timeFormat24h') : $t('apps.settings.timeFormat12h')"
+          :variant="store.timeFormat === fmt ? 'solid' : 'outline'"
+          :color="store.timeFormat === fmt ? 'primary' : 'neutral'"
+          size="sm"
+          @click="store.setTimeFormat(fmt)"
+        />
+      </div>
+    </div>
+    <!-- 秒表示トグル -->
+    <div class="field">
+      <div class="toggle-field">
+        <div class="toggle-info">
+          <p class="field-label">
+            {{ $t('apps.settings.showSeconds') }}
+          </p>
+          <p class="field-desc">
+            {{ $t('apps.settings.showSecondsDesc') }}
+          </p>
+        </div>
+        <USwitch
+          :model-value="store.showSeconds"
+          @update:model-value="store.setShowSeconds"
         />
       </div>
     </div>

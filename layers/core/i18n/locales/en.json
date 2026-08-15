@@ -14,6 +14,13 @@
       "taskbar": {
         "launcher": "App Launcher"
       },
+      "clock": {
+        "title": "Clock & Calendar",
+        "openClock": "Open Clock",
+        "openCalendar": "Open Calendar",
+        "noEvents": "No events scheduled",
+        "viewInCalendar": "Open Calendar"
+      },
       "launcher": {
         "search_placeholder": "Search apps...",
         "all_apps": "All Apps",

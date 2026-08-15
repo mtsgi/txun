@@ -14,6 +14,13 @@
       "taskbar": {
         "launcher": "アプリ起動"
       },
+      "clock": {
+        "title": "時計とカレンダー",
+        "openClock": "時計アプリを開く",
+        "openCalendar": "カレンダーアプリを開く",
+        "noEvents": "予定はありません",
+        "viewInCalendar": "カレンダーを開く"
+      },
       "launcher": {
         "search_placeholder": "アプリを検索...",
         "all_apps": "すべてのアプリ",

@@ -107,6 +107,8 @@ function getWindowAppColor(win: WindowState): UButtonColor {
 }
 
 const now = ref(new Date())
+const isClockFlyoutOpen = ref(false)
+
 onMounted(() => {
   const timer = setInterval(() => {
     now.value = new Date()
@@ -114,11 +116,17 @@ onMounted(() => {
   onUnmounted(() => clearInterval(timer))
 })
 
-const timeLabel = computed(() =>
-  now.value.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-)
+const timeLabel = computed(() => {
+  const is12h = store.timeFormat === '12h'
+  return now.value.toLocaleTimeString(store.locale === 'ja' ? 'ja-JP' : 'en-US', {
+    hour12: is12h,
+    hour: is12h ? 'numeric' : '2-digit',
+    minute: '2-digit',
+    ...(store.showSeconds ? { second: '2-digit' } : {})
+  })
+})
 const dateLabel = computed(() =>
-  now.value.toLocaleDateString([], { month: 'short', day: 'numeric' })
+  now.value.toLocaleDateString(store.locale === 'ja' ? 'ja-JP' : 'en-US', { month: 'short', day: 'numeric' })
 )
 </script>
 
@@ -217,21 +225,38 @@ const dateLabel = computed(() =>
       />
     </UTooltip>
 
-    <!-- Clock -->
-    <div
-      class="clock"
+    <!-- Clock Widget with Flyout Popover -->
+    <UPopover
+      v-model:open="isClockFlyoutOpen"
+      :content="{
+        side: isVertical ? (store.taskbarPosition === 'left' ? 'right' : 'left') : (store.taskbarPosition === 'top' ? 'bottom' : 'top'),
+        align: 'end',
+        sideOffset: 8
+      }"
       :style="clockStyle"
     >
-      <div class="clock-time">
-        {{ timeLabel }}
-      </div>
-      <div
-        v-if="!isMobile && !isVertical"
-        class="clock-date"
+      <button
+        type="button"
+        class="clock-btn"
+        :class="{ 'is-open': isClockFlyoutOpen }"
+        :aria-label="$t('core.desktop.clock.title')"
+        :aria-expanded="isClockFlyoutOpen"
       >
-        {{ dateLabel }}
-      </div>
-    </div>
+        <div class="clock-time">
+          {{ timeLabel }}
+        </div>
+        <div
+          v-if="!isMobile && !isVertical"
+          class="clock-date"
+        >
+          {{ dateLabel }}
+        </div>
+      </button>
+
+      <template #content>
+        <DesktopTaskbarClockFlyout @close="isClockFlyoutOpen = false" />
+      </template>
+    </UPopover>
   </div>
 </template>
 
@@ -302,14 +327,33 @@ const dateLabel = computed(() =>
   }
 }
 
-.clock {
-  flex-shrink: 0;
-  text-align: center;
+.clock-btn {
+  border: none;
+  background: transparent;
+  padding: 2px 6px;
+  border-radius: var(--ui-radius, 6px);
+  cursor: pointer;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   line-height: 1.25;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: var(--ui-bg-elevated);
+  }
+
+  &.is-open {
+    background: color-mix(in srgb, var(--ui-primary) 18%, transparent);
+    color: var(--ui-primary);
+  }
 
   .clock-time {
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     font-weight: 600;
+    font-variant-numeric: tabular-nums;
   }
 
   .clock-date {

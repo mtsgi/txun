@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { AppFont, AppRadius, AppUIScale, AppFontSize, TaskbarPosition, TaskbarSize, TaskbarTaskAlign, TaskbarTaskDisplay } from '../../stores/desktop'
+import type { AppFont, AppRadius, AppUIScale, AppFontSize, TaskbarPosition, TaskbarSize, TaskbarTaskAlign, TaskbarTaskDisplay, TimeFormat } from '../../stores/desktop'
 import type { TaskbarInsets } from '../../utils/window-manager'
 import { useClipboardStore } from '../../stores/clipboard'
 
@@ -20,6 +20,8 @@ type UserSettings = {
   taskbarSize?: TaskbarSize
   taskbarTaskAlign?: TaskbarTaskAlign
   taskbarTaskDisplay?: TaskbarTaskDisplay
+  timeFormat?: TimeFormat
+  showSeconds?: boolean
   showTopVDesktopBar?: boolean
   shortcuts?: Record<string, string>
 }
@@ -419,6 +421,8 @@ onMounted(async () => {
     if (saved.taskbarSize) store.setTaskbarSize(saved.taskbarSize)
     if (saved.taskbarTaskAlign) store.setTaskbarTaskAlign(saved.taskbarTaskAlign)
     if (saved.taskbarTaskDisplay) store.setTaskbarTaskDisplay(saved.taskbarTaskDisplay)
+    if (saved.timeFormat) store.setTimeFormat(saved.timeFormat)
+    if (saved.showSeconds !== undefined) store.setShowSeconds(saved.showSeconds)
     if (saved.showTopVDesktopBar !== undefined) store.setShowTopVDesktopBar(saved.showTopVDesktopBar)
     if (saved.shortcuts) store.setShortcuts(saved.shortcuts)
   } else {
@@ -448,6 +452,8 @@ watch(
     () => store.taskbarSize,
     () => store.taskbarTaskAlign,
     () => store.taskbarTaskDisplay,
+    () => store.timeFormat,
+    () => store.showSeconds,
     () => store.showTopVDesktopBar,
     () => store.shortcuts
   ],
@@ -468,6 +474,8 @@ watch(
       taskbarSize: store.taskbarSize,
       taskbarTaskAlign: store.taskbarTaskAlign,
       taskbarTaskDisplay: store.taskbarTaskDisplay,
+      timeFormat: store.timeFormat,
+      showSeconds: store.showSeconds,
       showTopVDesktopBar: store.showTopVDesktopBar,
       shortcuts: store.shortcuts
     })

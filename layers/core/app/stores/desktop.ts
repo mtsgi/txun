@@ -102,6 +102,9 @@ export type TaskbarTaskAlign = 'start' | 'center' | 'end'
 /** タスクリストのアイテム表示形式 */
 export type TaskbarTaskDisplay = 'icon' | 'icon-label'
 
+/** 時刻の表示形式（12時間表示 / 24時間表示） */
+export type TimeFormat = '12h' | '24h'
+
 /** ランチャーフォルダーを表すインターフェース */
 export interface LauncherFolder {
   /** フォルダー固有の ID */
@@ -158,6 +161,10 @@ export interface DesktopState {
   taskbarTaskAlign: TaskbarTaskAlign
   /** タスクリストのアイテム表示形式 */
   taskbarTaskDisplay: TaskbarTaskDisplay
+  /** 時刻表示形式（12h / 24h） */
+  timeFormat: TimeFormat
+  /** 秒を表示するかどうか */
+  showSeconds: boolean
   /** 仮想デスクトップ切り替え方向アニメーション用 */
   slideDirection: 'left' | 'right' | 'none'
   /** 画面上部ホバー式仮想デスクトップバーの表示設定 */
@@ -190,6 +197,8 @@ export const useDesktopStore = defineStore('desktop', {
     taskbarSize: 'md',
     taskbarTaskAlign: 'start',
     taskbarTaskDisplay: 'icon-label',
+    timeFormat: '24h',
+    showSeconds: false,
     slideDirection: 'none',
     showTopVDesktopBar: true,
     shortcuts: {
@@ -616,6 +625,22 @@ export const useDesktopStore = defineStore('desktop', {
      */
     setTaskbarTaskDisplay(display: TaskbarTaskDisplay): void {
       this.taskbarTaskDisplay = display
+    },
+
+    /**
+     * 時刻表示形式を変更する。
+     * @param format - 変更先の形式（'12h' | '24h'）
+     */
+    setTimeFormat(format: TimeFormat): void {
+      this.timeFormat = format
+    },
+
+    /**
+     * 秒の表示有無を変更する。
+     * @param show - true で秒を表示
+     */
+    setShowSeconds(show: boolean): void {
+      this.showSeconds = show
     },
 
     /**

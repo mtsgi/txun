@@ -27,7 +27,7 @@ const tabs = computed(() => [
   { label: t('apps.settings.appearance'), icon: 'i-lucide-palette', slot: 'appearance' },
   { label: t('apps.settings.wallpaper'), icon: 'i-lucide-image', slot: 'wallpaper' },
   { label: t('apps.settings.font'), icon: 'i-lucide-type', slot: 'font' },
-  { label: t('apps.settings.language'), icon: 'i-lucide-globe', slot: 'language' },
+  { label: t('apps.settings.languageAndTime'), icon: 'i-lucide-globe', slot: 'language' },
   { label: t('apps.settings.taskbar'), icon: 'i-lucide-panel-bottom', slot: 'taskbar' },
   { label: t('apps.settings.shortcuts'), icon: 'i-lucide-keyboard', slot: 'shortcuts' },
   { label: t('apps.settings.filesystem'), icon: 'i-lucide-folder-tree', slot: 'filesystem' },
