@@ -68,6 +68,9 @@ function onFocus() {
 }
 
 function onTitlebarMouseDown(e: MouseEvent) {
+  if (e.button !== 0) return
+  const target = e.target as HTMLElement | null
+  if (target?.closest('.titlebar-controls')) return
   if (props.isMobile || props.window.isMaximized) return
   e.preventDefault()
   isDragging.value = true
@@ -114,6 +117,110 @@ function onTitlebarDblClick() {
   store.toggleMaximize(props.window.id, props.screenWidth, props.screenHeight, taskbarH.value, insets.value)
 }
 
+const titlebarContextMenuItems = computed(() => {
+  const desktopItems = store.virtualDesktops.map(d => ({
+    label: d.name,
+    icon: d.id === props.window.virtualDesktopId ? 'i-lucide-check' : 'i-lucide-monitor',
+    disabled: d.id === props.window.virtualDesktopId,
+    onSelect: () => store.moveWindowToDesktop(props.window.id, d.id)
+  }))
+
+  desktopItems.push({
+    label: t('core.desktop.contextMenu.moveToNewDesktop'),
+    icon: 'i-lucide-plus',
+    disabled: false,
+    onSelect: () => {
+      const newId = `desktop-${Date.now()}`
+      store.virtualDesktops.push({ id: newId, name: `Desktop ${store.virtualDesktops.length + 1}` })
+      store.moveWindowToDesktop(props.window.id, newId)
+    }
+  })
+
+  return [
+    [
+      {
+        label: t('core.desktop.contextMenu.restore'),
+        icon: 'i-lucide-copy',
+        disabled: !props.window.isMaximized,
+        onSelect: () => {
+          if (props.window.isMaximized) {
+            store.toggleMaximize(props.window.id, props.screenWidth, props.screenHeight, taskbarH.value, insets.value)
+          }
+        }
+      },
+      ...(!props.isMobile
+        ? [
+            {
+              label: t('core.desktop.contextMenu.minimize'),
+              icon: 'i-lucide-minus',
+              onSelect: () => store.minimizeWindow(props.window.id)
+            },
+            {
+              label: t('core.desktop.contextMenu.maximize'),
+              icon: 'i-lucide-square',
+              disabled: props.window.isMaximized,
+              onSelect: () => {
+                if (!props.window.isMaximized) {
+                  store.toggleMaximize(props.window.id, props.screenWidth, props.screenHeight, taskbarH.value, insets.value)
+                }
+              }
+            }
+          ]
+        : [])
+    ],
+    ...(!props.isMobile
+      ? [
+          [
+            {
+              label: t('core.desktop.contextMenu.snap'),
+              icon: 'i-lucide-layout-grid',
+              children: [
+                {
+                  label: t('core.desktop.contextMenu.snapLeft'),
+                  icon: 'i-lucide-panel-left',
+                  onSelect: () => {
+                    if (props.window.isMaximized) {
+                      store.toggleMaximize(props.window.id, props.screenWidth, props.screenHeight, taskbarH.value, insets.value)
+                    }
+                    store.updateWindowBounds(
+                      props.window.id,
+                      applySnapZone('left', props.screenWidth, props.screenHeight, taskbarH.value, insets.value)
+                    )
+                  }
+                },
+                {
+                  label: t('core.desktop.contextMenu.snapRight'),
+                  icon: 'i-lucide-panel-right',
+                  onSelect: () => {
+                    if (props.window.isMaximized) {
+                      store.toggleMaximize(props.window.id, props.screenWidth, props.screenHeight, taskbarH.value, insets.value)
+                    }
+                    store.updateWindowBounds(
+                      props.window.id,
+                      applySnapZone('right', props.screenWidth, props.screenHeight, taskbarH.value, insets.value)
+                    )
+                  }
+                }
+              ]
+            },
+            {
+              label: t('core.desktop.contextMenu.moveToDesktop'),
+              icon: 'i-lucide-arrow-right-left',
+              children: desktopItems
+            }
+          ]
+        ]
+      : []),
+    [
+      {
+        label: t('core.desktop.contextMenu.close'),
+        icon: 'i-lucide-x',
+        color: 'error' as const,
+        onSelect: () => store.closeWindow(props.window.id)
+      }
+    ]
+  ]
+})
 type ResizeDir = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw'
 
 function onResizeStart(e: MouseEvent, dir: ResizeDir) {
@@ -181,48 +288,50 @@ function onResizeStart(e: MouseEvent, dir: ResizeDir) {
         />
       </Transition>
     </Teleport>
-    <!-- Title bar -->
-    <div
-      class="titlebar"
-      @mousedown.self="onTitlebarMouseDown"
-      @dblclick="onTitlebarDblClick"
-    >
-      <UIcon
-        :name="window.icon"
-        class="titlebar-icon"
-      />
-      <span class="titlebar-title">
-        {{ window.nameKey ? t(window.nameKey) : window.title }}
-      </span>
-      <div class="titlebar-controls">
-        <UButton
-          v-if="!isMobile"
-          size="xs"
-          color="neutral"
-          variant="ghost"
-          icon="i-lucide-minus"
-          :aria-label="$t('core.desktop.window.minimize')"
-          @click="store.minimizeWindow(window.id)"
+    <!-- Title bar with Context Menu -->
+    <UContextMenu :items="titlebarContextMenuItems">
+      <div
+        class="titlebar"
+        @mousedown="onTitlebarMouseDown"
+        @dblclick="onTitlebarDblClick"
+      >
+        <UIcon
+          :name="window.icon"
+          class="titlebar-icon"
         />
-        <UButton
-          v-if="!isMobile"
-          size="xs"
-          color="neutral"
-          variant="ghost"
-          :icon="window.isMaximized ? 'i-lucide-minimize-2' : 'i-lucide-maximize-2'"
-          :aria-label="$t('core.desktop.window.maximize')"
-          @click="store.toggleMaximize(window.id, screenWidth, screenHeight, taskbarH)"
-        />
-        <UButton
-          size="xs"
-          color="error"
-          variant="ghost"
-          icon="i-lucide-x"
-          :aria-label="$t('core.desktop.window.close')"
-          @click="store.closeWindow(window.id)"
-        />
+        <span class="titlebar-title">
+          {{ window.nameKey ? t(window.nameKey) : window.title }}
+        </span>
+        <div class="titlebar-controls">
+          <UButton
+            v-if="!isMobile"
+            size="xs"
+            color="neutral"
+            variant="ghost"
+            icon="i-lucide-minus"
+            :aria-label="$t('core.desktop.window.minimize')"
+            @click="store.minimizeWindow(window.id)"
+          />
+          <UButton
+            v-if="!isMobile"
+            size="xs"
+            color="neutral"
+            variant="ghost"
+            :icon="window.isMaximized ? 'i-lucide-minimize-2' : 'i-lucide-maximize-2'"
+            :aria-label="$t('core.desktop.window.maximize')"
+            @click="store.toggleMaximize(window.id, screenWidth, screenHeight, taskbarH)"
+          />
+          <UButton
+            size="xs"
+            color="error"
+            variant="ghost"
+            icon="i-lucide-x"
+            :aria-label="$t('core.desktop.window.close')"
+            @click="store.closeWindow(window.id)"
+          />
+        </div>
       </div>
-    </div>
+    </UContextMenu>
 
     <!-- Window content -->
     <div class="window-content">

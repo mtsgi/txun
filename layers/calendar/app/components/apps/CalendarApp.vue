@@ -5,7 +5,6 @@ defineProps<{ windowId: string }>()
 
 const { t } = useI18n()
 const {
-  events,
   loadEvents,
   addEvent: createEvent,
   removeEvent,

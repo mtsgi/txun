@@ -74,6 +74,8 @@ export interface AppMeta {
   defaultWidth: number
   /** ウィンドウのデフォルト高さ（px） */
   defaultHeight: number
+  /** 複数インスタンスの起動を許可するかどうか（省略時は true） */
+  multiInstance?: boolean
   /** アプリのカテゴリ（任意） */
   category?: string
 }
@@ -247,6 +249,22 @@ export const useDesktopStore = defineStore('desktop', {
      * @returns 生成したウィンドウの ID
      */
     openWindow(app: AppMeta, options?: Partial<WindowState>): string {
+      if (!app.multiInstance) {
+        const existing = this.windows.find(
+          w => w.appId === app.id && w.virtualDesktopId === this.activeVirtualDesktopId
+        )
+        if (existing) {
+          if (options?.args) {
+            existing.args = { ...existing.args, ...options.args }
+          }
+          if (existing.isMinimized) {
+            existing.isMinimized = false
+          }
+          this.focusWindow(existing.id)
+          return existing.id
+        }
+      }
+
       const id = `window-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
       const zIndex = this.nextZIndex++
       const cascadeCount = this.windows.filter(
@@ -356,6 +374,45 @@ export const useDesktopStore = defineStore('desktop', {
     ): void {
       const w = this.windows.find(w => w.id === id)
       if (w) Object.assign(w, bounds)
+    },
+
+    /**
+     * 現在のアクティブな仮想デスクトップに属するすべてのウィンドウを最小化する。
+     */
+    minimizeAllWindows(): void {
+      this.windows
+        .filter(w => w.virtualDesktopId === this.activeVirtualDesktopId)
+        .forEach((w) => {
+          w.isMinimized = true
+        })
+      this.focusedWindowId = null
+    },
+
+    /**
+     * 現在のアクティブな仮想デスクトップに属するすべてのウィンドウを復元する。
+     */
+    restoreAllWindows(): void {
+      this.windows
+        .filter(w => w.virtualDesktopId === this.activeVirtualDesktopId)
+        .forEach((w) => {
+          w.isMinimized = false
+        })
+      if (this.topWindow) {
+        this.focusWindow(this.topWindow.id)
+      }
+    },
+
+    /**
+     * デスクトップ表示（全最小化）と全ウィンドウ復元をトグルする。
+     */
+    toggleShowDesktop(): void {
+      const activeWins = this.windows.filter(w => w.virtualDesktopId === this.activeVirtualDesktopId)
+      const hasVisible = activeWins.some(w => !w.isMinimized)
+      if (hasVisible) {
+        this.minimizeAllWindows()
+      } else {
+        this.restoreAllWindows()
+      }
     },
 
     /** 新しい仮想デスクトップを追加する。 */

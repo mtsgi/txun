@@ -10,7 +10,7 @@ const emit = defineEmits<{
 const store = useDesktopStore()
 const { openApp } = useWindowManager()
 const { t } = useI18n()
-const { events, loadEvents, eventsOnDate } = useCalendarEvents()
+const { loadEvents, eventsOnDate } = useCalendarEvents()
 
 /** 現在時刻 */
 const now = ref(new Date())
