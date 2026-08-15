@@ -82,6 +82,8 @@
       "taskbarTaskDisplay": "Task Display",
       "taskbarTaskDisplayIcon": "Icon only",
       "taskbarTaskDisplayIconLabel": "Icon and label",
+      "showTopVDesktopBar": "Edge Virtual Desktop Bar",
+      "showTopVDesktopBarDesc": "Show the virtual desktop bar when hovering near the screen edge.",
       "deviceCamera": "Camera",
       "deviceCameraPermission": "Permission",
       "deviceCameraPermissionGranted": "Granted",
@@ -93,7 +95,18 @@
       "deviceCameraNoDevices": "No camera devices",
       "deviceCameraSupported": "Supported",
       "deviceCameraNotSupported": "Not supported",
-      "deviceCameraLive": "LIVE"
+      "deviceCameraLive": "LIVE",
+      "shortcuts": "Shortcuts",
+      "shortcutsDescription": "Customize keyboard shortcuts for OS shell navigation and window controls.",
+      "shortcutsResetAll": "Reset All",
+      "shortcutsChange": "Change",
+      "shortcutsReset": "Reset",
+      "shortcutsCancel": "Cancel",
+      "shortcutsPressKeys": "Press keys...",
+      "shortcutsConflict": "Conflicts with \"{action}\"",
+      "shortcutsCatDesktop": "Desktop & Task View",
+      "shortcutsCatSystem": "System",
+      "shortcutsCatWindow": "Window Operations"
     }
   }
 }

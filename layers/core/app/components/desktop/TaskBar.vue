@@ -158,6 +158,18 @@ const dateLabel = computed(() =>
       class="sep"
     />
 
+    <!-- Virtual Desktop switcher widget -->
+    <DesktopTaskbarDesktopSwitcher
+      :btn-size="btnSize"
+      :is-vertical="isVertical"
+      :is-mobile="isMobile"
+    />
+
+    <USeparator
+      :orientation="isVertical ? 'horizontal' : 'vertical'"
+      class="sep"
+    />
+
     <!-- Open windows -->
     <div
       class="task-list"
@@ -212,6 +224,7 @@ const dateLabel = computed(() =>
 <style lang="scss" scoped>
 .taskbar {
   position: absolute;
+  z-index: 10000;
   display: flex;
   align-items: center;
   gap: 0.25rem;
@@ -242,8 +255,10 @@ const dateLabel = computed(() =>
   &.task-btn-icon {
     max-width: var(--taskbar-btn-icon-size, 2.5rem);
     min-width: var(--taskbar-btn-icon-size, 2.5rem);
-    padding-inline: 0;
-    justify-content: center;
+    padding: 0 !important;
+    justify-content: center !important;
+    align-items: center !important;
+    text-align: center;
   }
 
   &.task-btn-vertical {

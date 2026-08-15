@@ -82,6 +82,8 @@
       "taskbarTaskDisplay": "タスクの表示",
       "taskbarTaskDisplayIcon": "アイコン",
       "taskbarTaskDisplayIconLabel": "アイコンとラベル",
+      "showTopVDesktopBar": "画面端の仮想デスクトップバー",
+      "showTopVDesktopBarDesc": "画面端にホバーした際に仮想デスクトップバーを表示します。",
       "deviceCamera": "カメラ",
       "deviceCameraPermission": "権限",
       "deviceCameraPermissionGranted": "許可済み",
@@ -93,7 +95,18 @@
       "deviceCameraNoDevices": "カメラデバイスなし",
       "deviceCameraSupported": "対応",
       "deviceCameraNotSupported": "非対応",
-      "deviceCameraLive": "LIVE"
+      "deviceCameraLive": "LIVE",
+      "shortcuts": "ショートカット",
+      "shortcutsDescription": "OSシェル操作に関するキーボードショートカットをカスタマイズできます。",
+      "shortcutsResetAll": "すべてリセット",
+      "shortcutsChange": "変更",
+      "shortcutsReset": "リセット",
+      "shortcutsCancel": "キャンセル",
+      "shortcutsPressKeys": "キーを押してください...",
+      "shortcutsConflict": "「{action}」と重複しています",
+      "shortcutsCatDesktop": "デスクトップ・タスクビュー",
+      "shortcutsCatSystem": "システム",
+      "shortcutsCatWindow": "ウィンドウ操作"
     }
   }
 }

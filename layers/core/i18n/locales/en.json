@@ -25,8 +25,20 @@
         "open": "Open"
       },
       "virtualDesktop": {
+        "title": "Virtual Desktops",
         "add": "Add Virtual Desktop",
-        "remove": "Remove"
+        "remove": "Remove",
+        "rename": "Rename",
+        "renamePlaceholder": "Enter desktop name",
+        "overview": "Task View / Overview",
+        "next": "Next Desktop",
+        "prev": "Previous Desktop",
+        "noWindows": "No open windows on this desktop",
+        "dragToMove": "Drag to thumbnail to move",
+        "dragToNew": "Drop to create new desktop",
+        "switchTo": "Switch to {name}",
+        "shortcutsHint": "Press Win+Tab or Ctrl+Alt+Up to toggle Overview",
+        "swipeUpToClose": "Swipe up to close"
       },
       "spotlight": {
         "open": "Spotlight Search",
@@ -45,6 +57,24 @@
         "mountRemoved": "Working directory removed",
         "mountRequired": "Working directory is required",
         "unsupported": "File System Access API is not available in this browser"
+      },
+      "shortcuts": {
+        "toggleOverview": "Toggle Task View (Overview)",
+        "toggleOverviewDesc": "Show all open windows and virtual desktops",
+        "prevDesktop": "Previous Virtual Desktop",
+        "prevDesktopDesc": "Switch to virtual desktop on the left",
+        "nextDesktop": "Next Virtual Desktop",
+        "nextDesktopDesc": "Switch to virtual desktop on the right",
+        "toggleSpotlight": "Toggle Spotlight Search",
+        "toggleSpotlightDesc": "Quickly search and launch apps or windows",
+        "toggleLauncher": "Toggle App Launcher",
+        "toggleLauncherDesc": "Open or close the Start menu / app grid",
+        "closeWindow": "Close Active Window",
+        "closeWindowDesc": "Close the currently focused window",
+        "minimizeWindow": "Minimize Active Window",
+        "minimizeWindowDesc": "Minimize the currently focused window",
+        "maximizeWindow": "Maximize / Restore Window",
+        "maximizeWindowDesc": "Toggle maximize state of currently focused window"
       }
     }
   }

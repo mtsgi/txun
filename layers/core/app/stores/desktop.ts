@@ -158,6 +158,12 @@ export interface DesktopState {
   taskbarTaskAlign: TaskbarTaskAlign
   /** タスクリストのアイテム表示形式 */
   taskbarTaskDisplay: TaskbarTaskDisplay
+  /** 仮想デスクトップ切り替え方向アニメーション用 */
+  slideDirection: 'left' | 'right' | 'none'
+  /** 画面上部ホバー式仮想デスクトップバーの表示設定 */
+  showTopVDesktopBar: boolean
+  /** カスタマイズ可能なキーボードショートカット */
+  shortcuts: Record<string, string>
 }
 
 export const useDesktopStore = defineStore('desktop', {
@@ -183,7 +189,19 @@ export const useDesktopStore = defineStore('desktop', {
     taskbarPosition: 'bottom',
     taskbarSize: 'md',
     taskbarTaskAlign: 'start',
-    taskbarTaskDisplay: 'icon-label'
+    taskbarTaskDisplay: 'icon-label',
+    slideDirection: 'none',
+    showTopVDesktopBar: true,
+    shortcuts: {
+      toggleOverview: 'Ctrl+Alt+ArrowUp',
+      prevDesktop: 'Ctrl+Alt+ArrowLeft',
+      nextDesktop: 'Ctrl+Alt+ArrowRight',
+      toggleSpotlight: 'Ctrl+k',
+      toggleLauncher: 'Alt+Space',
+      closeWindow: 'Alt+w',
+      minimizeWindow: 'Alt+m',
+      maximizeWindow: 'Alt+Enter'
+    }
   }),
 
   getters: {
@@ -354,12 +372,128 @@ export const useDesktopStore = defineStore('desktop', {
     },
 
     /**
+     * 指定 ID の仮想デスクトップの名前を変更する。
+     * @param id - 変更対象の仮想デスクトップ ID
+     * @param name - 新しい表示名
+     */
+    renameVirtualDesktop(id: string, name: string): void {
+      const trimmed = name.trim()
+      if (!trimmed) return
+      const target = this.virtualDesktops.find(d => d.id === id)
+      if (target) {
+        target.name = trimmed
+      }
+    },
+
+    /**
+     * 指定ウィンドウを別の仮想デスクトップに移動する。
+     * @param windowId - 移動対象のウィンドウ ID
+     * @param targetDesktopId - 移動先の仮想デスクトップ ID
+     */
+    moveWindowToDesktop(windowId: string, targetDesktopId: string): void {
+      if (!this.virtualDesktops.some(d => d.id === targetDesktopId)) return
+      const win = this.windows.find(w => w.id === windowId)
+      if (win) {
+        win.virtualDesktopId = targetDesktopId
+      }
+    },
+
+    /**
      * 指定 ID の仮想デスクトップに切り替える。
      * @param id - 切り替え先の仮想デスクトップの ID
      */
     switchVirtualDesktop(id: string): void {
-      if (this.virtualDesktops.some(d => d.id === id)) {
+      if (id === this.activeVirtualDesktopId) return
+      const currentIdx = this.virtualDesktops.findIndex(d => d.id === this.activeVirtualDesktopId)
+      const targetIdx = this.virtualDesktops.findIndex(d => d.id === id)
+      if (targetIdx !== -1) {
+        this.slideDirection = targetIdx > currentIdx ? 'right' : 'left'
         this.activeVirtualDesktopId = id
+      }
+    },
+
+    /** 次の仮想デスクトップに切り替える（あれば）。 */
+    switchToNextDesktop(): void {
+      const currentIdx = this.virtualDesktops.findIndex(d => d.id === this.activeVirtualDesktopId)
+      if (currentIdx !== -1 && currentIdx < this.virtualDesktops.length - 1) {
+        const next = this.virtualDesktops[currentIdx + 1]
+        if (next) this.switchVirtualDesktop(next.id)
+      }
+    },
+
+    /** 前の仮想デスクトップに切り替える（あれば）。 */
+    switchToPrevDesktop(): void {
+      const currentIdx = this.virtualDesktops.findIndex(d => d.id === this.activeVirtualDesktopId)
+      if (currentIdx > 0) {
+        const prev = this.virtualDesktops[currentIdx - 1]
+        if (prev) this.switchVirtualDesktop(prev.id)
+      }
+    },
+
+    /**
+     * 画面上部ホバー式仮想デスクトップバーの表示設定を変更する。
+     * @param show - 表示するかどうか
+     */
+    setShowTopVDesktopBar(show: boolean): void {
+      this.showTopVDesktopBar = show
+    },
+
+    /**
+     * ショートカットキーを設定する。
+     * @param action - アクションID
+     * @param keyCombo - キーコンビネーション文字列
+     */
+    setShortcut(action: string, keyCombo: string): void {
+      this.shortcuts = {
+        ...this.shortcuts,
+        [action]: keyCombo
+      }
+    },
+
+    /**
+     * すべてのショートカットキーを設定する。
+     * @param shortcuts - ショートカットのマップ
+     */
+    setShortcuts(shortcuts: Record<string, string>): void {
+      this.shortcuts = {
+        ...this.shortcuts,
+        ...shortcuts
+      }
+    },
+
+    /**
+     * 指定ショートカットをデフォルト値にリセットする。
+     * @param action - アクションID
+     */
+    resetShortcut(action: string): void {
+      const DEFAULT_SHORTCUTS: Record<string, string> = {
+        toggleOverview: 'Ctrl+Alt+ArrowUp',
+        prevDesktop: 'Ctrl+Alt+ArrowLeft',
+        nextDesktop: 'Ctrl+Alt+ArrowRight',
+        toggleSpotlight: 'Ctrl+k',
+        toggleLauncher: 'Alt+Space',
+        closeWindow: 'Alt+w',
+        minimizeWindow: 'Alt+m',
+        maximizeWindow: 'Alt+Enter'
+      }
+      if (DEFAULT_SHORTCUTS[action]) {
+        this.setShortcut(action, DEFAULT_SHORTCUTS[action])
+      }
+    },
+
+    /**
+     * すべてのショートカットをデフォルト値にリセットする。
+     */
+    resetShortcuts(): void {
+      this.shortcuts = {
+        toggleOverview: 'Ctrl+Alt+ArrowUp',
+        prevDesktop: 'Ctrl+Alt+ArrowLeft',
+        nextDesktop: 'Ctrl+Alt+ArrowRight',
+        toggleSpotlight: 'Ctrl+k',
+        toggleLauncher: 'Alt+Space',
+        closeWindow: 'Alt+w',
+        minimizeWindow: 'Alt+m',
+        maximizeWindow: 'Alt+Enter'
       }
     },
 

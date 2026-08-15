@@ -19,6 +19,8 @@ type UserSettings = {
   taskbarSize?: TaskbarSize
   taskbarTaskAlign?: TaskbarTaskAlign
   taskbarTaskDisplay?: TaskbarTaskDisplay
+  showTopVDesktopBar?: boolean
+  shortcuts?: Record<string, string>
 }
 
 /** CSS 変数 --ui-radius / --desktop-radius に設定する値のマッピング */
@@ -91,6 +93,15 @@ const { isOpen: launcherOpen, initLauncher } = useLauncher()
 const { openSpotlight } = useSpotlight()
 const { setTheme, setLocale } = useWindowManager()
 const { saveState, loadState } = useDesktopStorage()
+const {
+  toggleOverview,
+  closeOverview,
+  isOverviewOpen,
+  nextDesktop,
+  prevDesktop,
+  switchDesktop,
+  desktops
+} = useVirtualDesktop()
 const fileSystemStore = useFileSystemStore()
 
 const isMobile = computed(() => screenWidth.value < MOBILE_BREAKPOINT)
@@ -143,12 +154,118 @@ const vdesktopTransitionName = computed(() =>
   store.taskbarPosition === 'top' ? 'vdesktop-slide-up' : 'vdesktop-slide-down'
 )
 
-function onKeydown(e: KeyboardEvent) {
-  if (e.ctrlKey && e.key === 'k') {
-    e.preventDefault()
-    openSpotlight()
+const { toDefineShortcutKey } = useShortcuts()
+
+const shellShortcuts = computed(() => {
+  const config: Record<string, { handler: () => void, usingInput?: boolean }> = {}
+
+  // Escape で Overview を閉じる
+  config['escape'] = {
+    handler: () => {
+      if (isOverviewOpen.value) closeOverview()
+    },
+    usingInput: true
   }
-}
+
+  // スポットライト検索トグル
+  const spotlightKey = toDefineShortcutKey(store.shortcuts?.toggleSpotlight || 'Ctrl+k')
+  if (spotlightKey) {
+    config[spotlightKey] = {
+      handler: () => openSpotlight(),
+      usingInput: false
+    }
+  }
+
+  // アプリランチャートグル
+  const launcherKey = toDefineShortcutKey(store.shortcuts?.toggleLauncher || 'Alt+Space')
+  if (launcherKey) {
+    config[launcherKey] = {
+      handler: () => initLauncher(),
+      usingInput: false
+    }
+  }
+
+  // タスクビュー / Overview トグル
+  const overviewKey = toDefineShortcutKey(store.shortcuts?.toggleOverview || 'Ctrl+Alt+ArrowUp')
+  if (overviewKey) {
+    config[overviewKey] = {
+      handler: () => toggleOverview(),
+      usingInput: false
+    }
+  }
+  // 予備ショートカット（Win+Tab, Ctrl+Shift+Tab, Ctrl+` 等）
+  config['ctrl_shift_tab'] = { handler: () => toggleOverview(), usingInput: false }
+  config['ctrl_`'] = { handler: () => toggleOverview(), usingInput: false }
+  config['meta_arrowup'] = { handler: () => toggleOverview(), usingInput: false }
+
+  // 前の仮想デスクトップへ移動
+  const prevKey = toDefineShortcutKey(store.shortcuts?.prevDesktop || 'Ctrl+Alt+ArrowLeft')
+  if (prevKey) {
+    config[prevKey] = {
+      handler: () => prevDesktop(),
+      usingInput: false
+    }
+  }
+  config['meta_ctrl_arrowleft'] = { handler: () => prevDesktop(), usingInput: false }
+
+  // 次の仮想デスクトップへ移動
+  const nextKey = toDefineShortcutKey(store.shortcuts?.nextDesktop || 'Ctrl+Alt+ArrowRight')
+  if (nextKey) {
+    config[nextKey] = {
+      handler: () => nextDesktop(),
+      usingInput: false
+    }
+  }
+  config['meta_ctrl_arrowright'] = { handler: () => nextDesktop(), usingInput: false }
+
+  // アクティブウィンドウを閉じる
+  const closeWindowKey = toDefineShortcutKey(store.shortcuts?.closeWindow || 'Alt+w')
+  if (closeWindowKey) {
+    config[closeWindowKey] = {
+      handler: () => {
+        if (store.topWindow) store.closeWindow(store.topWindow.id)
+      },
+      usingInput: false
+    }
+  }
+
+  // アクティブウィンドウを最小化
+  const minWindowKey = toDefineShortcutKey(store.shortcuts?.minimizeWindow || 'Alt+m')
+  if (minWindowKey) {
+    config[minWindowKey] = {
+      handler: () => {
+        if (store.topWindow) store.minimizeWindow(store.topWindow.id)
+      },
+      usingInput: false
+    }
+  }
+
+  // アクティブウィンドウを最大化/元に戻す
+  const maxWindowKey = toDefineShortcutKey(store.shortcuts?.maximizeWindow || 'Alt+Enter')
+  if (maxWindowKey) {
+    config[maxWindowKey] = {
+      handler: () => {
+        if (store.topWindow) store.toggleMaximize(store.topWindow.id)
+      },
+      usingInput: false
+    }
+  }
+
+  // Alt + 1..9 で対応するデスクトップへジャンプ
+  for (let i = 1; i <= 9; i++) {
+    config[`alt_${i}`] = {
+      handler: () => {
+        const target = desktops.value[i - 1]
+        if (target) switchDesktop(target.id)
+      },
+      usingInput: false
+    }
+  }
+
+  return config
+})
+
+defineShortcuts(shellShortcuts)
 
 function updateSize() {
   if (!shellRef.value) return
@@ -159,7 +276,6 @@ function updateSize() {
 onMounted(async () => {
   updateSize()
   window.addEventListener('resize', updateSize)
-  window.addEventListener('keydown', onKeydown)
   initLauncher()
   await fileSystemStore.restoreMounts()
 
@@ -192,6 +308,8 @@ onMounted(async () => {
     if (saved.taskbarSize) store.setTaskbarSize(saved.taskbarSize)
     if (saved.taskbarTaskAlign) store.setTaskbarTaskAlign(saved.taskbarTaskAlign)
     if (saved.taskbarTaskDisplay) store.setTaskbarTaskDisplay(saved.taskbarTaskDisplay)
+    if (saved.showTopVDesktopBar !== undefined) store.setShowTopVDesktopBar(saved.showTopVDesktopBar)
+    if (saved.shortcuts) store.setShortcuts(saved.shortcuts)
   } else {
     // 初回起動時もデフォルト値を CSS に反映
     applyRadius(store.radius)
@@ -218,7 +336,9 @@ watch(
     () => store.taskbarPosition,
     () => store.taskbarSize,
     () => store.taskbarTaskAlign,
-    () => store.taskbarTaskDisplay
+    () => store.taskbarTaskDisplay,
+    () => store.showTopVDesktopBar,
+    () => store.shortcuts
   ],
   async () => {
     await saveState(SETTINGS_KEY, {
@@ -236,9 +356,12 @@ watch(
       taskbarPosition: store.taskbarPosition,
       taskbarSize: store.taskbarSize,
       taskbarTaskAlign: store.taskbarTaskAlign,
-      taskbarTaskDisplay: store.taskbarTaskDisplay
+      taskbarTaskDisplay: store.taskbarTaskDisplay,
+      showTopVDesktopBar: store.showTopVDesktopBar,
+      shortcuts: store.shortcuts
     })
-  }
+  },
+  { deep: true }
 )
 
 watch(() => store.uiScale, scale => applyUIScale(scale))
@@ -249,7 +372,6 @@ watch(() => store.radius, radius => applyRadius(radius))
 
 onUnmounted(() => {
   window.removeEventListener('resize', updateSize)
-  window.removeEventListener('keydown', onKeydown)
 })
 </script>
 
@@ -264,7 +386,7 @@ onUnmounted(() => {
 
     <!-- Virtual desktop indicator (hover zone, PC only) -->
     <div
-      v-if="!isMobile"
+      v-if="!isMobile && store.showTopVDesktopBar"
       class="vdesktop-trigger"
       :style="vdesktopTriggerStyle"
       @mouseenter="vDesktopVisible = true"
@@ -308,6 +430,13 @@ onUnmounted(() => {
         :taskbar-size-px="taskbarSizePx"
       />
     </Transition>
+
+    <!-- Virtual Desktop Overview (Mission Control / Task View) -->
+    <DesktopVirtualDesktopOverview
+      :screen-width="screenWidth"
+      :screen-height="screenHeight"
+      :is-mobile="isMobile"
+    />
   </div>
 </template>
 

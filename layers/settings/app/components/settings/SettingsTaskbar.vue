@@ -78,6 +78,23 @@ const store = useDesktopStore()
         />
       </div>
     </div>
+    <!-- 画面端ホバーバー -->
+    <div class="field">
+      <div class="toggle-field">
+        <div class="toggle-info">
+          <p class="field-label">
+            {{ $t('apps.settings.showTopVDesktopBar') }}
+          </p>
+          <p class="field-desc">
+            {{ $t('apps.settings.showTopVDesktopBarDesc') }}
+          </p>
+        </div>
+        <USwitch
+          :model-value="store.showTopVDesktopBar"
+          @update:model-value="store.setShowTopVDesktopBar"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -110,5 +127,26 @@ const store = useDesktopStore()
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+}
+
+.toggle-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.toggle-info {
+  flex: 1;
+
+  .field-label {
+    margin-bottom: 0.125rem;
+  }
+
+  .field-desc {
+    font-size: 0.75rem;
+    color: var(--ui-text-muted);
+    margin: 0;
+  }
 }
 </style>
