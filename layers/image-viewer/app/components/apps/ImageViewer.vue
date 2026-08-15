@@ -28,6 +28,7 @@ const containerRef = ref<HTMLElement | null>(null)
 const containerWidth = ref(700)
 
 let currentObjectUrl: string | null = null
+let currentDataUrl: string | null = null
 
 const isCompact = computed(() => containerWidth.value < 860)
 
@@ -63,6 +64,14 @@ async function openPath(path: string, selectedMountId?: string): Promise<void> {
     zoom.value = 1
     rotation.value = 0
 
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        currentDataUrl = reader.result
+      }
+    }
+    reader.readAsDataURL(blob)
+
     const name = path.split('/').filter(Boolean).at(-1) || 'image'
     imageInfo.value = {
       name,
@@ -70,6 +79,16 @@ async function openPath(path: string, selectedMountId?: string): Promise<void> {
     }
   } catch (error) {
     localError.value = toErrorMessage(error)
+  }
+}
+
+function setAsWallpaper(): void {
+  if (currentDataUrl) {
+    store.setWallpaper(currentDataUrl)
+    notify(t('apps.imageViewer.wallpaperApplied'), { type: 'success' })
+  } else if (imageUrl.value) {
+    store.setWallpaper(imageUrl.value)
+    notify(t('apps.imageViewer.wallpaperApplied'), { type: 'success' })
   }
 }
 
@@ -217,6 +236,15 @@ onBeforeUnmount(() => {
           size="sm"
           :disabled="!imageUrl"
           @click="zoomReset"
+        />
+        <UButton
+          icon="i-lucide-image"
+          :title="t('apps.imageViewer.setAsWallpaper')"
+          variant="ghost"
+          color="neutral"
+          size="sm"
+          :disabled="!imageUrl"
+          @click="setAsWallpaper"
         />
       </div>
     </div>

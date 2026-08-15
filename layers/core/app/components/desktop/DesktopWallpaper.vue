@@ -15,18 +15,61 @@ const WALLPAPER_PRESETS: Record<string, string> = {
   'solid-light': '#e5e7eb'
 }
 
-const wallpaperCss = computed(() => {
-  const w = store.wallpaper
-  // http/https URL または絶対パスの場合は background-image として扱う
-  if (w.startsWith('http://') || w.startsWith('https://') || w.startsWith('/')) {
-    return `url("${w}")`
-  }
-  return WALLPAPER_PRESETS[w] ?? WALLPAPER_PRESETS['gradient-default'] ?? ''
-})
-
 const isImageUrl = computed(() => {
   const w = store.wallpaper
-  return w.startsWith('http://') || w.startsWith('https://') || w.startsWith('/')
+  return (
+    w.startsWith('http://')
+    || w.startsWith('https://')
+    || w.startsWith('/')
+    || w.startsWith('data:')
+    || w.startsWith('blob:')
+  )
+})
+
+const wallpaperStyle = computed(() => {
+  const w = store.wallpaper
+  const fit = store.wallpaperFit || 'cover'
+  const brightness = store.wallpaperBrightness ?? 100
+  const blur = store.wallpaperBlur ?? 0
+
+  const filterParts: string[] = []
+  if (brightness !== 100) {
+    filterParts.push(`brightness(${brightness}%)`)
+  }
+  if (blur > 0) {
+    filterParts.push(`blur(${blur}px)`)
+  }
+  const filter = filterParts.length > 0 ? filterParts.join(' ') : 'none'
+
+  if (isImageUrl.value) {
+    let backgroundSize = 'cover'
+    const backgroundRepeat = 'no-repeat'
+    const backgroundPosition = 'center'
+
+    if (fit === 'contain') {
+      backgroundSize = 'contain'
+    } else if (fit === 'center') {
+      backgroundSize = 'auto'
+    } else if (fit === 'fill') {
+      backgroundSize = '100% 100%'
+    }
+
+    return {
+      backgroundImage: `url("${w}")`,
+      backgroundSize,
+      backgroundRepeat,
+      backgroundPosition,
+      filter,
+      transform: blur > 0 ? 'scale(1.06)' : 'none',
+      transition: 'filter 0.2s ease, transform 0.2s ease'
+    }
+  }
+
+  return {
+    background: WALLPAPER_PRESETS[w] ?? WALLPAPER_PRESETS['gradient-default'] ?? '',
+    filter,
+    transition: 'filter 0.2s ease'
+  }
 })
 const { openSpotlight } = useSpotlight()
 const { addDesktop } = useVirtualDesktop()
@@ -89,14 +132,23 @@ const contextMenuItems = computed(() => {
 
 <template>
   <UContextMenu :items="contextMenuItems">
-    <div
-      class="wallpaper"
-      :style="isImageUrl ? { backgroundImage: wallpaperCss, backgroundSize: 'cover', backgroundPosition: 'center' } : { background: wallpaperCss }"
-    />
+    <div class="wallpaper-container">
+      <div
+        class="wallpaper"
+        :style="wallpaperStyle"
+      />
+    </div>
   </UContextMenu>
 </template>
 
 <style lang="scss" scoped>
+.wallpaper-container {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: auto;
+}
+
 .wallpaper {
   position: absolute;
   inset: 0;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { AppFont, AppRadius, AppUIScale, AppFontSize, TaskbarPosition, TaskbarSize, TaskbarTaskAlign, TaskbarTaskDisplay, TimeFormat } from '../../stores/desktop'
+import type { AppFont, AppRadius, AppUIScale, AppFontSize, TaskbarPosition, TaskbarSize, TaskbarTaskAlign, TaskbarTaskDisplay, TimeFormat, WallpaperFit } from '../../stores/desktop'
 import type { TaskbarInsets } from '../../utils/window-manager'
 import { useClipboardStore } from '../../stores/clipboard'
 
@@ -10,6 +10,9 @@ type UserSettings = {
   font: AppFont
   primaryColor: string
   wallpaper: string
+  wallpaperFit?: WallpaperFit
+  wallpaperBrightness?: number
+  wallpaperBlur?: number
   radius: AppRadius
   uiScale?: AppUIScale
   safeArea?: boolean
@@ -399,6 +402,9 @@ onMounted(async () => {
     if (saved.font) store.setFont(saved.font)
     if (saved.primaryColor) store.setPrimaryColor(saved.primaryColor)
     if (saved.wallpaper) store.setWallpaper(saved.wallpaper)
+    if (saved.wallpaperFit) store.setWallpaperFit(saved.wallpaperFit)
+    if (saved.wallpaperBrightness !== undefined) store.setWallpaperBrightness(saved.wallpaperBrightness)
+    if (saved.wallpaperBlur !== undefined) store.setWallpaperBlur(saved.wallpaperBlur)
     if (saved.radius) {
       store.setRadius(saved.radius)
       applyRadius(saved.radius)
@@ -442,6 +448,9 @@ watch(
     () => store.font,
     () => store.primaryColor,
     () => store.wallpaper,
+    () => store.wallpaperFit,
+    () => store.wallpaperBrightness,
+    () => store.wallpaperBlur,
     () => store.radius,
     () => store.uiScale,
     () => store.safeArea,
@@ -464,6 +473,9 @@ watch(
       font: store.font,
       primaryColor: store.primaryColor,
       wallpaper: store.wallpaper,
+      wallpaperFit: store.wallpaperFit,
+      wallpaperBrightness: store.wallpaperBrightness,
+      wallpaperBlur: store.wallpaperBlur,
       radius: store.radius,
       uiScale: store.uiScale,
       safeArea: store.safeArea,

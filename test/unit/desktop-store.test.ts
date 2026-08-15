@@ -365,4 +365,48 @@ describe('useDesktopStore', () => {
       expect(store.primaryColor).toBe('blue')
     })
   })
+
+  // ── wallpaper settings ─────────────────────────────────────────
+  describe('wallpaper settings', () => {
+    it('sets wallpaper id or url', () => {
+      const store = useDesktopStore()
+      store.setWallpaper('gradient-sunset')
+      expect(store.wallpaper).toBe('gradient-sunset')
+      store.setWallpaper('https://example.com/custom.jpg')
+      expect(store.wallpaper).toBe('https://example.com/custom.jpg')
+    })
+
+    it('sets wallpaper fit mode', () => {
+      const store = useDesktopStore()
+      expect(store.wallpaperFit).toBe('cover')
+      store.setWallpaperFit('contain')
+      expect(store.wallpaperFit).toBe('contain')
+      store.setWallpaperFit('center')
+      expect(store.wallpaperFit).toBe('center')
+      store.setWallpaperFit('fill')
+      expect(store.wallpaperFit).toBe('fill')
+    })
+
+    it('sets wallpaper brightness within 50 to 150 range', () => {
+      const store = useDesktopStore()
+      expect(store.wallpaperBrightness).toBe(100)
+      store.setWallpaperBrightness(120)
+      expect(store.wallpaperBrightness).toBe(120)
+      store.setWallpaperBrightness(30)
+      expect(store.wallpaperBrightness).toBe(50)
+      store.setWallpaperBrightness(200)
+      expect(store.wallpaperBrightness).toBe(150)
+    })
+
+    it('sets wallpaper blur within 0 to 20 range', () => {
+      const store = useDesktopStore()
+      expect(store.wallpaperBlur).toBe(0)
+      store.setWallpaperBlur(10)
+      expect(store.wallpaperBlur).toBe(10)
+      store.setWallpaperBlur(-5)
+      expect(store.wallpaperBlur).toBe(0)
+      store.setWallpaperBlur(35)
+      expect(store.wallpaperBlur).toBe(20)
+    })
+  })
 })

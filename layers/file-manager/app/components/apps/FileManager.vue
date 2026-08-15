@@ -494,10 +494,36 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
+const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.ico', '.avif', '.tif', '.tiff'])
+
+function isImageFile(path: string): boolean {
+  const ext = '.' + path.split('.').pop()?.toLowerCase()
+  return IMAGE_EXTENSIONS.has(ext)
+}
+
+async function setEntryAsWallpaper(entry: FileSystemEntry): Promise<void> {
+  const mountId = fileSystem.activeMountId.value
+  if (!mountId) return
+  try {
+    const blob = await fileSystem.readFileBlob(entry.path, mountId)
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        desktopStore.setWallpaper(reader.result)
+        notify(t('apps.fileManager.setAsWallpaper') + ': ' + entry.name, { type: 'success' })
+      }
+    }
+    reader.readAsDataURL(blob)
+  } catch (err) {
+    notify(err instanceof Error ? err.message : t('apps.fileManager.errorGeneric'), { type: 'error' })
+  }
+}
+
 // Menus and context items mapping
 const contextMenuItems = computed(() => (entry: FileSystemEntry) => {
   const isDir = entry.kind === 'directory'
   const isPinned = favorites.value.includes(entry.path)
+  const isImage = !isDir && isImageFile(entry.path)
   const menu: { label: string, icon: string, onSelect: () => void, color?: 'error' }[][] = [
     [
       {
@@ -523,6 +549,15 @@ const contextMenuItems = computed(() => (entry: FileSystemEntry) => {
         onSelect: () => handleCopy(entry)
       }
     ],
+    ...(isImage
+      ? [[
+          {
+            label: t('apps.fileManager.setAsWallpaper'),
+            icon: 'i-lucide-image',
+            onSelect: () => void setEntryAsWallpaper(entry)
+          }
+        ]]
+      : []),
     [
       {
         label: isPinned ? t('apps.fileManager.unpinFromFavorites') : t('apps.fileManager.pinToFavorites'),

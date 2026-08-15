@@ -8,6 +8,8 @@
       "zoomOut": "Zoom Out",
       "reset": "Reset",
       "rotate": "Rotate",
+      "setAsWallpaper": "Set as Wallpaper",
+      "wallpaperApplied": "Wallpaper applied",
       "mount": "Working Directory",
       "addMount": "Add",
       "mountAdded": "Working directory added: {name}",

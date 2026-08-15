@@ -554,6 +554,7 @@ const clockContextMenuItems = computed(() => {
             :class="{ 'is-open': isClockFlyoutOpen }"
             :aria-label="$t('core.desktop.clock.title')"
             :aria-expanded="isClockFlyoutOpen"
+            @click="isClockFlyoutOpen = !isClockFlyoutOpen"
           >
             <div class="clock-time">
               {{ timeLabel }}

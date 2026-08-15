@@ -117,6 +117,9 @@ export interface LauncherFolder {
   appIds: string[]
 }
 
+/** 壁紙のフィット方式 */
+export type WallpaperFit = 'cover' | 'contain' | 'center' | 'fill'
+
 /** デスクトップ全体の状態ツリーを表すインターフェース */
 export interface DesktopState {
   /** 開いているウィンドウ一覧 */
@@ -141,6 +144,12 @@ export interface DesktopState {
   nextZIndex: number
   /** 壁紙プリセット ID または CSS 文字列 */
   wallpaper: string
+  /** 壁紙のフィット方式 */
+  wallpaperFit: WallpaperFit
+  /** 壁紙の明るさ（50 - 150 %） */
+  wallpaperBrightness: number
+  /** 壁紙のぼかし（0 - 20 px） */
+  wallpaperBlur: number
   /** ボーダー半径設定 */
   radius: AppRadius
   /** UI 全体のスケール設定 */
@@ -188,6 +197,9 @@ export const useDesktopStore = defineStore('desktop', {
     apps: [],
     nextZIndex: 100,
     wallpaper: 'gradient-default',
+    wallpaperFit: 'cover',
+    wallpaperBrightness: 100,
+    wallpaperBlur: 0,
     radius: 'md',
     uiScale: 'md',
     safeArea: false,
@@ -598,10 +610,34 @@ export const useDesktopStore = defineStore('desktop', {
 
     /**
      * 壁紙を変更する。
-     * @param wallpaper - 壁紙プリセット ID
+     * @param wallpaper - 壁紙プリセット ID または画像 URL
      */
     setWallpaper(wallpaper: string): void {
       this.wallpaper = wallpaper
+    },
+
+    /**
+     * 壁紙のフィット方式を変更する。
+     * @param fit - フィット方式 ('cover' | 'contain' | 'center' | 'fill')
+     */
+    setWallpaperFit(fit: WallpaperFit): void {
+      this.wallpaperFit = fit
+    },
+
+    /**
+     * 壁紙の明るさを変更する。
+     * @param brightness - 明るさ（50 - 150 %）
+     */
+    setWallpaperBrightness(brightness: number): void {
+      this.wallpaperBrightness = Math.max(50, Math.min(150, brightness))
+    },
+
+    /**
+     * 壁紙のぼかしを変更する。
+     * @param blur - ぼかし（0 - 20 px）
+     */
+    setWallpaperBlur(blur: number): void {
+      this.wallpaperBlur = Math.max(0, Math.min(20, blur))
     },
 
     /**
