@@ -96,9 +96,10 @@ function onRecordKeydown(e: KeyboardEvent) {
 
   if (conflicting) {
     conflictWarning.value = t('apps.settings.shortcutsConflict', { action: t(conflicting.labelKey) })
-  } else {
-    conflictWarning.value = null
+    return
   }
+
+  conflictWarning.value = null
 
   // 設定を保存して記録モード終了
   store.setShortcut(recordingActionId.value, combo)

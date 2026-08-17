@@ -261,7 +261,7 @@ export const useDesktopStore = defineStore('desktop', {
      * @returns 生成したウィンドウの ID
      */
     openWindow(app: AppMeta, options?: Partial<WindowState>): string {
-      if (!app.multiInstance) {
+      if (app.multiInstance === false) {
         const existing = this.windows.find(
           w => w.appId === app.id && w.virtualDesktopId === this.activeVirtualDesktopId
         )
@@ -551,6 +551,7 @@ export const useDesktopStore = defineStore('desktop', {
         nextDesktop: 'Ctrl+Alt+ArrowRight',
         toggleSpotlight: 'Ctrl+k',
         toggleLauncher: 'Alt+Space',
+        toggleClipboardHistory: 'Meta+v',
         closeWindow: 'Alt+w',
         minimizeWindow: 'Alt+m',
         maximizeWindow: 'Alt+Enter'
@@ -570,6 +571,7 @@ export const useDesktopStore = defineStore('desktop', {
         nextDesktop: 'Ctrl+Alt+ArrowRight',
         toggleSpotlight: 'Ctrl+k',
         toggleLauncher: 'Alt+Space',
+        toggleClipboardHistory: 'Meta+v',
         closeWindow: 'Alt+w',
         minimizeWindow: 'Alt+m',
         maximizeWindow: 'Alt+Enter'

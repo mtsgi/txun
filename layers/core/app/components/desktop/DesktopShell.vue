@@ -97,7 +97,7 @@ const vDesktopVisible = ref(false)
 const store = useDesktopStore()
 const clipboardStore = useClipboardStore()
 const editableContextMenuRef = ref<{ openMenu: (e: MouseEvent, target: HTMLElement) => void, closeMenu: () => void } | null>(null)
-const { isOpen: launcherOpen, initLauncher } = useLauncher()
+const { isOpen: launcherOpen, toggleLauncher, initLauncher } = useLauncher()
 const { openSpotlight } = useSpotlight()
 const { setTheme, setLocale } = useWindowManager()
 const { saveState, loadState } = useDesktopStorage()
@@ -188,7 +188,7 @@ const shellShortcuts = computed(() => {
   const launcherKey = toDefineShortcutKey(store.shortcuts?.toggleLauncher || 'Alt+Space')
   if (launcherKey) {
     config[launcherKey] = {
-      handler: () => initLauncher(),
+      handler: () => toggleLauncher(),
       usingInput: false
     }
   }
@@ -335,15 +335,27 @@ function onGlobalSelectionChange() {
   }
 }
 
-function onGlobalCopy(_e: ClipboardEvent) {
-  const sel = window.getSelection()?.toString()
+function getTargetSelectionText(e: ClipboardEvent): string {
+  const target = (e.target as HTMLElement | null) || (typeof document !== 'undefined' ? (document.activeElement as HTMLElement | null) : null)
+  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+    const start = target.selectionStart ?? 0
+    const end = target.selectionEnd ?? 0
+    if (start !== end) {
+      return target.value.substring(start, end)
+    }
+  }
+  return window.getSelection()?.toString() || ''
+}
+
+function onGlobalCopy(e: ClipboardEvent) {
+  const sel = getTargetSelectionText(e)
   if (sel && sel.trim()) {
     clipboardStore.copyText(sel, { syncNative: false })
   }
 }
 
-function onGlobalCut(_e: ClipboardEvent) {
-  const sel = window.getSelection()?.toString()
+function onGlobalCut(e: ClipboardEvent) {
+  const sel = getTargetSelectionText(e)
   if (sel && sel.trim()) {
     clipboardStore.copyText(sel, { syncNative: false })
   }

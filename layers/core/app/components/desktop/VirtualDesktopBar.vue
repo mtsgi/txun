@@ -63,32 +63,38 @@ const barStyle = computed<CSSProperties>(() =>
       class="vdesktop-sep"
     />
 
-    <UTooltip
+    <div
       v-for="desktop in desktops"
       :key="desktop.id"
-      :text="$t('core.desktop.virtualDesktop.switchTo', { name: desktop.name })"
+      class="vdesktop-item"
+      :class="[
+        desktop.id === activeId ? 'active' : 'inactive',
+        { 'has-close': desktops.length > 1 && editingId !== desktop.id }
+      ]"
     >
-      <button
-        class="vdesktop-btn"
-        :class="desktop.id === activeId ? 'active' : 'inactive'"
-        @click="switchDesktop(desktop.id)"
-        @dblclick.stop="startRename(desktop.id, desktop.name)"
-      >
-        <template v-if="editingId === desktop.id">
-          <UInput
-            v-model="editingName"
-            size="xs"
-            class="vdesktop-inline-input"
-            autofocus
-            @blur="saveRename(desktop.id)"
-            @keydown.enter="saveRename(desktop.id)"
-            @keydown.esc="editingId = null"
-            @click.stop
-          />
-        </template>
-        <template v-else>
-          <span>{{ desktop.name }}</span>
-        </template>
+      <template v-if="editingId === desktop.id">
+        <UInput
+          v-model="editingName"
+          size="xs"
+          class="vdesktop-inline-input"
+          autofocus
+          @blur="saveRename(desktop.id)"
+          @keydown.enter="saveRename(desktop.id)"
+          @keydown.esc="editingId = null"
+          @click.stop
+        />
+      </template>
+      <template v-else>
+        <UTooltip :text="$t('core.desktop.virtualDesktop.switchTo', { name: desktop.name })">
+          <button
+            type="button"
+            class="vdesktop-btn"
+            @click="switchDesktop(desktop.id)"
+            @dblclick.stop="startRename(desktop.id, desktop.name)"
+          >
+            <span>{{ desktop.name }}</span>
+          </button>
+        </UTooltip>
 
         <UButton
           v-if="desktops.length > 1"
@@ -99,8 +105,8 @@ const barStyle = computed<CSSProperties>(() =>
           :aria-label="$t('core.desktop.virtualDesktop.remove')"
           @click.stop="removeDesktop(desktop.id)"
         />
-      </button>
-    </UTooltip>
+      </template>
+    </div>
 
     <UButton
       size="xs"
@@ -130,17 +136,18 @@ const barStyle = computed<CSSProperties>(() =>
   backdrop-filter: blur(var(--desktop-blur));
 }
 
-.vdesktop-btn {
+.vdesktop-item {
   display: flex;
   align-items: center;
-  gap: 0.375rem;
+  gap: 0.25rem;
   border-radius: 9999px;
   padding: 0.125rem 0.625rem;
   font-size: 0.75rem;
-  border: none;
-  cursor: pointer;
   transition: background-color 0.15s, color 0.15s;
-  color: inherit;
+
+  &.has-close {
+    padding-right: 0.25rem;
+  }
 
   &.active {
     background: var(--ui-primary);
@@ -156,6 +163,18 @@ const barStyle = computed<CSSProperties>(() =>
       color: var(--ui-text);
     }
   }
+}
+
+.vdesktop-btn {
+  display: flex;
+  align-items: center;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 0.75rem;
+  color: inherit;
+  cursor: pointer;
+  line-height: 1.25rem;
 }
 
 .vdesktop-overview-btn {
@@ -174,7 +193,6 @@ const barStyle = computed<CSSProperties>(() =>
 }
 
 .vdesktop-close {
-  margin-right: -0.25rem;
   width: 1rem;
   height: 1rem;
   padding: 0;

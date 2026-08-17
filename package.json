@@ -23,7 +23,8 @@
     "layers/minesweeper",
     "layers/whiteboard",
     "layers/screen-time",
-    "layers/clipboard"
+    "layers/clipboard",
+    "layers/git-viewer"
   ],
   "scripts": {
     "build": "nuxt build",

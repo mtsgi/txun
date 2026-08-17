@@ -28,7 +28,8 @@ const containerRef = ref<HTMLElement | null>(null)
 const containerWidth = ref(700)
 
 let currentObjectUrl: string | null = null
-let currentDataUrl: string | null = null
+const currentDataUrl = ref<string | null>(null)
+let activeLoadId = 0
 
 const isCompact = computed(() => containerWidth.value < 860)
 
@@ -52,8 +53,13 @@ async function openPath(path: string, selectedMountId?: string): Promise<void> {
   if (!mountId) return
 
   localError.value = null
+  currentDataUrl.value = null
+  const loadId = ++activeLoadId
+
   try {
     const blob = await fileSystem.readFileBlob(path, mountId)
+    if (loadId !== activeLoadId) return
+
     if (currentObjectUrl) {
       URL.revokeObjectURL(currentObjectUrl)
       currentObjectUrl = null
@@ -66,8 +72,8 @@ async function openPath(path: string, selectedMountId?: string): Promise<void> {
 
     const reader = new FileReader()
     reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        currentDataUrl = reader.result
+      if (loadId === activeLoadId && typeof reader.result === 'string') {
+        currentDataUrl.value = reader.result
       }
     }
     reader.readAsDataURL(blob)
@@ -78,16 +84,15 @@ async function openPath(path: string, selectedMountId?: string): Promise<void> {
       size: formatFileSize(blob.size)
     }
   } catch (error) {
-    localError.value = toErrorMessage(error)
+    if (loadId === activeLoadId) {
+      localError.value = toErrorMessage(error)
+    }
   }
 }
 
 function setAsWallpaper(): void {
-  if (currentDataUrl) {
-    store.setWallpaper(currentDataUrl)
-    notify(t('apps.imageViewer.wallpaperApplied'), { type: 'success' })
-  } else if (imageUrl.value) {
-    store.setWallpaper(imageUrl.value)
+  if (currentDataUrl.value) {
+    store.setWallpaper(currentDataUrl.value)
     notify(t('apps.imageViewer.wallpaperApplied'), { type: 'success' })
   }
 }
@@ -240,10 +245,11 @@ onBeforeUnmount(() => {
         <UButton
           icon="i-lucide-image"
           :title="t('apps.imageViewer.setAsWallpaper')"
+          :aria-label="t('apps.imageViewer.setAsWallpaper')"
           variant="ghost"
           color="neutral"
           size="sm"
-          :disabled="!imageUrl"
+          :disabled="!currentDataUrl"
           @click="setAsWallpaper"
         />
       </div>

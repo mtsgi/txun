@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useDesktopStore } from '../../stores/desktop'
 import { useWindowManager } from '../../composables/useWindowManager'
-import { useCalendarEvents } from '#layers/txunos-calendar/app/composables/useCalendarEvents'
+import { useCalendarEvents } from '../../composables/useCalendarEvents'
 
 const emit = defineEmits<{
   (e: 'close'): void
@@ -114,16 +114,16 @@ const calendarCells = computed(() => {
 })
 
 const monthNames = computed(() => [
-  t('apps.calendar.month.jan'), t('apps.calendar.month.feb'), t('apps.calendar.month.mar'),
-  t('apps.calendar.month.apr'), t('apps.calendar.month.may'), t('apps.calendar.month.jun'),
-  t('apps.calendar.month.jul'), t('apps.calendar.month.aug'), t('apps.calendar.month.sep'),
-  t('apps.calendar.month.oct'), t('apps.calendar.month.nov'), t('apps.calendar.month.dec')
+  t('core.desktop.clock.month.jan'), t('core.desktop.clock.month.feb'), t('core.desktop.clock.month.mar'),
+  t('core.desktop.clock.month.apr'), t('core.desktop.clock.month.may'), t('core.desktop.clock.month.jun'),
+  t('core.desktop.clock.month.jul'), t('core.desktop.clock.month.aug'), t('core.desktop.clock.month.sep'),
+  t('core.desktop.clock.month.oct'), t('core.desktop.clock.month.nov'), t('core.desktop.clock.month.dec')
 ])
 
 const weekDays = computed(() => [
-  t('apps.calendar.week.sun'), t('apps.calendar.week.mon'), t('apps.calendar.week.tue'),
-  t('apps.calendar.week.wed'), t('apps.calendar.week.thu'), t('apps.calendar.week.fri'),
-  t('apps.calendar.week.sat')
+  t('core.desktop.clock.week.sun'), t('core.desktop.clock.week.mon'), t('core.desktop.clock.week.tue'),
+  t('core.desktop.clock.week.wed'), t('core.desktop.clock.week.thu'), t('core.desktop.clock.week.fri'),
+  t('core.desktop.clock.week.sat')
 ])
 
 /** イベント色マッピング */
@@ -193,6 +193,7 @@ function handleOpenCalendar() {
             size="xs"
             variant="ghost"
             color="neutral"
+            :aria-label="$t('core.desktop.clock.prevMonth')"
             @click="prevMonth"
           />
           <UButton
@@ -200,7 +201,8 @@ function handleOpenCalendar() {
             size="xs"
             variant="ghost"
             color="neutral"
-            :title="$t('apps.calendar.today')"
+            :title="$t('core.desktop.clock.today')"
+            :aria-label="$t('core.desktop.clock.today')"
             @click="goToday"
           />
           <UButton
@@ -208,6 +210,7 @@ function handleOpenCalendar() {
             size="xs"
             variant="ghost"
             color="neutral"
+            :aria-label="$t('core.desktop.clock.nextMonth')"
             @click="nextMonth"
           />
         </div>

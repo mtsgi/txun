@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { FileSystemEntry } from '#layers/txunos-core/app/stores/filesystem'
 import { useDesktopStore } from '#layers/txunos-core/app/stores/desktop'
-import { useClipboardStore } from '#layers/txunos-core/app/stores/clipboard'
+import { useClipboardStore, type ClipboardEntry } from '#layers/txunos-core/app/stores/clipboard'
 
 defineProps<{ windowId: string }>()
 
@@ -367,6 +367,38 @@ async function handlePaste() {
   }
 }
 
+async function handleExternalPasteFiles(e: Event) {
+  const customEvent = e as CustomEvent<{ entry?: ClipboardEntry }>
+  const entry = customEvent.detail?.entry
+  if (!entry || entry.type !== 'files') return
+
+  const paths = entry.metadata?.paths || []
+  const mountId = entry.metadata?.mountId || fileSystem.activeMountId.value
+  const isCut = !!entry.metadata?.isCut
+  const tab = activeTab.value
+
+  if (paths.length === 0 || !tab || !mountId || !fileSystem.activeMountId.value) return
+
+  isLoading.value = true
+  try {
+    for (const srcPath of paths) {
+      const filename = srcPath.split('/').filter(Boolean).pop()!
+      const destPath = fileSystem.resolvePath(tab.currentPath, filename)
+      if (!isCut) {
+        await fileSystem.copy(srcPath, destPath, mountId)
+      } else {
+        await fileSystem.move(srcPath, destPath, mountId)
+      }
+    }
+    notify(t('apps.fileManager.paste'), { type: 'success' })
+    await loadEntries()
+  } catch (error) {
+    localError.value = toErrorMessage(error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
 // File actions
 async function createFolder() {
   const tab = activeTab.value
@@ -724,6 +756,10 @@ onMounted(async () => {
     createTab('/')
   }
   await loadEntries()
+  window.addEventListener('txun:clipboard-paste-files', handleExternalPasteFiles)
+  onUnmounted(() => {
+    window.removeEventListener('txun:clipboard-paste-files', handleExternalPasteFiles)
+  })
 })
 </script>
 
