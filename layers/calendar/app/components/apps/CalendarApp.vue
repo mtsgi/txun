@@ -1,21 +1,18 @@
 <script setup lang="ts">
+import { useCalendarEvents, type CalendarEvent } from '../../composables/useCalendarEvents'
+
 defineProps<{ windowId: string }>()
 
 const { t } = useI18n()
-const { saveState, loadState } = useDesktopStorage()
-
-/** カレンダーイベントを表す型 */
-interface CalendarEvent {
-  id: string
-  date: string
-  title: string
-  color: 'red' | 'blue' | 'green' | 'orange' | 'purple'
-}
+const {
+  loadEvents,
+  addEvent: createEvent,
+  removeEvent,
+  eventsOnDate
+} = useCalendarEvents()
 
 /** 表示中の月 */
 const currentDate = ref(new Date())
-/** イベント一覧 */
-const events = ref<CalendarEvent[]>([])
 /** イベント追加モーダルの表示状態 */
 const showAddModal = ref(false)
 /** 新規イベントのフォームデータ */
@@ -23,20 +20,9 @@ const newEvent = ref<Partial<CalendarEvent>>({ color: 'blue' })
 /** 選択中の日付 */
 const selectedDate = ref<string | null>(null)
 
-/** ストレージキー */
-const STORAGE_KEY = 'calendar-events'
-
 onMounted(async () => {
-  const saved = await loadState(STORAGE_KEY)
-  if (Array.isArray(saved)) {
-    events.value = saved as CalendarEvent[]
-  }
+  await loadEvents()
 })
-
-/** イベントをストレージに保存する */
-async function persistEvents(): Promise<void> {
-  await saveState(STORAGE_KEY, events.value)
-}
 
 /** コンテナ幅によるレスポンシブ判定 */
 const containerRef = ref<HTMLElement | null>(null)
@@ -75,11 +61,6 @@ const calendarCells = computed(() => {
   return cells
 })
 
-/** 指定日付のイベントを返す */
-function eventsOnDate(date: string): CalendarEvent[] {
-  return events.value.filter(e => e.date === date)
-}
-
 /** 前の月に移動する */
 function prevMonth(): void {
   currentDate.value = new Date(year.value, month.value - 1, 1)
@@ -103,24 +84,15 @@ function openAddModal(date: string): void {
 }
 
 /** イベントを追加する */
-async function addEvent(): Promise<void> {
+async function handleAddEvent(): Promise<void> {
   if (!newEvent.value.title || !newEvent.value.date) return
-  const event: CalendarEvent = {
-    id: crypto.randomUUID(),
+  await createEvent({
     date: newEvent.value.date,
     title: newEvent.value.title,
     color: newEvent.value.color ?? 'blue'
-  }
-  events.value.push(event)
-  await persistEvents()
+  })
   showAddModal.value = false
   newEvent.value = { color: 'blue' }
-}
-
-/** イベントを削除する */
-async function removeEvent(id: string): Promise<void> {
-  events.value = events.value.filter(e => e.id !== id)
-  await persistEvents()
 }
 
 /** 今日の日付文字列 */
@@ -283,7 +255,7 @@ const colorOptions = [
             :label="t('apps.calendar.add')"
             color="primary"
             :disabled="!newEvent.title"
-            @click="addEvent"
+            @click="handleAddEvent"
           />
         </div>
       </template>
@@ -403,6 +375,13 @@ const colorOptions = [
   margin-top: 2px;
 }
 
+.compact .cal-events {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 3px;
+}
+
 .cal-event {
   border-radius: 3px;
   padding: 1px 4px;
@@ -412,6 +391,14 @@ const colorOptions = [
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
+}
+
+.compact .cal-event {
+  width: 6px;
+  height: 6px;
+  min-width: 6px;
+  border-radius: 50%;
+  padding: 0;
 }
 
 .cal-event:hover {

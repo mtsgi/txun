@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import type { AppFont, AppRadius, AppUIScale, AppFontSize, TaskbarPosition, TaskbarSize, TaskbarTaskAlign, TaskbarTaskDisplay } from '../../stores/desktop'
+import type { AppFont, AppRadius, AppUIScale, AppFontSize, TaskbarPosition, TaskbarSize, TaskbarTaskAlign, TaskbarTaskDisplay, TimeFormat, WallpaperFit } from '../../stores/desktop'
 import type { TaskbarInsets } from '../../utils/window-manager'
+import { useClipboardStore } from '../../stores/clipboard'
 
 /** 永続化する設定データの型 */
 type UserSettings = {
@@ -9,6 +10,9 @@ type UserSettings = {
   font: AppFont
   primaryColor: string
   wallpaper: string
+  wallpaperFit?: WallpaperFit
+  wallpaperBrightness?: number
+  wallpaperBlur?: number
   radius: AppRadius
   uiScale?: AppUIScale
   safeArea?: boolean
@@ -19,6 +23,10 @@ type UserSettings = {
   taskbarSize?: TaskbarSize
   taskbarTaskAlign?: TaskbarTaskAlign
   taskbarTaskDisplay?: TaskbarTaskDisplay
+  timeFormat?: TimeFormat
+  showSeconds?: boolean
+  showTopVDesktopBar?: boolean
+  shortcuts?: Record<string, string>
 }
 
 /** CSS 変数 --ui-radius / --desktop-radius に設定する値のマッピング */
@@ -87,10 +95,21 @@ const screenHeight = ref(0)
 const vDesktopVisible = ref(false)
 
 const store = useDesktopStore()
-const { isOpen: launcherOpen, initLauncher } = useLauncher()
+const clipboardStore = useClipboardStore()
+const editableContextMenuRef = ref<{ openMenu: (e: MouseEvent, target: HTMLElement) => void, closeMenu: () => void } | null>(null)
+const { isOpen: launcherOpen, toggleLauncher, initLauncher } = useLauncher()
 const { openSpotlight } = useSpotlight()
 const { setTheme, setLocale } = useWindowManager()
 const { saveState, loadState } = useDesktopStorage()
+const {
+  toggleOverview,
+  closeOverview,
+  isOverviewOpen,
+  nextDesktop,
+  prevDesktop,
+  switchDesktop,
+  desktops
+} = useVirtualDesktop()
 const fileSystemStore = useFileSystemStore()
 
 const isMobile = computed(() => screenWidth.value < MOBILE_BREAKPOINT)
@@ -143,12 +162,129 @@ const vdesktopTransitionName = computed(() =>
   store.taskbarPosition === 'top' ? 'vdesktop-slide-up' : 'vdesktop-slide-down'
 )
 
-function onKeydown(e: KeyboardEvent) {
-  if (e.ctrlKey && e.key === 'k') {
-    e.preventDefault()
-    openSpotlight()
+const { toDefineShortcutKey } = useShortcuts()
+
+const shellShortcuts = computed(() => {
+  const config: Record<string, { handler: () => void, usingInput?: boolean }> = {}
+
+  // Escape で Overview を閉じる
+  config['escape'] = {
+    handler: () => {
+      if (isOverviewOpen.value) closeOverview()
+    },
+    usingInput: true
   }
-}
+
+  // スポットライト検索トグル
+  const spotlightKey = toDefineShortcutKey(store.shortcuts?.toggleSpotlight || 'Ctrl+k')
+  if (spotlightKey) {
+    config[spotlightKey] = {
+      handler: () => openSpotlight(),
+      usingInput: false
+    }
+  }
+
+  // アプリランチャートグル
+  const launcherKey = toDefineShortcutKey(store.shortcuts?.toggleLauncher || 'Alt+Space')
+  if (launcherKey) {
+    config[launcherKey] = {
+      handler: () => toggleLauncher(),
+      usingInput: false
+    }
+  }
+
+  // タスクビュー / Overview トグル
+  const overviewKey = toDefineShortcutKey(store.shortcuts?.toggleOverview || 'Ctrl+Alt+ArrowUp')
+  if (overviewKey) {
+    config[overviewKey] = {
+      handler: () => toggleOverview(),
+      usingInput: false
+    }
+  }
+  // 予備ショートカット（Win+Tab, Ctrl+Shift+Tab, Ctrl+` 等）
+  config['ctrl_shift_tab'] = { handler: () => toggleOverview(), usingInput: false }
+  config['ctrl_`'] = { handler: () => toggleOverview(), usingInput: false }
+  config['meta_arrowup'] = { handler: () => toggleOverview(), usingInput: false }
+
+  // 前の仮想デスクトップへ移動
+  const prevKey = toDefineShortcutKey(store.shortcuts?.prevDesktop || 'Ctrl+Alt+ArrowLeft')
+  if (prevKey) {
+    config[prevKey] = {
+      handler: () => prevDesktop(),
+      usingInput: false
+    }
+  }
+  config['meta_ctrl_arrowleft'] = { handler: () => prevDesktop(), usingInput: false }
+
+  // 次の仮想デスクトップへ移動
+  const nextKey = toDefineShortcutKey(store.shortcuts?.nextDesktop || 'Ctrl+Alt+ArrowRight')
+  if (nextKey) {
+    config[nextKey] = {
+      handler: () => nextDesktop(),
+      usingInput: false
+    }
+  }
+  config['meta_ctrl_arrowright'] = { handler: () => nextDesktop(), usingInput: false }
+
+  // アクティブウィンドウを閉じる
+  const closeWindowKey = toDefineShortcutKey(store.shortcuts?.closeWindow || 'Alt+w')
+  if (closeWindowKey) {
+    config[closeWindowKey] = {
+      handler: () => {
+        if (store.topWindow) store.closeWindow(store.topWindow.id)
+      },
+      usingInput: false
+    }
+  }
+
+  // アクティブウィンドウを最小化
+  const minWindowKey = toDefineShortcutKey(store.shortcuts?.minimizeWindow || 'Alt+m')
+  if (minWindowKey) {
+    config[minWindowKey] = {
+      handler: () => {
+        if (store.topWindow) store.minimizeWindow(store.topWindow.id)
+      },
+      usingInput: false
+    }
+  }
+
+  // アクティブウィンドウを最大化/元に戻す
+  const maxWindowKey = toDefineShortcutKey(store.shortcuts?.maximizeWindow || 'Alt+Enter')
+  if (maxWindowKey) {
+    config[maxWindowKey] = {
+      handler: () => {
+        if (store.topWindow) store.toggleMaximize(store.topWindow.id)
+      },
+      usingInput: false
+    }
+  }
+
+  // クリップボード履歴トグル
+  const clipKey = toDefineShortcutKey(store.shortcuts?.toggleClipboardHistory || 'Meta+v')
+  if (clipKey) {
+    config[clipKey] = {
+      handler: () => clipboardStore.toggleQuickHistory(),
+      usingInput: true
+    }
+  }
+  config['ctrl_shift_v'] = { handler: () => clipboardStore.toggleQuickHistory(), usingInput: true }
+  config['meta_v'] = { handler: () => clipboardStore.toggleQuickHistory(), usingInput: true }
+
+  // Alt + 1..9 で対応するデスクトップへジャンプ
+  for (let i = 1; i <= 9; i++) {
+    config[`alt_${i}`] = {
+      handler: () => {
+        const target = desktops.value[i - 1]
+        if (target) switchDesktop(target.id)
+      },
+      usingInput: false
+    }
+  }
+
+  return config
+})
+
+defineShortcuts(shellShortcuts)
 
 function updateSize() {
   if (!shellRef.value) return
@@ -156,12 +292,120 @@ function updateSize() {
   screenHeight.value = shellRef.value.clientHeight
 }
 
+function onGlobalContextMenu(e: MouseEvent) {
+  const target = e.target as HTMLElement | null
+  if (!target) return
+
+  // 明示的な除外属性があればスキップ
+  if (target.closest('[data-no-txun-contextmenu]')) return
+
+  // 入力要素（input, textarea, contenteditable, [data-txun-editable]）の判定
+  const editableTarget = target.closest('input, textarea, [contenteditable="true"], [data-txun-editable]') as HTMLElement | null
+  if (editableTarget && editableContextMenuRef.value) {
+    clipboardStore.setLastEditableTarget(editableTarget)
+    e.preventDefault()
+    e.stopPropagation()
+    editableContextMenuRef.value.openMenu(e, editableTarget)
+  }
+}
+
+function onGlobalFocusIn(e: FocusEvent) {
+  const target = e.target as HTMLElement | null
+  if (!target) return
+  if (target.closest('.clipboard-history-panel, .editable-context-menu-container')) return
+
+  if (
+    target instanceof HTMLInputElement
+    || target instanceof HTMLTextAreaElement
+    || target.isContentEditable
+    || target.hasAttribute('data-txun-editable')
+  ) {
+    clipboardStore.setLastEditableTarget(target)
+  }
+}
+
+function onGlobalSelectionChange() {
+  if (typeof document === 'undefined') return
+  const active = document.activeElement as HTMLElement | null
+  if (!active) return
+  if (active.closest('.clipboard-history-panel, .editable-context-menu-container')) return
+
+  if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) {
+    clipboardStore.setLastEditableTarget(active, active.selectionStart ?? undefined, active.selectionEnd ?? undefined)
+  }
+}
+
+function getTargetSelectionText(e: ClipboardEvent): string {
+  const target = (e.target as HTMLElement | null) || (typeof document !== 'undefined' ? (document.activeElement as HTMLElement | null) : null)
+  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+    const start = target.selectionStart ?? 0
+    const end = target.selectionEnd ?? 0
+    if (start !== end) {
+      return target.value.substring(start, end)
+    }
+  }
+  return window.getSelection()?.toString() || ''
+}
+
+function onGlobalCopy(e: ClipboardEvent) {
+  const sel = getTargetSelectionText(e)
+  if (sel && sel.trim()) {
+    clipboardStore.copyText(sel, { syncNative: false })
+  }
+}
+
+function onGlobalCut(e: ClipboardEvent) {
+  const sel = getTargetSelectionText(e)
+  if (sel && sel.trim()) {
+    clipboardStore.copyText(sel, { syncNative: false })
+  }
+}
+
+function onGlobalPaste(e: ClipboardEvent) {
+  if (e.clipboardData) {
+    const text = e.clipboardData.getData('text/plain')
+    const html = e.clipboardData.getData('text/html')
+    const files = e.clipboardData.files
+
+    if (files && files.length > 0) {
+      for (const file of Array.from(files)) {
+        if (file.type.startsWith('image/')) {
+          const reader = new FileReader()
+          reader.onload = () => {
+            if (typeof reader.result === 'string') {
+              clipboardStore.copyImage(reader.result, {
+                mimeType: file.type,
+                fileName: file.name,
+                syncNative: false
+              })
+            }
+          }
+          reader.readAsDataURL(file)
+        }
+      }
+    } else if (text && text.trim()) {
+      clipboardStore.copyText(text, { html: html || undefined, syncNative: false })
+    }
+  }
+}
+
+function onWindowFocus() {
+  clipboardStore.syncFromNativeClipboard().catch(() => {})
+}
+
 onMounted(async () => {
   updateSize()
   window.addEventListener('resize', updateSize)
-  window.addEventListener('keydown', onKeydown)
+  window.addEventListener('focus', onWindowFocus)
+  window.addEventListener('focusin', onGlobalFocusIn)
+  document.addEventListener('selectionchange', onGlobalSelectionChange)
+  window.addEventListener('contextmenu', onGlobalContextMenu, true)
+  window.addEventListener('copy', onGlobalCopy)
+  window.addEventListener('cut', onGlobalCut)
+  window.addEventListener('paste', onGlobalPaste)
   initLauncher()
   await fileSystemStore.restoreMounts()
+  await clipboardStore.restoreFromStorage()
 
   const saved = await loadState<UserSettings>(SETTINGS_KEY)
   if (saved) {
@@ -170,6 +414,9 @@ onMounted(async () => {
     if (saved.font) store.setFont(saved.font)
     if (saved.primaryColor) store.setPrimaryColor(saved.primaryColor)
     if (saved.wallpaper) store.setWallpaper(saved.wallpaper)
+    if (saved.wallpaperFit) store.setWallpaperFit(saved.wallpaperFit)
+    if (saved.wallpaperBrightness !== undefined) store.setWallpaperBrightness(saved.wallpaperBrightness)
+    if (saved.wallpaperBlur !== undefined) store.setWallpaperBlur(saved.wallpaperBlur)
     if (saved.radius) {
       store.setRadius(saved.radius)
       applyRadius(saved.radius)
@@ -192,6 +439,10 @@ onMounted(async () => {
     if (saved.taskbarSize) store.setTaskbarSize(saved.taskbarSize)
     if (saved.taskbarTaskAlign) store.setTaskbarTaskAlign(saved.taskbarTaskAlign)
     if (saved.taskbarTaskDisplay) store.setTaskbarTaskDisplay(saved.taskbarTaskDisplay)
+    if (saved.timeFormat) store.setTimeFormat(saved.timeFormat)
+    if (saved.showSeconds !== undefined) store.setShowSeconds(saved.showSeconds)
+    if (saved.showTopVDesktopBar !== undefined) store.setShowTopVDesktopBar(saved.showTopVDesktopBar)
+    if (saved.shortcuts) store.setShortcuts(saved.shortcuts)
   } else {
     // 初回起動時もデフォルト値を CSS に反映
     applyRadius(store.radius)
@@ -209,6 +460,9 @@ watch(
     () => store.font,
     () => store.primaryColor,
     () => store.wallpaper,
+    () => store.wallpaperFit,
+    () => store.wallpaperBrightness,
+    () => store.wallpaperBlur,
     () => store.radius,
     () => store.uiScale,
     () => store.safeArea,
@@ -218,7 +472,11 @@ watch(
     () => store.taskbarPosition,
     () => store.taskbarSize,
     () => store.taskbarTaskAlign,
-    () => store.taskbarTaskDisplay
+    () => store.taskbarTaskDisplay,
+    () => store.timeFormat,
+    () => store.showSeconds,
+    () => store.showTopVDesktopBar,
+    () => store.shortcuts
   ],
   async () => {
     await saveState(SETTINGS_KEY, {
@@ -227,6 +485,9 @@ watch(
       font: store.font,
       primaryColor: store.primaryColor,
       wallpaper: store.wallpaper,
+      wallpaperFit: store.wallpaperFit,
+      wallpaperBrightness: store.wallpaperBrightness,
+      wallpaperBlur: store.wallpaperBlur,
       radius: store.radius,
       uiScale: store.uiScale,
       safeArea: store.safeArea,
@@ -236,9 +497,14 @@ watch(
       taskbarPosition: store.taskbarPosition,
       taskbarSize: store.taskbarSize,
       taskbarTaskAlign: store.taskbarTaskAlign,
-      taskbarTaskDisplay: store.taskbarTaskDisplay
+      taskbarTaskDisplay: store.taskbarTaskDisplay,
+      timeFormat: store.timeFormat,
+      showSeconds: store.showSeconds,
+      showTopVDesktopBar: store.showTopVDesktopBar,
+      shortcuts: store.shortcuts
     })
-  }
+  },
+  { deep: true }
 )
 
 watch(() => store.uiScale, scale => applyUIScale(scale))
@@ -249,7 +515,13 @@ watch(() => store.radius, radius => applyRadius(radius))
 
 onUnmounted(() => {
   window.removeEventListener('resize', updateSize)
-  window.removeEventListener('keydown', onKeydown)
+  window.removeEventListener('focus', onWindowFocus)
+  window.removeEventListener('focusin', onGlobalFocusIn)
+  document.removeEventListener('selectionchange', onGlobalSelectionChange)
+  window.removeEventListener('contextmenu', onGlobalContextMenu, true)
+  window.removeEventListener('copy', onGlobalCopy)
+  window.removeEventListener('cut', onGlobalCut)
+  window.removeEventListener('paste', onGlobalPaste)
 })
 </script>
 
@@ -264,7 +536,7 @@ onUnmounted(() => {
 
     <!-- Virtual desktop indicator (hover zone, PC only) -->
     <div
-      v-if="!isMobile"
+      v-if="!isMobile && store.showTopVDesktopBar"
       class="vdesktop-trigger"
       :style="vdesktopTriggerStyle"
       @mouseenter="vDesktopVisible = true"
@@ -298,6 +570,12 @@ onUnmounted(() => {
     <!-- File Dialog -->
     <DesktopFileDialog />
 
+    <!-- Clipboard History Popup -->
+    <DesktopClipboardHistory />
+
+    <!-- Editable Context Menu -->
+    <DesktopEditableContextMenu ref="editableContextMenuRef" />
+
     <!-- App Launcher -->
     <Transition :name="launcherTransitionName">
       <DesktopAppLauncher
@@ -308,6 +586,13 @@ onUnmounted(() => {
         :taskbar-size-px="taskbarSizePx"
       />
     </Transition>
+
+    <!-- Virtual Desktop Overview (Mission Control / Task View) -->
+    <DesktopVirtualDesktopOverview
+      :screen-width="screenWidth"
+      :screen-height="screenHeight"
+      :is-mobile="isMobile"
+    />
   </div>
 </template>
 

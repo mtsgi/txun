@@ -8,6 +8,8 @@
       "zoomOut": "ズームアウト",
       "reset": "リセット",
       "rotate": "回転",
+      "setAsWallpaper": "壁紙に設定",
+      "wallpaperApplied": "壁紙に設定しました",
       "mount": "作業ディレクトリ",
       "addMount": "追加",
       "mountAdded": "作業ディレクトリを追加しました: {name}",

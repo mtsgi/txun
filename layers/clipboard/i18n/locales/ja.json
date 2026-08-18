@@ -1,0 +1,35 @@
+{
+  "apps": {
+    "clipboard": {
+      "name": "クリップボード",
+      "description": "クリップボードの履歴管理・閲覧・検索",
+      "searchPlaceholder": "クリップボード履歴を検索...",
+      "filterAll": "すべて",
+      "filterText": "テキスト",
+      "filterImage": "画像",
+      "filterFiles": "ファイル",
+      "filterPinned": "ピン留め",
+      "clearAll": "履歴をクリア",
+      "clearConfirm": "ピン留めされていない履歴項目をすべて削除しますか？",
+      "empty": "クリップボード履歴はありません",
+      "noSelection": "左の一覧から項目を選択してください",
+      "copy": "再度コピー",
+      "paste": "貼り付け",
+      "pin": "ピン留め",
+      "unpin": "ピン留め解除",
+      "delete": "削除",
+      "openInTextEditor": "Text Editorで開く",
+      "openInImageViewer": "Image Viewerで開く",
+      "openInFileManager": "File Managerで開く",
+      "metadata": "詳細情報",
+      "type": "種別",
+      "createdAt": "作成日時",
+      "size": "データサイズ",
+      "dimensions": "画像サイズ",
+      "copiedToast": "クリップボードにコピーしました",
+      "deletedToast": "項目を削除しました",
+      "stats": "合計 {total} 件（ピン留め: {pinned} 件）",
+      "backToList": "一覧に戻る"
+    }
+  }
+}

@@ -25,16 +25,37 @@ Nuxt 4 Layer は `app/` を srcDir として扱う。実装は以下に配置す
 
 旧 `layers/apps`（一括レイヤー）は廃止済み。新規実装で復活させないこと。
 
-## コンポーネント規約
+## コンポーネント & Nuxt UI 規約
 
-- Nuxt UI コンポーネントを優先利用する（例: `UButton`, `UDropdownMenu`, `UContextMenu`, `UInput`）。
-- アプリコンポーネントは `layers/<app>/app/components/apps/` 直下に配置する。
-  - 正: `components/apps/BrowserApp.vue`
-  - 禁止: `components/apps/browser/BrowserApp.vue` のような深いネスト
-- アプリコンポーネントは `windowId: string` を props で受け取る。
-- ウィンドウ表示・一覧のアニメーションには `Transition` / `TransitionGroup` を使用する。
-- Auto-import 名は `prefix: 'Apps'` を前提に `AppMeta.component` と一致させる。
-  - 例: `components/apps/MyApp.vue` → `AppsMyApp`
+- **Nuxt UI コンポーネントを最優先で利用する**:
+  - ネイティブ HTML タグの直接使用を避け、Nuxt UI のコンポーネント群を積極的に採用する。
+    - **入力系**: `UInput`, `UTextarea`, `USelect`, `USwitch`, `UCheckbox`, `URadioGroup`
+    - **アクション・オーバーレイ**: `UButton`, `UDropdownMenu`, `UContextMenu`, `UPopover`, `UTooltip`, `UModal`
+    - **データ表示・ナビゲーション**: `UBadge`, `UKbd`, `UTabs`, `UProgress`, `USkeleton`, `UIcon`
+  - カラー・バリアントは Nuxt UI のデザイントークン（`primary`, `neutral`, `error`, `warning` 等）および CSS 変数（`--ui-bg`, `--ui-text`, `--ui-border`）に統一する。
+- **アイコン規約**:
+  - アイコンはすべて Lucide アイコン（`i-lucide-*` プレフィックス）で統一する（例: `i-lucide-star`, `i-lucide-settings`, `i-lucide-panel-left`）。
+- **アイコンのみボタン**:
+  - ラベルなしの `UButton` は `aria-label` の付与を必須とし、パディングによる偏りを防ぐため中央揃え（`justify-content: center`）を適用する。
+- **配置・命名規約**:
+  - アプリコンポーネントは `layers/<app>/app/components/apps/` 直下に配置する。
+    - 正: `components/apps/BrowserApp.vue`
+    - 禁止: `components/apps/browser/BrowserApp.vue` のような深いネスト
+  - アプリコンポーネントは `windowId: string` を props で受け取る。
+  - ウィンドウ表示・一覧のアニメーションには `Transition` / `TransitionGroup` を使用する。
+  - Auto-import 名は `prefix: 'Apps'` を前提に `AppMeta.component` と一致させる（例: `components/apps/MyApp.vue` → `AppsMyApp`）。
+
+## レスポンシブ設計 & コンテナクエリ規約
+
+- **OS 側とアプリ側の役割分担**:
+  - **OS 側（`AppWindow.vue`）**: `.window-content` に `container-type: inline-size;` が標準で設定されており、各アプリコンポーネントは自身で `container-type` を二重宣言することなくコンテナクエリを利用できる。
+  - **アプリ側（各 `*App.vue`）**: ウィンドウのリサイズや狭小化に追従するため、メディアクエリではなく **コンテナクエリ（`@container`）** を使用してレスポンシブスタイルを記述する。
+  - **OS シェル側（`TaskBar.vue`, `DesktopShell.vue`, `VirtualDesktopOverview.vue` 等）**: デバイス全体の画面解像度に依存するため、**メディアクエリ（`@media (max-width: ...)`）** を使用する。
+- **コンテナクエリの基準ブレークポイント**:
+  - `@container (max-width: 520px)` または `@container (max-width: 480px)`:
+    - 2 カラムや左右分割レイアウトを縦積み（スタック）に切り替える。
+    - ツールバーやボタングループの補助テキストを非表示にしてアイコンのみ表示にする。
+    - パディングやギャップをスリム化し、限られたウィンドウ領域でコンテンツの視認性を最大化する。
 
 ## アプリ登録規約
 
@@ -63,6 +84,24 @@ Nuxt 4 Layer は `app/` を srcDir として扱う。実装は以下に配置す
 - テンプレートでは `$t('key')`、`script setup` では `t('key')` を使う。
 - core のキーは `core.desktop.*`、アプリのキーは `apps.<appName>.*`。
 - `store.locale` と `locale.value` は `useWindowManager.setLocale` を経由して同期する。
+
+## ショートカット規約
+
+- ショートカット登録は Nuxt UI の `defineShortcuts` を活用する。
+- OS シェルのショートカット定義・デフォルト値・キー変換は `layers/core/app/composables/useShortcuts.ts`（`SHORTCUT_DEFINITIONS`, `DEFAULT_SHORTCUTS`, `toDefineShortcutKey`）に集約する。
+- ショートカットの i18n キーは `core.desktop.shortcuts.*` に統一する。
+- 設定変更時は `store.shortcuts` に保存し、IndexedDB（`useDesktopStorage`）で永続化する。
+
+## 仮想デスクトップ & シェル UI 規約
+
+- PC 時: Mission Control 形式（壁紙サムネイル、ミニウィンドウ、Exposé ウィンドウグリッド、ドラッグ移動）。
+- モバイル時: iOS / Android 風スナップカルーセル（`scroll-snap-type: x mandatory`）、上スワイプによるウィンドウ閉じジェスチャー。
+- タスクバー（`TaskBar.vue`）は `z-index: 10000;` とし、Overview（Task View）起動中も最前面で常時操作可能とする。
+- ボタンコンポーネントでアイコンのみ・ラベルなしの場合は中央揃え（`justify-content: center`）を徹底する。
+
+## クリップボード連携
+
+- `useClipboardStore` により履歴保持、IndexedDB 永続化、ネイティブクリップボード同期および入力要素用コンテキストメニュー連携を行う。
 
 ## ウィンドウマネージャー
 
@@ -94,6 +133,6 @@ Nuxt 4 Layer は `app/` を srcDir として扱う。実装は以下に配置す
 
 ## テスト方針
 
-- ユニットテスト: `test/unit/`（純粋ユーティリティ中心、`environment: 'node'`）。
+- ユニットテスト: `test/unit/`（純粋ユーティリティ中心、`environment: 'node'` または DOM が必要な場合は `// @vitest-environment happy-dom`）。
 - Nuxt 統合テスト: `test/nuxt/`（コンポーザブル・コンポーネント）。
 - 仕様変更時は既存テストの維持だけでなく、必要に応じてケース追加を検討する。

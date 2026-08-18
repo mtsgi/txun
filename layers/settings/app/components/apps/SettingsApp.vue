@@ -1,7 +1,11 @@
 <script setup lang="ts">
-defineProps<{ windowId: string }>()
+import { useDesktopStore } from '../../../../core/app/stores/desktop'
+
+const props = defineProps<{ windowId: string }>()
 
 const { t } = useI18n()
+const store = useDesktopStore()
+const currentWindow = computed(() => store.getWindowById(props.windowId))
 
 /** コンテナ幅に応じてモバイルレイアウトかどうかを判定する */
 const containerRef = ref<HTMLElement | null>(null)
@@ -20,19 +24,37 @@ onMounted(() => {
 
 const isMobile = computed(() => containerWidth.value < 480)
 
+/** 選択中タブ */
+const activeTab = ref('appearance')
+
 /** モバイル時の選択セクション（null = リスト表示） */
 const activeSection = ref<string | null>(null)
 
 const tabs = computed(() => [
-  { label: t('apps.settings.appearance'), icon: 'i-lucide-palette', slot: 'appearance' },
-  { label: t('apps.settings.wallpaper'), icon: 'i-lucide-image', slot: 'wallpaper' },
-  { label: t('apps.settings.font'), icon: 'i-lucide-type', slot: 'font' },
-  { label: t('apps.settings.language'), icon: 'i-lucide-globe', slot: 'language' },
-  { label: t('apps.settings.taskbar'), icon: 'i-lucide-panel-bottom', slot: 'taskbar' },
-  { label: t('apps.settings.filesystem'), icon: 'i-lucide-folder-tree', slot: 'filesystem' },
-  { label: t('apps.settings.device'), icon: 'i-lucide-cpu', slot: 'device' },
-  { label: t('apps.settings.about'), icon: 'i-lucide-info', slot: 'about' }
+  { label: t('apps.settings.appearance'), icon: 'i-lucide-palette', value: 'appearance', slot: 'appearance' },
+  { label: t('apps.settings.wallpaper'), icon: 'i-lucide-image', value: 'wallpaper', slot: 'wallpaper' },
+  { label: t('apps.settings.font'), icon: 'i-lucide-type', value: 'font', slot: 'font' },
+  { label: t('apps.settings.languageAndTime'), icon: 'i-lucide-globe', value: 'language', slot: 'language' },
+  { label: t('apps.settings.taskbar'), icon: 'i-lucide-panel-bottom', value: 'taskbar', slot: 'taskbar' },
+  { label: t('apps.settings.shortcuts'), icon: 'i-lucide-keyboard', value: 'shortcuts', slot: 'shortcuts' },
+  { label: t('apps.settings.filesystem'), icon: 'i-lucide-folder-tree', value: 'filesystem', slot: 'filesystem' },
+  { label: t('apps.settings.device'), icon: 'i-lucide-cpu', value: 'device', slot: 'device' },
+  { label: t('apps.settings.about'), icon: 'i-lucide-info', value: 'about', slot: 'about' }
 ])
+
+watch(
+  () => currentWindow.value?.args?.tab as string | undefined,
+  (tab) => {
+    if (tab) {
+      const matched = tabs.value.find(t => t.value === tab || t.slot === tab)
+      if (matched) {
+        activeTab.value = matched.value
+        activeSection.value = matched.value
+      }
+    }
+  },
+  { immediate: true }
+)
 </script>
 
 <template>
@@ -43,6 +65,7 @@ const tabs = computed(() => [
     <!-- PC: UTabs 縦型 2カラム -->
     <UTabs
       v-if="!isMobile"
+      v-model="activeTab"
       orientation="vertical"
       :items="tabs"
       :ui="{ root: 'h-full items-stretch', list: 'border-r border-(--ui-border) w-40 justify-start', content: 'flex-1 overflow-y-auto' }"
@@ -61,6 +84,9 @@ const tabs = computed(() => [
       </template>
       <template #taskbar>
         <SettingsTaskbar />
+      </template>
+      <template #shortcuts>
+        <SettingsShortcuts />
       </template>
       <template #filesystem>
         <SettingsFileSystem />
@@ -124,6 +150,7 @@ const tabs = computed(() => [
             <SettingsFont v-else-if="activeSection === 'font'" />
             <SettingsLanguage v-else-if="activeSection === 'language'" />
             <SettingsTaskbar v-else-if="activeSection === 'taskbar'" />
+            <SettingsShortcuts v-else-if="activeSection === 'shortcuts'" />
             <SettingsFileSystem v-else-if="activeSection === 'filesystem'" />
             <SettingsDevice v-else-if="activeSection === 'device'" />
             <SettingsAbout v-else-if="activeSection === 'about'" />

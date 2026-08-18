@@ -7,7 +7,30 @@ const props = defineProps<{
   taskbarPosition: TaskbarPosition
 }>()
 
-const { desktops, activeId, addDesktop, removeDesktop, switchDesktop } = useVirtualDesktop()
+const {
+  desktops,
+  activeId,
+  addDesktop,
+  removeDesktop,
+  switchDesktop,
+  renameDesktop,
+  toggleOverview
+} = useVirtualDesktop()
+
+const editingId = ref<string | null>(null)
+const editingName = ref('')
+
+function startRename(id: string, name: string) {
+  editingId.value = id
+  editingName.value = name
+}
+
+function saveRename(id: string) {
+  if (editingName.value.trim()) {
+    renameDesktop(id, editingName.value.trim())
+  }
+  editingId.value = null
+}
 
 /** バーのインラインスタイル（タスクバー位置に応じて上端・下端を切り替え） */
 const barStyle = computed<CSSProperties>(() =>
@@ -22,23 +45,68 @@ const barStyle = computed<CSSProperties>(() =>
     class="vdesktop-bar"
     :style="barStyle"
   >
-    <button
+    <!-- Overview Launcher Button -->
+    <UTooltip :text="$t('core.desktop.virtualDesktop.overview')">
+      <UButton
+        size="xs"
+        variant="ghost"
+        color="neutral"
+        icon="i-lucide-panels-top-left"
+        class="vdesktop-overview-btn"
+        :aria-label="$t('core.desktop.virtualDesktop.overview')"
+        @click="toggleOverview"
+      />
+    </UTooltip>
+
+    <USeparator
+      orientation="vertical"
+      class="vdesktop-sep"
+    />
+
+    <div
       v-for="desktop in desktops"
       :key="desktop.id"
-      class="vdesktop-btn"
-      :class="desktop.id === activeId ? 'active' : 'inactive'"
-      @click="switchDesktop(desktop.id)"
+      class="vdesktop-item"
+      :class="[
+        desktop.id === activeId ? 'active' : 'inactive',
+        { 'has-close': desktops.length > 1 && editingId !== desktop.id }
+      ]"
     >
-      {{ desktop.name }}
-      <UButton
-        v-if="desktops.length > 1"
-        size="xs"
-        :variant="desktop.id === activeId ? 'solid' : 'ghost'"
-        icon="i-lucide-x"
-        class="vdesktop-close"
-        @click.stop="removeDesktop(desktop.id)"
-      />
-    </button>
+      <template v-if="editingId === desktop.id">
+        <UInput
+          v-model="editingName"
+          size="xs"
+          class="vdesktop-inline-input"
+          autofocus
+          @blur="saveRename(desktop.id)"
+          @keydown.enter="saveRename(desktop.id)"
+          @keydown.esc="editingId = null"
+          @click.stop
+        />
+      </template>
+      <template v-else>
+        <UTooltip :text="$t('core.desktop.virtualDesktop.switchTo', { name: desktop.name })">
+          <button
+            type="button"
+            class="vdesktop-btn"
+            @click="switchDesktop(desktop.id)"
+            @dblclick.stop="startRename(desktop.id, desktop.name)"
+          >
+            <span>{{ desktop.name }}</span>
+          </button>
+        </UTooltip>
+
+        <UButton
+          v-if="desktops.length > 1"
+          size="xs"
+          :variant="desktop.id === activeId ? 'solid' : 'ghost'"
+          icon="i-lucide-x"
+          class="vdesktop-close"
+          :aria-label="$t('core.desktop.virtualDesktop.remove')"
+          @click.stop="removeDesktop(desktop.id)"
+        />
+      </template>
+    </div>
 
     <UButton
       size="xs"
@@ -68,17 +136,18 @@ const barStyle = computed<CSSProperties>(() =>
   backdrop-filter: blur(var(--desktop-blur));
 }
 
-.vdesktop-btn {
+.vdesktop-item {
   display: flex;
   align-items: center;
-  gap: 0.375rem;
+  gap: 0.25rem;
   border-radius: 9999px;
   padding: 0.125rem 0.625rem;
   font-size: 0.75rem;
-  border: none;
-  cursor: pointer;
   transition: background-color 0.15s, color 0.15s;
-  color: inherit;
+
+  &.has-close {
+    padding-right: 0.25rem;
+  }
 
   &.active {
     background: var(--ui-primary);
@@ -96,8 +165,34 @@ const barStyle = computed<CSSProperties>(() =>
   }
 }
 
+.vdesktop-btn {
+  display: flex;
+  align-items: center;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 0.75rem;
+  color: inherit;
+  cursor: pointer;
+  line-height: 1.25rem;
+}
+
+.vdesktop-overview-btn {
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+}
+
+.vdesktop-sep {
+  height: 1rem;
+  margin-inline: 0.125rem;
+}
+
+.vdesktop-inline-input {
+  width: 5.5rem;
+}
+
 .vdesktop-close {
-  margin-right: -0.25rem;
   width: 1rem;
   height: 1rem;
   padding: 0;

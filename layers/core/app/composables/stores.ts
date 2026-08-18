@@ -21,3 +21,11 @@ export type {
 
 export { useFileDialogStore } from '../stores/file-dialog'
 export type { FileDialogOptions, FileDialogResult } from '../stores/file-dialog'
+
+export { useClipboardStore } from '../stores/clipboard'
+export type {
+  ClipboardEntry,
+  ClipboardType,
+  ClipboardEntryMetadata,
+  ClipboardState
+} from '../stores/clipboard'

@@ -264,6 +264,79 @@ describe('useDesktopStore', () => {
       store.removeVirtualDesktop(second.id)
       expect(store.activeVirtualDesktopId).toBe('desktop-1')
     })
+
+    it('renames a virtual desktop', () => {
+      const store = useDesktopStore()
+      store.renameVirtualDesktop('desktop-1', 'Work Space')
+      expect(store.virtualDesktops[0]?.name).toBe('Work Space')
+    })
+
+    it('does not rename if name is whitespace only', () => {
+      const store = useDesktopStore()
+      store.renameVirtualDesktop('desktop-1', '   ')
+      expect(store.virtualDesktops[0]?.name).toBe('Desktop 1')
+    })
+
+    it('moves window to another virtual desktop', () => {
+      const store = useDesktopStore()
+      store.addVirtualDesktop()
+      const winId = store.openWindow(mockApp)
+      const second = store.virtualDesktops[1]
+      if (!second) throw new Error('no second desktop')
+
+      store.moveWindowToDesktop(winId, second.id)
+      const win = store.windows.find(w => w.id === winId)
+      expect(win?.virtualDesktopId).toBe(second.id)
+    })
+
+    it('does not move window if target desktop does not exist', () => {
+      const store = useDesktopStore()
+      const winId = store.openWindow(mockApp)
+      store.moveWindowToDesktop(winId, 'non-existent-desktop')
+      const win = store.windows.find(w => w.id === winId)
+      expect(win?.virtualDesktopId).toBe('desktop-1')
+    })
+
+    it('calculates slideDirection correctly when switching desktops', () => {
+      const store = useDesktopStore()
+      store.addVirtualDesktop()
+      store.addVirtualDesktop()
+      const d1 = store.virtualDesktops[0]!
+      const d2 = store.virtualDesktops[1]!
+      const d3 = store.virtualDesktops[2]!
+
+      // switch 1 -> 2 (right)
+      store.switchVirtualDesktop(d2.id)
+      expect(store.slideDirection).toBe('right')
+
+      // switch 2 -> 3 (right)
+      store.switchVirtualDesktop(d3.id)
+      expect(store.slideDirection).toBe('right')
+
+      // switch 3 -> 1 (left)
+      store.switchVirtualDesktop(d1.id)
+      expect(store.slideDirection).toBe('left')
+    })
+
+    it('switches to next and prev desktop', () => {
+      const store = useDesktopStore()
+      store.addVirtualDesktop()
+      store.addVirtualDesktop()
+      const d2 = store.virtualDesktops[1]!
+
+      store.switchToNextDesktop()
+      expect(store.activeVirtualDesktopId).toBe(d2.id)
+
+      store.switchToPrevDesktop()
+      expect(store.activeVirtualDesktopId).toBe('desktop-1')
+    })
+
+    it('sets showTopVDesktopBar', () => {
+      const store = useDesktopStore()
+      expect(store.showTopVDesktopBar).toBe(true)
+      store.setShowTopVDesktopBar(false)
+      expect(store.showTopVDesktopBar).toBe(false)
+    })
   })
 
   // ── theme / locale / font / primaryColor ──────────────────────
@@ -290,6 +363,50 @@ describe('useDesktopStore', () => {
       const store = useDesktopStore()
       store.setPrimaryColor('blue')
       expect(store.primaryColor).toBe('blue')
+    })
+  })
+
+  // ── wallpaper settings ─────────────────────────────────────────
+  describe('wallpaper settings', () => {
+    it('sets wallpaper id or url', () => {
+      const store = useDesktopStore()
+      store.setWallpaper('gradient-sunset')
+      expect(store.wallpaper).toBe('gradient-sunset')
+      store.setWallpaper('https://example.com/custom.jpg')
+      expect(store.wallpaper).toBe('https://example.com/custom.jpg')
+    })
+
+    it('sets wallpaper fit mode', () => {
+      const store = useDesktopStore()
+      expect(store.wallpaperFit).toBe('cover')
+      store.setWallpaperFit('contain')
+      expect(store.wallpaperFit).toBe('contain')
+      store.setWallpaperFit('center')
+      expect(store.wallpaperFit).toBe('center')
+      store.setWallpaperFit('fill')
+      expect(store.wallpaperFit).toBe('fill')
+    })
+
+    it('sets wallpaper brightness within 50 to 150 range', () => {
+      const store = useDesktopStore()
+      expect(store.wallpaperBrightness).toBe(100)
+      store.setWallpaperBrightness(120)
+      expect(store.wallpaperBrightness).toBe(120)
+      store.setWallpaperBrightness(30)
+      expect(store.wallpaperBrightness).toBe(50)
+      store.setWallpaperBrightness(200)
+      expect(store.wallpaperBrightness).toBe(150)
+    })
+
+    it('sets wallpaper blur within 0 to 20 range', () => {
+      const store = useDesktopStore()
+      expect(store.wallpaperBlur).toBe(0)
+      store.setWallpaperBlur(10)
+      expect(store.wallpaperBlur).toBe(10)
+      store.setWallpaperBlur(-5)
+      expect(store.wallpaperBlur).toBe(0)
+      store.setWallpaperBlur(35)
+      expect(store.wallpaperBlur).toBe(20)
     })
   })
 })

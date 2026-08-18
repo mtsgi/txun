@@ -13,11 +13,13 @@
 ## 特徴
 
 - ドラッグ・リサイズ可能なウィンドウ（8 方向スナップゾーン）
-- 仮想デスクトップの追加・切替
+- 仮想デスクトップ（Overview / Mission Control / モバイル App Switcher / スワイプジェスチャー）
+- OS 全体でカスタマイズ可能なキーボードショートカット（Nuxt UI `defineShortcuts` 連携）
+- クリップボード履歴マネージャー・コンテキストメニュー連携
 - Nuxt UI ベースのビルトインアプリ群
 - 日本語 / 英語 i18n（`@nuxtjs/i18n`）
 - ライト / ダークテーマ（Nuxt UI カラーモード）
-- IndexedDB への状態保存
+- IndexedDB への状態保存（設定、デスクトップ、クリップボード等）
 - File System Access API による作業ディレクトリ連携（Files / Terminal）
 - Nuxt Layers による拡張しやすい構成
 
@@ -48,6 +50,8 @@ TxunOS は以下の npm パッケージ単位で利用できます。
 | `@txun/dev-tools` | 開発者向けツール |
 | `@txun/minesweeper` | マインスイーパーゲーム |
 | `@txun/screen-time` | スクリーンタイム管理 |
+| `@txun/git-viewer` | Git リポジトリビューア |
+| `@txun/clipboard` | クリップボード履歴マネージャー |
 
 各アプリレイヤーは `useDesktopStore().registerApp()` を自身のプラグインで実行し、`@txun/core` のストアに動的登録されます。
 
@@ -74,7 +78,7 @@ export default defineNuxtConfig({
 ### フル構成（全ビルトインアプリ）
 
 ```bash
-npm install @txun/core @txun/settings @txun/text-editor @txun/file-manager @txun/browser @txun/terminal @txun/task-manager @txun/calculator @txun/calendar @txun/clock @txun/image-viewer @txun/sticky-notes @txun/camera @txun/music-player @txun/video-player @txun/whiteboard @txun/dev-tools @txun/minesweeper @txun/screen-time
+npm install @txun/core @txun/settings @txun/text-editor @txun/file-manager @txun/browser @txun/terminal @txun/task-manager @txun/calculator @txun/calendar @txun/clock @txun/image-viewer @txun/sticky-notes @txun/camera @txun/music-player @txun/video-player @txun/whiteboard @txun/dev-tools @txun/minesweeper @txun/screen-time @txun/git-viewer @txun/clipboard
 ```
 
 ```ts
@@ -99,7 +103,9 @@ export default defineNuxtConfig({
     '@txun/whiteboard',
     '@txun/dev-tools',
     '@txun/minesweeper',
-    '@txun/screen-time'
+    '@txun/screen-time',
+    '@txun/git-viewer',
+    '@txun/clipboard'
   ]
 })
 ```
@@ -189,11 +195,16 @@ txunos/
 │   ├── browser/
 │   ├── calculator/
 │   ├── calendar/
-│   ├── clock/
 │   ├── camera/
+│   ├── clipboard/
+│   ├── clock/
+│   ├── dev-tools/
 │   ├── file-manager/
+│   ├── git-viewer/
 │   ├── image-viewer/
+│   ├── minesweeper/
 │   ├── music-player/
+│   ├── screen-time/
 │   ├── settings/
 │   ├── sticky-notes/
 │   ├── task-manager/
@@ -212,13 +223,14 @@ txunos/
 
 ### 状態管理（Pinia）
 
-`layers/core/app/stores/desktop.ts` が単一ソースです。
+`layers/core/app/stores/desktop.ts` がデスクトップ全体の単一ソースです。
 
 | 状態 | 型 | 説明 |
 |---|---|---|
 | `windows` | `WindowState[]` | 開いているウィンドウ |
-| `virtualDesktops` | `VirtualDesktop[]` | 仮想デスクトップ |
+| `virtualDesktops` | `VirtualDesktop[]` | 仮想デスクトップ一覧 |
 | `apps` | `AppMeta[]` | 登録済みアプリ |
+| `shortcuts` | `Record<string, string>` | カスタマイズされたキーボードショートカット |
 | `theme` | `'light' \| 'dark'` | テーマ |
 | `locale` | `'ja' \| 'en'` | 言語 |
 
@@ -227,9 +239,20 @@ txunos/
 | コンポーザブル | 役割 |
 |---|---|
 | `useWindowManager` | ウィンドウ操作 + `setTheme` / `setLocale` 同期 |
-| `useVirtualDesktop` | 仮想デスクトップ操作 |
+| `useVirtualDesktop` | 仮想デスクトップ操作・Overview 開閉制御 |
+| `useShortcuts` | OS ショートカット管理・キーマッピング |
+| `useClipboardStore` | クリップボード履歴の保持・コピー/ペースト・ネイティブ連携 |
 | `useDesktopStorage` | IndexedDB 保存・復元 |
 | `useFileSystem` | File System Access API のマウント管理と共通ファイル操作 |
+
+### レスポンシブ & UI 設計方針
+
+- **Nuxt UI コンポーネントの標準採用**:
+  - `UButton`, `UInput`, `USwitch`, `UPopover`, `UKbd`, `UTabs`, `UDropdownMenu`, `UContextMenu` などの Nuxt UI コンポーネントおよび Lucide アイコン（`i-lucide-*`）を標準利用します。
+- **コンテナクエリによるウィンドウ幅適応**:
+  - OS 側（`AppWindow.vue`）の `.window-content` に `container-type: inline-size;` が標準で設定されているため、各アプリは `@container (max-width: 520px)` 等のコンテナクエリを用いて、ユーザーによるウィンドウリサイズに自動追従するレスポンシブ UI を実装できます。
+- **OS シェルとメディアクエリ**:
+  - タスクバーや Mission Control / Overview などの OS シェルは、画面全体の解像度に応じて `@media (max-width: 640px)` でモバイルレイアウト（iOS/Android 風スワイプスイッチャー）へ切り替わります。
 
 ### File System API 導線
 
@@ -289,10 +312,52 @@ defineProps<{ windowId: string }>()
 </script>
 
 <template>
-  <div class="p-4">
-    My App
+  <div class="my-app">
+    <div class="toolbar">
+      <UInput
+        icon="i-lucide-search"
+        placeholder="検索..."
+        size="sm"
+      />
+      <UButton
+        icon="i-lucide-plus"
+        label="新規作成"
+        color="primary"
+        size="sm"
+      />
+    </div>
+    <div class="body">
+      <p>My App Content</p>
+    </div>
   </div>
 </template>
+
+<style lang="scss" scoped>
+.my-app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 1rem;
+  gap: 1rem;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  /* OS 側の .window-content が container-type を提供するため、直接コンテナクエリを利用可能 */
+  @container (max-width: 480px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.body {
+  flex: 1;
+  overflow: auto;
+}
+</style>
 ```
 
 ### 3. 登録プラグイン

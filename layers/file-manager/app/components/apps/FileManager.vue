@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { FileSystemEntry } from '#layers/txunos-core/app/stores/filesystem'
 import { useDesktopStore } from '#layers/txunos-core/app/stores/desktop'
+import { useClipboardStore, type ClipboardEntry } from '#layers/txunos-core/app/stores/clipboard'
 
 defineProps<{ windowId: string }>()
 
@@ -8,6 +9,7 @@ const { t } = useI18n()
 const { notify } = useDesktopNotification()
 const fileSystem = useFileSystem()
 const desktopStore = useDesktopStore()
+const clipboardStore = useClipboardStore()
 const { openApp } = useWindowManager()
 
 // Interfaces
@@ -317,6 +319,10 @@ function handleCopy(entry: FileSystemEntry) {
     paths: [entry.path],
     mountId: fileSystem.activeMountId.value
   }
+  clipboardStore.copyFiles([entry.path], {
+    mountId: fileSystem.activeMountId.value,
+    isCut: false
+  })
   notify(t('apps.fileManager.copy'), { type: 'success' })
 }
 
@@ -327,6 +333,10 @@ function handleCut(entry: FileSystemEntry) {
     paths: [entry.path],
     mountId: fileSystem.activeMountId.value
   }
+  clipboardStore.copyFiles([entry.path], {
+    mountId: fileSystem.activeMountId.value,
+    isCut: true
+  })
   notify(t('apps.fileManager.cut'), { type: 'success' })
 }
 
@@ -349,6 +359,38 @@ async function handlePaste() {
     if (clip.type === 'cut') {
       clipboard.value = null
     }
+    await loadEntries()
+  } catch (error) {
+    localError.value = toErrorMessage(error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+async function handleExternalPasteFiles(e: Event) {
+  const customEvent = e as CustomEvent<{ entry?: ClipboardEntry }>
+  const entry = customEvent.detail?.entry
+  if (!entry || entry.type !== 'files') return
+
+  const paths = entry.metadata?.paths || []
+  const mountId = entry.metadata?.mountId || fileSystem.activeMountId.value
+  const isCut = !!entry.metadata?.isCut
+  const tab = activeTab.value
+
+  if (paths.length === 0 || !tab || !mountId || !fileSystem.activeMountId.value) return
+
+  isLoading.value = true
+  try {
+    for (const srcPath of paths) {
+      const filename = srcPath.split('/').filter(Boolean).pop()!
+      const destPath = fileSystem.resolvePath(tab.currentPath, filename)
+      if (!isCut) {
+        await fileSystem.copy(srcPath, destPath, mountId)
+      } else {
+        await fileSystem.move(srcPath, destPath, mountId)
+      }
+    }
+    notify(t('apps.fileManager.paste'), { type: 'success' })
     await loadEntries()
   } catch (error) {
     localError.value = toErrorMessage(error)
@@ -484,10 +526,36 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
+const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.ico', '.avif', '.tif', '.tiff'])
+
+function isImageFile(path: string): boolean {
+  const ext = '.' + path.split('.').pop()?.toLowerCase()
+  return IMAGE_EXTENSIONS.has(ext)
+}
+
+async function setEntryAsWallpaper(entry: FileSystemEntry): Promise<void> {
+  const mountId = fileSystem.activeMountId.value
+  if (!mountId) return
+  try {
+    const blob = await fileSystem.readFileBlob(entry.path, mountId)
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        desktopStore.setWallpaper(reader.result)
+        notify(t('apps.fileManager.setAsWallpaper') + ': ' + entry.name, { type: 'success' })
+      }
+    }
+    reader.readAsDataURL(blob)
+  } catch (err) {
+    notify(err instanceof Error ? err.message : t('apps.fileManager.errorGeneric'), { type: 'error' })
+  }
+}
+
 // Menus and context items mapping
 const contextMenuItems = computed(() => (entry: FileSystemEntry) => {
   const isDir = entry.kind === 'directory'
   const isPinned = favorites.value.includes(entry.path)
+  const isImage = !isDir && isImageFile(entry.path)
   const menu: { label: string, icon: string, onSelect: () => void, color?: 'error' }[][] = [
     [
       {
@@ -513,6 +581,15 @@ const contextMenuItems = computed(() => (entry: FileSystemEntry) => {
         onSelect: () => handleCopy(entry)
       }
     ],
+    ...(isImage
+      ? [[
+          {
+            label: t('apps.fileManager.setAsWallpaper'),
+            icon: 'i-lucide-image',
+            onSelect: () => void setEntryAsWallpaper(entry)
+          }
+        ]]
+      : []),
     [
       {
         label: isPinned ? t('apps.fileManager.unpinFromFavorites') : t('apps.fileManager.pinToFavorites'),
@@ -679,6 +756,10 @@ onMounted(async () => {
     createTab('/')
   }
   await loadEntries()
+  window.addEventListener('txun:clipboard-paste-files', handleExternalPasteFiles)
+  onUnmounted(() => {
+    window.removeEventListener('txun:clipboard-paste-files', handleExternalPasteFiles)
+  })
 })
 </script>
 

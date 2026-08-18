@@ -74,6 +74,8 @@ export interface AppMeta {
   defaultWidth: number
   /** ウィンドウのデフォルト高さ（px） */
   defaultHeight: number
+  /** 複数インスタンスの起動を許可するかどうか（省略時は true） */
+  multiInstance?: boolean
   /** アプリのカテゴリ（任意） */
   category?: string
 }
@@ -102,6 +104,9 @@ export type TaskbarTaskAlign = 'start' | 'center' | 'end'
 /** タスクリストのアイテム表示形式 */
 export type TaskbarTaskDisplay = 'icon' | 'icon-label'
 
+/** 時刻の表示形式（12時間表示 / 24時間表示） */
+export type TimeFormat = '12h' | '24h'
+
 /** ランチャーフォルダーを表すインターフェース */
 export interface LauncherFolder {
   /** フォルダー固有の ID */
@@ -111,6 +116,9 @@ export interface LauncherFolder {
   /** フォルダーに含まれるアプリ ID の配列 */
   appIds: string[]
 }
+
+/** 壁紙のフィット方式 */
+export type WallpaperFit = 'cover' | 'contain' | 'center' | 'fill'
 
 /** デスクトップ全体の状態ツリーを表すインターフェース */
 export interface DesktopState {
@@ -136,6 +144,12 @@ export interface DesktopState {
   nextZIndex: number
   /** 壁紙プリセット ID または CSS 文字列 */
   wallpaper: string
+  /** 壁紙のフィット方式 */
+  wallpaperFit: WallpaperFit
+  /** 壁紙の明るさ（50 - 150 %） */
+  wallpaperBrightness: number
+  /** 壁紙のぼかし（0 - 20 px） */
+  wallpaperBlur: number
   /** ボーダー半径設定 */
   radius: AppRadius
   /** UI 全体のスケール設定 */
@@ -158,6 +172,16 @@ export interface DesktopState {
   taskbarTaskAlign: TaskbarTaskAlign
   /** タスクリストのアイテム表示形式 */
   taskbarTaskDisplay: TaskbarTaskDisplay
+  /** 時刻表示形式（12h / 24h） */
+  timeFormat: TimeFormat
+  /** 秒を表示するかどうか */
+  showSeconds: boolean
+  /** 仮想デスクトップ切り替え方向アニメーション用 */
+  slideDirection: 'left' | 'right' | 'none'
+  /** 画面上部ホバー式仮想デスクトップバーの表示設定 */
+  showTopVDesktopBar: boolean
+  /** カスタマイズ可能なキーボードショートカット */
+  shortcuts: Record<string, string>
 }
 
 export const useDesktopStore = defineStore('desktop', {
@@ -173,6 +197,9 @@ export const useDesktopStore = defineStore('desktop', {
     apps: [],
     nextZIndex: 100,
     wallpaper: 'gradient-default',
+    wallpaperFit: 'cover',
+    wallpaperBrightness: 100,
+    wallpaperBlur: 0,
     radius: 'md',
     uiScale: 'md',
     safeArea: false,
@@ -183,7 +210,22 @@ export const useDesktopStore = defineStore('desktop', {
     taskbarPosition: 'bottom',
     taskbarSize: 'md',
     taskbarTaskAlign: 'start',
-    taskbarTaskDisplay: 'icon-label'
+    taskbarTaskDisplay: 'icon-label',
+    timeFormat: '24h',
+    showSeconds: false,
+    slideDirection: 'none',
+    showTopVDesktopBar: true,
+    shortcuts: {
+      toggleOverview: 'Ctrl+Alt+ArrowUp',
+      prevDesktop: 'Ctrl+Alt+ArrowLeft',
+      nextDesktop: 'Ctrl+Alt+ArrowRight',
+      toggleSpotlight: 'Ctrl+k',
+      toggleLauncher: 'Alt+Space',
+      toggleClipboardHistory: 'Meta+v',
+      closeWindow: 'Alt+w',
+      minimizeWindow: 'Alt+m',
+      maximizeWindow: 'Alt+Enter'
+    }
   }),
 
   getters: {
@@ -219,6 +261,22 @@ export const useDesktopStore = defineStore('desktop', {
      * @returns 生成したウィンドウの ID
      */
     openWindow(app: AppMeta, options?: Partial<WindowState>): string {
+      if (app.multiInstance === false) {
+        const existing = this.windows.find(
+          w => w.appId === app.id && w.virtualDesktopId === this.activeVirtualDesktopId
+        )
+        if (existing) {
+          if (options?.args) {
+            existing.args = { ...existing.args, ...options.args }
+          }
+          if (existing.isMinimized) {
+            existing.isMinimized = false
+          }
+          this.focusWindow(existing.id)
+          return existing.id
+        }
+      }
+
       const id = `window-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
       const zIndex = this.nextZIndex++
       const cascadeCount = this.windows.filter(
@@ -330,6 +388,45 @@ export const useDesktopStore = defineStore('desktop', {
       if (w) Object.assign(w, bounds)
     },
 
+    /**
+     * 現在のアクティブな仮想デスクトップに属するすべてのウィンドウを最小化する。
+     */
+    minimizeAllWindows(): void {
+      this.windows
+        .filter(w => w.virtualDesktopId === this.activeVirtualDesktopId)
+        .forEach((w) => {
+          w.isMinimized = true
+        })
+      this.focusedWindowId = null
+    },
+
+    /**
+     * 現在のアクティブな仮想デスクトップに属するすべてのウィンドウを復元する。
+     */
+    restoreAllWindows(): void {
+      this.windows
+        .filter(w => w.virtualDesktopId === this.activeVirtualDesktopId)
+        .forEach((w) => {
+          w.isMinimized = false
+        })
+      if (this.topWindow) {
+        this.focusWindow(this.topWindow.id)
+      }
+    },
+
+    /**
+     * デスクトップ表示（全最小化）と全ウィンドウ復元をトグルする。
+     */
+    toggleShowDesktop(): void {
+      const activeWins = this.windows.filter(w => w.virtualDesktopId === this.activeVirtualDesktopId)
+      const hasVisible = activeWins.some(w => !w.isMinimized)
+      if (hasVisible) {
+        this.minimizeAllWindows()
+      } else {
+        this.restoreAllWindows()
+      }
+    },
+
     /** 新しい仮想デスクトップを追加する。 */
     addVirtualDesktop(): void {
       const id = `desktop-${Date.now()}`
@@ -354,12 +451,130 @@ export const useDesktopStore = defineStore('desktop', {
     },
 
     /**
+     * 指定 ID の仮想デスクトップの名前を変更する。
+     * @param id - 変更対象の仮想デスクトップ ID
+     * @param name - 新しい表示名
+     */
+    renameVirtualDesktop(id: string, name: string): void {
+      const trimmed = name.trim()
+      if (!trimmed) return
+      const target = this.virtualDesktops.find(d => d.id === id)
+      if (target) {
+        target.name = trimmed
+      }
+    },
+
+    /**
+     * 指定ウィンドウを別の仮想デスクトップに移動する。
+     * @param windowId - 移動対象のウィンドウ ID
+     * @param targetDesktopId - 移動先の仮想デスクトップ ID
+     */
+    moveWindowToDesktop(windowId: string, targetDesktopId: string): void {
+      if (!this.virtualDesktops.some(d => d.id === targetDesktopId)) return
+      const win = this.windows.find(w => w.id === windowId)
+      if (win) {
+        win.virtualDesktopId = targetDesktopId
+      }
+    },
+
+    /**
      * 指定 ID の仮想デスクトップに切り替える。
      * @param id - 切り替え先の仮想デスクトップの ID
      */
     switchVirtualDesktop(id: string): void {
-      if (this.virtualDesktops.some(d => d.id === id)) {
+      if (id === this.activeVirtualDesktopId) return
+      const currentIdx = this.virtualDesktops.findIndex(d => d.id === this.activeVirtualDesktopId)
+      const targetIdx = this.virtualDesktops.findIndex(d => d.id === id)
+      if (targetIdx !== -1) {
+        this.slideDirection = targetIdx > currentIdx ? 'right' : 'left'
         this.activeVirtualDesktopId = id
+      }
+    },
+
+    /** 次の仮想デスクトップに切り替える（あれば）。 */
+    switchToNextDesktop(): void {
+      const currentIdx = this.virtualDesktops.findIndex(d => d.id === this.activeVirtualDesktopId)
+      if (currentIdx !== -1 && currentIdx < this.virtualDesktops.length - 1) {
+        const next = this.virtualDesktops[currentIdx + 1]
+        if (next) this.switchVirtualDesktop(next.id)
+      }
+    },
+
+    /** 前の仮想デスクトップに切り替える（あれば）。 */
+    switchToPrevDesktop(): void {
+      const currentIdx = this.virtualDesktops.findIndex(d => d.id === this.activeVirtualDesktopId)
+      if (currentIdx > 0) {
+        const prev = this.virtualDesktops[currentIdx - 1]
+        if (prev) this.switchVirtualDesktop(prev.id)
+      }
+    },
+
+    /**
+     * 画面上部ホバー式仮想デスクトップバーの表示設定を変更する。
+     * @param show - 表示するかどうか
+     */
+    setShowTopVDesktopBar(show: boolean): void {
+      this.showTopVDesktopBar = show
+    },
+
+    /**
+     * ショートカットキーを設定する。
+     * @param action - アクションID
+     * @param keyCombo - キーコンビネーション文字列
+     */
+    setShortcut(action: string, keyCombo: string): void {
+      this.shortcuts = {
+        ...this.shortcuts,
+        [action]: keyCombo
+      }
+    },
+
+    /**
+     * すべてのショートカットキーを設定する。
+     * @param shortcuts - ショートカットのマップ
+     */
+    setShortcuts(shortcuts: Record<string, string>): void {
+      this.shortcuts = {
+        ...this.shortcuts,
+        ...shortcuts
+      }
+    },
+
+    /**
+     * 指定ショートカットをデフォルト値にリセットする。
+     * @param action - アクションID
+     */
+    resetShortcut(action: string): void {
+      const DEFAULT_SHORTCUTS: Record<string, string> = {
+        toggleOverview: 'Ctrl+Alt+ArrowUp',
+        prevDesktop: 'Ctrl+Alt+ArrowLeft',
+        nextDesktop: 'Ctrl+Alt+ArrowRight',
+        toggleSpotlight: 'Ctrl+k',
+        toggleLauncher: 'Alt+Space',
+        toggleClipboardHistory: 'Meta+v',
+        closeWindow: 'Alt+w',
+        minimizeWindow: 'Alt+m',
+        maximizeWindow: 'Alt+Enter'
+      }
+      if (DEFAULT_SHORTCUTS[action]) {
+        this.setShortcut(action, DEFAULT_SHORTCUTS[action])
+      }
+    },
+
+    /**
+     * すべてのショートカットをデフォルト値にリセットする。
+     */
+    resetShortcuts(): void {
+      this.shortcuts = {
+        toggleOverview: 'Ctrl+Alt+ArrowUp',
+        prevDesktop: 'Ctrl+Alt+ArrowLeft',
+        nextDesktop: 'Ctrl+Alt+ArrowRight',
+        toggleSpotlight: 'Ctrl+k',
+        toggleLauncher: 'Alt+Space',
+        toggleClipboardHistory: 'Meta+v',
+        closeWindow: 'Alt+w',
+        minimizeWindow: 'Alt+m',
+        maximizeWindow: 'Alt+Enter'
       }
     },
 
@@ -397,10 +612,34 @@ export const useDesktopStore = defineStore('desktop', {
 
     /**
      * 壁紙を変更する。
-     * @param wallpaper - 壁紙プリセット ID
+     * @param wallpaper - 壁紙プリセット ID または画像 URL
      */
     setWallpaper(wallpaper: string): void {
       this.wallpaper = wallpaper
+    },
+
+    /**
+     * 壁紙のフィット方式を変更する。
+     * @param fit - フィット方式 ('cover' | 'contain' | 'center' | 'fill')
+     */
+    setWallpaperFit(fit: WallpaperFit): void {
+      this.wallpaperFit = fit
+    },
+
+    /**
+     * 壁紙の明るさを変更する。
+     * @param brightness - 明るさ（50 - 150 %）
+     */
+    setWallpaperBrightness(brightness: number): void {
+      this.wallpaperBrightness = Math.max(50, Math.min(150, brightness))
+    },
+
+    /**
+     * 壁紙のぼかしを変更する。
+     * @param blur - ぼかし（0 - 20 px）
+     */
+    setWallpaperBlur(blur: number): void {
+      this.wallpaperBlur = Math.max(0, Math.min(20, blur))
     },
 
     /**
@@ -481,6 +720,22 @@ export const useDesktopStore = defineStore('desktop', {
      */
     setTaskbarTaskDisplay(display: TaskbarTaskDisplay): void {
       this.taskbarTaskDisplay = display
+    },
+
+    /**
+     * 時刻表示形式を変更する。
+     * @param format - 変更先の形式（'12h' | '24h'）
+     */
+    setTimeFormat(format: TimeFormat): void {
+      this.timeFormat = format
+    },
+
+    /**
+     * 秒の表示有無を変更する。
+     * @param show - true で秒を表示
+     */
+    setShowSeconds(show: boolean): void {
+      this.showSeconds = show
     },
 
     /**

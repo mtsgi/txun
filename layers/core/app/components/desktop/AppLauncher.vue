@@ -112,14 +112,29 @@ function onOverlayClick(event: MouseEvent): void {
   }
 }
 
-/** PC パネルのインラインスタイル（タスクバー位置に応じて変更） */
-const launcherPanelStyle = computed<CSSProperties>(() => {
-  const offset = `${props.taskbarSizePx + 4}px`
+/** ランチャーのインラインスタイル（PC: パネル配置 / SP: タスクバー位置・サイズに応じたパディング） */
+const launcherRootStyle = computed<CSSProperties>(() => {
+  if (!props.isMobile) {
+    const offset = `${props.taskbarSizePx + 4}px`
+    switch (props.taskbarPosition) {
+      case 'top': return { top: offset, left: '0' }
+      case 'left': return { left: offset, top: '0' }
+      case 'right': return { right: offset, top: '0' }
+      default: return { bottom: offset, left: '0' }
+    }
+  }
+
+  // モバイル（SP）全画面・ボトムシートモード時: タスクバーと重ならないよう余白を確保
+  const size = `${props.taskbarSizePx}px`
   switch (props.taskbarPosition) {
-    case 'top': return { top: offset, left: '0' }
-    case 'left': return { left: offset, top: '0' }
-    case 'right': return { right: offset, top: '0' }
-    default: return { bottom: offset, left: '0' }
+    case 'top':
+      return { paddingTop: size }
+    case 'left':
+      return { paddingLeft: size }
+    case 'right':
+      return { paddingRight: size }
+    default:
+      return { paddingBottom: size }
   }
 })
 
@@ -132,7 +147,7 @@ onMounted(() => {
 <template>
   <div
     :class="['launcher-root', props.isMobile ? 'launcher-fullscreen' : 'launcher-panel']"
-    :style="!props.isMobile ? launcherPanelStyle : undefined"
+    :style="launcherRootStyle"
     @click="props.isMobile ? onOverlayClick($event) : undefined"
   >
     <div
@@ -282,7 +297,10 @@ onMounted(() => {
   width: 100%;
   max-height: 85vh;
   border-radius: calc(var(--desktop-radius) + 0.5rem) calc(var(--desktop-radius) + 0.5rem) 0 0;
+  border-top: 1px solid var(--ui-border);
+  border-inline: 1px solid var(--ui-border);
   background: color-mix(in srgb, var(--ui-bg-elevated) var(--desktop-bg-opacity), transparent);
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.24);
   display: flex;
   flex-direction: column;
   overflow: hidden;
