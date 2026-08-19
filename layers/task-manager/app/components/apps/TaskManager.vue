@@ -32,6 +32,15 @@ function getDesktopWindowCount(desktop: VirtualDesktop): number {
   return store.windows.filter(w => w.virtualDesktopId === desktop.id).length
 }
 
+/** 仮想デスクトップのIDから名前へのマッピング（高速化のため） */
+const desktopNameMap = computed(() => {
+  const map = new Map<string, string>()
+  for (const desktop of store.virtualDesktops) {
+    map.set(desktop.id, desktop.name)
+  }
+  return map
+})
+
 /** performance.memory の型定義 */
 interface PerformanceMemory {
   usedJSHeapSize: number
@@ -141,7 +150,7 @@ onMounted(() => {
 
             <!-- 所属デスクトップ -->
             <span class="col-desktop hide-mobile text-muted">
-              {{ store.virtualDesktops.find(d => d.id === win.virtualDesktopId)?.name ?? '' }}
+              {{ desktopNameMap.get(win.virtualDesktopId) ?? '' }}
             </span>
 
             <!-- 操作ボタン -->
