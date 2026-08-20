@@ -149,8 +149,8 @@ let _videoEl: HTMLVideoElement | null = null
 // ─────────────────────────────────────────────────────────
 
 /** ImageCapture API がブラウザでサポートされているか確認する */
-function checkImageCaptureSupport(): boolean {
-  return import.meta.client && 'ImageCapture' in globalThis
+export function checkImageCaptureSupport(): boolean {
+  return !!import.meta.client && 'ImageCapture' in globalThis
 }
 
 /** ImageCapture インスタンスを生成する */
