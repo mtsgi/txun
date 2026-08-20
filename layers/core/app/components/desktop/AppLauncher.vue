@@ -47,7 +47,7 @@ const resolvedFolders = computed(() =>
   }))
 )
 
-/** フォルダーごとのアプリアイディーのSet */
+/** フォルダーごとのアプリIDのSet */
 const folderAppSets = computed(() => {
   const map = new Map<string, Set<string>>()
   for (const f of store.launcherFolders) {
