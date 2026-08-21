@@ -194,7 +194,7 @@ function handleGenerateUuid(): void {
   } catch {
     // 古いブラウザ向けの fallback
     const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-      const r = (Math.random() * 16) | 0
+      const r = crypto.getRandomValues(new Uint8Array(1))[0] & 15
       const v = c === 'x' ? r : (r & 0x3) | 0x8
       return v.toString(16)
     })
@@ -213,7 +213,7 @@ function handleGenerateMultiple(count: number): void {
       list.push(crypto.randomUUID())
     } catch {
       const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-        const r = (Math.random() * 16) | 0
+        const r = crypto.getRandomValues(new Uint8Array(1))[0] & 15
         const v = c === 'x' ? r : (r & 0x3) | 0x8
         return v.toString(16)
       })
