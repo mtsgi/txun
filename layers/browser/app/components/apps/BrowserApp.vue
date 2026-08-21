@@ -70,7 +70,7 @@ const canGoForward = computed(() => {
 /** 新しいタブを作成する */
 function createTab(url: string): BrowserTab {
   return {
-    id: `tab-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+    id: `tab-${crypto.randomUUID()}`,
     url,
     inputUrl: url,
     title: url,
