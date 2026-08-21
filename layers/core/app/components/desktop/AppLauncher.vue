@@ -47,12 +47,21 @@ const resolvedFolders = computed(() =>
   }))
 )
 
+/** フォルダーごとのアプリIDのSet */
+const folderAppSets = computed(() => {
+  const map = new Map<string, Set<string>>()
+  for (const f of store.launcherFolders) {
+    map.set(f.id, new Set(f.appIds))
+  }
+  return map
+})
+
 /** アプリのコンテキストメニュー項目を生成する */
 function getAppContextItems(app: AppMeta, folderId?: string) {
   const folderItems = store.launcherFolders.map(f => ({
     label: f.name,
     icon: 'i-lucide-folder',
-    disabled: f.appIds.includes(app.id),
+    disabled: folderAppSets.value.get(f.id)?.has(app.id) ?? false,
     onSelect: () => store.addAppToFolder(f.id, app.id)
   }))
 
