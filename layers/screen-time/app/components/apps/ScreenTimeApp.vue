@@ -58,13 +58,14 @@ const maxTodaySeconds = computed(() => sortedTodayApps.value[0]?.seconds ?? 1)
 const maxSelectedSeconds = computed(() => sortedSelectedApps.value[0]?.seconds ?? 1)
 
 /** すべての登録アプリを制限設定付きで返す */
-const appsWithLimits = computed(() =>
-  desktopStore.apps.map(app => ({
+const appsWithLimits = computed(() => {
+  const limitMap = new Map(screenTimeStore.limits.map(l => [l.appId, l]))
+  return desktopStore.apps.map(app => ({
     app,
-    limit: screenTimeStore.limits.find(l => l.appId === app.id),
+    limit: limitMap.get(app.id),
     usedSeconds: screenTimeStore.todayRecord.apps[app.id] ?? 0
   }))
-)
+})
 
 // ---- 制限設定ダイアログ ----
 const limitDialog = ref(false)
