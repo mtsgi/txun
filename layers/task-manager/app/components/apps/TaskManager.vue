@@ -29,7 +29,7 @@ function getWindowColor(win: WindowState): string {
 
 /** 仮想デスクトップ内のウィンドウ数を返す */
 function getDesktopWindowCount(desktop: VirtualDesktop): number {
-  return store.windows.filter(w => w.virtualDesktopId === desktop.id).length
+  return store.windows.reduce((count, w) => w.virtualDesktopId === desktop.id ? count + 1 : count, 0)
 }
 
 /** 仮想デスクトップのIDから名前へのマッピング（高速化のため） */
