@@ -37,12 +37,21 @@ const unfolderedApps = computed<AppMeta[]>(() => {
   return store.apps.filter(app => !assignedIds.has(app.id))
 })
 
+/** IDごとのアプリマップ (検索高速化) */
+const appMap = computed(() => {
+  const map = new Map<string, AppMeta>()
+  for (const app of store.apps) {
+    map.set(app.id, app)
+  }
+  return map
+})
+
 /** フォルダーごとの解決済みアプリ一覧 */
 const resolvedFolders = computed(() =>
   store.launcherFolders.map(folder => ({
     folder,
     apps: folder.appIds
-      .map(id => store.apps.find(a => a.id === id))
+      .map(id => appMap.value.get(id))
       .filter((a): a is AppMeta => a !== undefined)
   }))
 )
