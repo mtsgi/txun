@@ -211,9 +211,12 @@ export const useDeviceStore = defineStore('device', {
       // navigator.hid は @types に含まれていないため unknown 経由でアクセス
       const hid = (navigator as unknown as { hid: { requestDevice(opts: { filters: HIDDeviceFilter[] }): Promise<HIDDevice[]> } }).hid
       const devices = await hid.requestDevice({ filters: filters ?? [] })
+
+      const existingIds = new Set(this.hidDevices.map(d => d.id))
+
       for (const device of devices) {
         const id = `${device.vendorId}:${device.productId}:${device.productName}`
-        if (!this.hidDevices.some(d => d.id === id)) {
+        if (!existingIds.has(id)) {
           this.hidDevices.push({
             id,
             vendorId: device.vendorId,
@@ -221,6 +224,7 @@ export const useDeviceStore = defineStore('device', {
             productName: device.productName
           })
           this._hidHandles.set(id, device)
+          existingIds.add(id)
         }
       }
     },
