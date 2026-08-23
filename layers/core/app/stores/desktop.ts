@@ -753,7 +753,7 @@ export const useDesktopStore = defineStore('desktop', {
      * @param name - フォルダー表示名
      */
     createLauncherFolder(name: string): void {
-      const id = `folder-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+      const id = `folder-${crypto.randomUUID()}`
       this.launcherFolders.push({ id, name, appIds: [] })
     },
 
