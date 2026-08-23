@@ -348,10 +348,15 @@ export const useDeviceStore = defineStore('device', {
           axes: gp.axes
         })
       }
+      const existingMap = new Map<number, number>()
+      for (let i = 0; i < this.gamepads.length; i++) {
+        existingMap.set(this.gamepads[i]!.index, i)
+      }
+
       // 既存の状態を更新（追加・削除）
       for (const gp of active) {
-        const existing = this.gamepads.findIndex(g => g.index === gp.index)
-        if (existing !== -1) {
+        const existing = existingMap.get(gp.index)
+        if (existing !== undefined) {
           this.gamepads[existing] = gp
         } else {
           this.gamepads.push(gp)
