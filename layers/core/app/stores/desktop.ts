@@ -279,9 +279,12 @@ export const useDesktopStore = defineStore('desktop', {
 
       const id = `window-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
       const zIndex = this.nextZIndex++
-      const cascadeCount = this.windows.filter(
-        w => w.appId === app.id && w.virtualDesktopId === this.activeVirtualDesktopId
-      ).length
+      let cascadeCount = 0
+      for (const w of this.windows) {
+        if (w.appId === app.id && w.virtualDesktopId === this.activeVirtualDesktopId) {
+          cascadeCount++
+        }
+      }
       const offset = (cascadeCount % 8) * 30
 
       this.windows.push({
