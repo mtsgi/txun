@@ -287,13 +287,7 @@ export function parseGitTree(content: Uint8Array): GitTreeEntry[] {
 
   while (offset < content.length) {
     // ヌルバイトを探す
-    let nullIdx = -1
-    for (let i = offset; i < content.length; i++) {
-      if (content[i] === 0) {
-        nullIdx = i
-        break
-      }
-    }
+    const nullIdx = content.indexOf(0, offset)
 
     if (nullIdx === -1) break
 
