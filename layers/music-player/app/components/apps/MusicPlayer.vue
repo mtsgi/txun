@@ -177,7 +177,9 @@ async function nextTrack(): Promise<void> {
   if (tracks.value.length === 0) return
   let next: number
   if (isShuffle.value) {
-    next = Math.floor(Math.random() * tracks.value.length)
+    const arr = new Uint32Array(1)
+    crypto.getRandomValues(arr)
+    next = (arr[0] || 0) % tracks.value.length
   } else {
     next = currentIndex.value + 1
     if (next >= tracks.value.length) next = 0

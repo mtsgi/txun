@@ -88,9 +88,12 @@ export function useMinesweeper(): MinesweeperState {
     const { width, height, mines } = currentSettings.value
     let placed = 0
 
+    const randomBuffer = new Uint32Array(2)
+
     while (placed < mines) {
-      const rx = Math.floor(Math.random() * width)
-      const ry = Math.floor(Math.random() * height)
+      crypto.getRandomValues(randomBuffer)
+      const rx = (randomBuffer[0] || 0) % width
+      const ry = (randomBuffer[1] || 0) % height
 
       // 初回クリック位置の周囲3x3と、既に地雷がある場所には配置しない
       if (Math.abs(rx - firstX) <= 1 && Math.abs(ry - firstY) <= 1) continue
