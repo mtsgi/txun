@@ -116,7 +116,7 @@ async function searchOnlineImages(query: string, page = 1, append = false): Prom
     }
     const data = await res.json()
     const items: OpenverseImage[] = (data.results || []).map((item: Record<string, unknown>) => ({
-      id: String(item.id || Math.random()),
+      id: String(item.id || crypto.randomUUID()),
       title: String(item.title || 'Untitled'),
       creator: String(item.creator || 'Unknown'),
       creator_url: item.creator_url ? String(item.creator_url) : undefined,

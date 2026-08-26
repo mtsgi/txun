@@ -199,7 +199,9 @@ async function nextVideo(): Promise<void> {
   if (videos.value.length === 0) return
   let next: number
   if (isShuffle.value) {
-    next = Math.floor(Math.random() * videos.value.length)
+    const arr = new Uint32Array(1)
+    crypto.getRandomValues(arr)
+    next = (arr[0] || 0) % videos.value.length
   } else {
     next = currentIndex.value + 1
     if (next >= videos.value.length) next = 0

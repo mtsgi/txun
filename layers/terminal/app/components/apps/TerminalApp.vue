@@ -321,7 +321,7 @@ async function execute(cmd: string): Promise<void> {
   if (output === '__CLEAR__') {
     history.value = []
   } else {
-    const entryId = `entry-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    const entryId = crypto.randomUUID()
     const activeMountId = fileSystem.activeMountId.value
     const currentCwd = activeMountId ? getCwd(activeMountId) : ''
     history.value.push({

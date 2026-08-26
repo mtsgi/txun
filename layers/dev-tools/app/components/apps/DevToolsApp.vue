@@ -188,18 +188,8 @@ const generatedUuids = ref<string[]>([])
  * UUID v4 を単一生成する
  */
 function handleGenerateUuid(): void {
-  try {
-    const uuid = crypto.randomUUID()
-    generatedUuids.value.unshift(uuid)
-  } catch {
-    // 古いブラウザ向けの fallback
-    const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-      const r = (Math.random() * 16) | 0
-      const v = c === 'x' ? r : (r & 0x3) | 0x8
-      return v.toString(16)
-    })
-    generatedUuids.value.unshift(uuid)
-  }
+  const uuid = crypto.randomUUID()
+  generatedUuids.value.unshift(uuid)
 }
 
 /**
@@ -209,16 +199,7 @@ function handleGenerateUuid(): void {
 function handleGenerateMultiple(count: number): void {
   const list: string[] = []
   for (let i = 0; i < count; i++) {
-    try {
-      list.push(crypto.randomUUID())
-    } catch {
-      const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-        const r = (Math.random() * 16) | 0
-        const v = c === 'x' ? r : (r & 0x3) | 0x8
-        return v.toString(16)
-      })
-      list.push(uuid)
-    }
+    list.push(crypto.randomUUID())
   }
   generatedUuids.value = [...list, ...generatedUuids.value]
 }

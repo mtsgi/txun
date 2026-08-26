@@ -46,10 +46,7 @@ const STORAGE_KEY = 'clipboard-history'
 const DEFAULT_MAX_HISTORY = 50
 
 function generateId(): string {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID()
-  }
-  return `clip-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  return crypto.randomUUID()
 }
 
 function truncatePreview(str: string, maxLength = 200): string {

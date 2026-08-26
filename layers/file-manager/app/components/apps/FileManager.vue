@@ -117,7 +117,7 @@ const displayedEntries = computed(() => {
 
 // Methods
 function generateId(): string {
-  return `tab-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`
+  return crypto.randomUUID()
 }
 
 function loadFavorites() {
