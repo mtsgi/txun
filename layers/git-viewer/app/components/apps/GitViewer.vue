@@ -69,22 +69,25 @@ const availableRepos = ref<{ name: string, path: string, mountId: string }[]>([]
  * 読み込み可能な Git リポジトリをマウント一覧からスキャンして候補を作る
  */
 async function scanMountsForGitRepos() {
-  availableRepos.value = []
   const mounts = fileSystem.mounts.value
-  for (const m of mounts) {
+  const promises = mounts.map(async (m) => {
     try {
       const hasGit = await isGitRepository(fileSystem, '/', m.id)
       if (hasGit) {
-        availableRepos.value.push({
+        return {
           name: m.name,
           path: '/',
           mountId: m.id
-        })
+        }
       }
     } catch {
       // Ignore scanning failures
     }
-  }
+    return null
+  })
+
+  const results = await Promise.all(promises)
+  availableRepos.value = results.filter((r): r is NonNullable<typeof r> => r !== null)
 }
 
 /**
