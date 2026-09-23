@@ -40,6 +40,9 @@ function formatTime(sec: number): string {
   return t('apps.screenTime.minutes', { m })
 }
 
+/** アプリIDからアプリ情報へのマップ */
+const appMap = computed(() => new Map(desktopStore.apps.map(app => [app.id, app])))
+
 /** アプリ一覧を使用時間の降順に返す（0 秒のアプリは除外） */
 function sortedAppUsage(appsRecord: Record<string, number>) {
   return Object.entries(appsRecord)
@@ -48,7 +51,7 @@ function sortedAppUsage(appsRecord: Record<string, number>) {
     .map(([appId, seconds]) => ({
       appId,
       seconds,
-      meta: desktopStore.apps.find(a => a.id === appId)
+      meta: appMap.value.get(appId)
     }))
 }
 
